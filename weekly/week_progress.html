@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ผลการดำเนินงานในสัปดาห์</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../assets/gas-sync.js"></script>
+  <style>
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
+    @page { size: A4 portrait; margin: 0; }
+    body { font-family: 'THSarabunPSK', sans-serif; background-color: #94a3b8; margin: 0; padding: 0; font-size: 15pt; }
+    .sheet-workspace { width: 100%; max-width: 1200px; margin: 15px auto; background: white; padding: 15px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); box-sizing: border-box; }
+    .table-main { width: 100%; border-collapse: collapse; }
+    .table-main th, .table-main td { border: 1px solid #000; padding: 3px 5px; font-size: 13.5pt; vertical-align: middle; }
+    .table-main th { font-weight: bold; text-align: center; background-color: #f8fafc; }
+    .table-dashed-orange { width: 100%; border-collapse: collapse; border: 2px solid #b45309; }
+    .table-dashed-orange th { border: 1px solid #b45309; background-color: #fef3c7; color: #92400e; font-weight: bold; text-align: center; font-size: 12.5pt; }
+    .table-dashed-orange td { border: 1px dashed #b45309; padding: 2px; text-align: center; font-size: 13pt; }
+    .table-dashed-brown { width: 100%; border-collapse: collapse; border: 2px solid #451a03; }
+    .table-dashed-brown th { border: 1px solid #451a03; background-color: #f5f5f4; color: #78350f; font-weight: bold; text-align: center; font-size: 12pt; }
+    .table-dashed-brown td { border: 1px dashed #78350f; padding: 2px; text-align: right; font-size: 13pt; }
+    .cell-input-text, .cell-input-num { width: 100%; border: none; outline: none; background: transparent; font-family: inherit; font-size: 13pt; padding: 0; }
+    .cell-input-num { text-align: center; }
+    .cell-input-num:focus, .cell-input-text:focus { background-color: #fef08a; }
+    .dotted-line-4 { border-bottom: 1px dotted #334155; height: 22px; }
+    @media print {
+      body { background: white !important; padding: 0 !important; }
+      .no-print { display: none !important; }
+      .sheet-workspace { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 12mm 15mm 10mm 20mm !important; }
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-4 min-h-screen flex flex-col items-center">
+  <div class="max-w-[1200px] w-full mb-3 flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl shadow border border-slate-300 no-print">
+    <div class="flex items-center gap-2">
+      <a href="../Weekly_Reference.html" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1 text-sm font-bold">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i> กลับหน้ารายสัปดาห์
+      </a>
+      <span class="font-bold text-slate-800 text-lg">ผลการดำเนินงานในสัปดาห์</span>
+      <span id="badge-week" class="px-2.5 py-0.5 bg-purple-100 text-purple-800 rounded-full font-bold text-sm">สัปดาห์ที่ 1</span>
+    </div>
+    
+    <div class="flex items-center gap-2 flex-wrap">
+      <button onclick="pullDataFromPreviousWeek()" id="btn-pull-prev" class="flex items-center gap-1 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow hidden">
+        <i data-lucide="history" class="w-4 h-4"></i> ดึงงานสัปดาห์ก่อน
+      </button>
+      <!-- ปุ่มล้างข้อมูลสัปดาห์นี้ -->
+      <button onclick="resetCurrentWeekForm()" class="flex items-center gap-1 bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow">
+        <i data-lucide="rotate-ccw" class="w-4 h-4"></i> ล้างข้อมูลสัปดาห์นี้
+      </button>
+      <button onclick="addNewTaskRow()" class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i> เพิ่มรายการงาน
+      </button>
+      <button onclick="saveProgressData()" id="btn-save" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-bold">
+        <i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล
+      </button>
+      <button onclick="window.print()" class="flex items-center gap-1 bg-slate-700 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg text-sm font-bold">
+        <i data-lucide="printer" class="w-4 h-4"></i> พิมพ์ / PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- แถบแสดงสถานะแผนงาน S-Curve และการแจ้งเตือนความล่าช้า -->
+  <div class="max-w-[1200px] w-full mb-3 no-print">
+    <div id="scurve_alert_banner" class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs sm:text-sm text-blue-900 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+      <div class="flex items-center gap-2">
+        <i data-lucide="activity" class="w-5 h-5 text-blue-600"></i>
+        <span><b>วิเคราะห์แผนงาน S-Curve:</b> แผนงานสะสมตามสัญญาควรอยู่ที่ <span id="lbl_planned_progress" class="font-bold">0.00</span>%</span>
+      </div>
+      <div id="lbl_status_badge" class="px-3 py-1 bg-blue-200 text-blue-800 rounded-full font-bold text-xs">
+        กำลังวิเคราะห์สถานะโครงการ...
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-workspace" id="doc-print">
+    <div class="mb-1">
+      <h2 class="font-bold text-xl text-slate-900">ผลการดำเนินงานในสัปดาห์</h2>
+      <p class="font-semibold text-base text-slate-800" id="lbl-org">องค์การบริหารส่วนตำบลโพนงาม</p>
+      <p class="text-sm text-slate-600" id="lbl-project-name">โครงการ: กำลังโหลดข้อมูลสัญญา...</p>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-4 items-start mb-4">
+      <div class="flex-1 w-full" id="main-table-container">
+        <table class="table-main text-center">
+          <thead>
+            <tr>
+              <th rowspan="2" class="w-10">ที่</th>
+              <th rowspan="2" class="text-center">งานที่ดำเนินการ</th>
+              <th rowspan="2" class="w-20">สัดส่วนงาน (%)</th>
+              <th colspan="3">ผลงาน %</th>
+              <th rowspan="2" class="w-20">ผลงานรวม %</th>
+              <th rowspan="2" class="w-10 no-print">ลบ</th>
+            </tr>
+            <tr class="bg-slate-50 text-[12pt]">
+              <th class="w-20">ถึงสัปดาห์ก่อน</th>
+              <th class="w-20">ในสัปดาห์</th>
+              <th class="w-20">สะสม</th>
+            </tr>
+          </thead>
+          <tbody id="main-tbody"></tbody>
+          <tfoot>
+            <tr class="font-bold bg-slate-50 text-[13.5pt]">
+              <td colspan="2" class="text-center">รวม</td>
+              <td id="sum-proportion">100.00</td>
+              <td colspan="3" class="text-center">ผลงานรวมทั้งสิ้น</td>
+              <td id="sum-total-weight" class="text-emerald-800">-</td>
+              <td class="no-print"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="w-full lg:w-96 flex gap-3 no-print">
+        <div class="w-1/2">
+          <table class="table-dashed-orange">
+            <thead>
+              <tr><th colspan="2" class="py-1">กรอกข้อมูลรายสัปดาห์</th></tr>
+              <tr><th class="w-1/2">ถึงสัปดาห์ก่อน</th><th class="w-1/2">สัปดาห์นี้</th></tr>
+            </thead>
+            <tbody id="input-week-tbody"></tbody>
+          </table>
+        </div>
+        <div class="w-1/2">
+          <table class="table-dashed-brown">
+            <thead><tr><th class="py-1">กรอกมูลค่างาน (บาท)</th></tr></thead>
+            <tbody id="input-cost-tbody"></tbody>
+            <tfoot><tr class="font-bold bg-slate-100"><td id="sum-cost" class="p-1 text-right pr-2">0.00</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row justify-between items-start gap-4 pt-1">
+      <div class="flex-1 w-full text-base">
+        <p class="font-bold mb-1">ปัญหา - อุปสรรค</p>
+        <div class="flex items-center gap-8 mb-2">
+          <label class="flex items-center gap-2 cursor-pointer font-medium">
+            <input type="checkbox" id="chk_no_problem" checked class="w-4 h-4 accent-slate-800" onchange="handleProblemCheck('none')"> 
+            <span>ไม่มี</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer font-medium">
+            <input type="checkbox" id="chk_has_problem" class="w-4 h-4 accent-slate-800" onchange="handleProblemCheck('has')"> 
+            <span>มี ดังนี้</span>
+          </label>
+        </div>
+        <div class="space-y-1 w-full pl-2">
+          <div class="dotted-line-4">
+            <input type="text" id="prob_line_1" class="w-full border-none outline-none bg-transparent font-inherit text-base px-1" placeholder="...">
+          </div>
+          <div class="dotted-line-4">
+            <input type="text" id="prob_line_2" class="w-full border-none outline-none bg-transparent font-inherit text-base px-1">
+          </div>
+        </div>
+      </div>
+      <div class="w-full sm:w-64 pt-6 no-print flex justify-end">
+        <a href="" id="link-report" class="flex items-center justify-center gap-3 w-full bg-slate-200 border border-slate-400 rounded-xl py-3 px-5 text-slate-800 font-bold text-lg shadow">
+          <span>รายงานประจำสัปดาห์</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    
+    let currentTasks = [
+      { name: "งานถางป่าและขุดตอ ขนาดเบา", cost: 10108.72, proportion: 0.35, prev: "", curr: "" },
+      { name: "งานผิวทางปอร์ตแลนด์คอนกรีตเสริมเหล็ก", cost: 2392397.54, proportion: 83.97, prev: "", curr: "" }
+    ];
+    
+    let totalContractWeeks = 20;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentWeek = parseInt(urlParams.get('week')) || 1;
+    const STORAGE_KEY = `WEEK_PROGRESS_DATA_${currentWeek}`;
+    
+    document.getElementById('badge-week').textContent = `สัปดาห์ที่ ${currentWeek}`;
+    document.getElementById('link-report').href = `week_report.html?week=${currentWeek}`;
+
+    if (currentWeek > 1) {
+      document.getElementById('btn-pull-prev').classList.remove('hidden');
+    }
+
+    function loadProjectContractData() {
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          const projectData = JSON.parse(basicRaw);
+          if (projectData.projectName) {
+            document.getElementById('lbl-project-name').textContent = `โครงการ: ${projectData.projectName} (งบประมาณ ${projectData.budgetAmount || '-'} บาท)`;
+          }
+          if (projectData.durationWeeks) {
+            totalContractWeeks = parseInt(projectData.durationWeeks) || 20;
+          }
+          if (projectData.tasks && Array.isArray(projectData.tasks) && projectData.tasks.length > 0) {
+            currentTasks = projectData.tasks.map(t => ({
+              name: t.name || t.taskName || "",
+              cost: parseFloat(t.cost || t.itemCost) || 0,
+              proportion: parseFloat(t.proportion) || 0,
+              prev: t.prev || "",
+              curr: t.curr || ""
+            }));
+          }
+        } catch (e) {
+          console.error("Error loading project contract data:", e);
+        }
+      }
+    }
+
+    async function pullProgressFromCloud() {
+      try {
+        if (typeof CENTRAL_GAS_URL !== 'undefined') {
+          const res = await fetch(`${CENTRAL_GAS_URL}?action=get_week_progress&weekIndex=${currentWeek}`);
+          const result = await res.json();
+          if (result.status === 'success' && result.data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(result.data));
+          }
+        }
+      } catch (e) {}
+    }
+
+    function pullDataFromPreviousWeek() {
+      if (currentWeek <= 1) return alert("สัปดาห์ที่ 1 ไม่มีข้อมูลสัปดาห์ก่อนหน้าค่ะ");
+      
+      const prevStorageKey = `WEEK_PROGRESS_DATA_${currentWeek - 1}`;
+      const prevRaw = localStorage.getItem(prevStorageKey);
+      if (!prevRaw) {
+        return alert(`ไม่พบข้อมูลบันทึกของสัปดาห์ที่ ${currentWeek - 1} กรุณาบันทึกข้อมูลสัปดาห์ก่อนหน้าก่อนนะคะ`);
+      }
+
+      if (!confirm(`ต้องการดึง "รายการงานทั้งหมด" และ "ผลงานสะสม" จากสัปดาห์ที่ ${currentWeek - 1} มาใช้งานในสัปดาห์ที่ ${currentWeek} หรือไม่?`)) {
+        return;
+      }
+
+      try {
+        const prevData = JSON.parse(prevRaw);
+        if (prevData.tasks && Array.isArray(prevData.tasks)) {
+          currentTasks = prevData.tasks.map(pt => {
+            const pVal = parseFloat(pt.prev) || 0;
+            const cVal = parseFloat(pt.curr) || 0;
+            const accumPrev = pVal + cVal;
+
+            return {
+              name: pt.name || "",
+              cost: pt.cost || 0,
+              proportion: pt.proportion || 0,
+              prev: accumPrev > 0 ? accumPrev : "",
+              curr: ""
+            };
+          });
+        }
+        renderTables();
+        alert(`ดึงรายการงานและผลงานจากสัปดาห์ที่ ${currentWeek - 1} สำเร็จแล้วค่ะ`);
+      } catch (e) {
+        alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
+      }
+    }
+
+    // ฟังก์ชันล้างข้อมูลเฉพาะช่อง "ในสัปดาห์ (Curr)" ของสัปดาห์นี้
+    function resetCurrentWeekForm() {
+      if (!confirm("ต้องการล้างข้อมูลตัวเลขช่อง 'ในสัปดาห์' ทั้งหมดของสัปดาห์นี้ใช่หรือไม่?")) {
+        return;
+      }
+      currentTasks.forEach((t, i) => {
+        t.curr = "";
+        const currEl = document.getElementById(`in_curr_${i}`);
+        if (currEl) currEl.value = "";
+      });
+      calculateAll();
+      alert("ล้างข้อมูลช่อง 'ในสัปดาห์' เรียบร้อยแล้วค่ะ");
+    }
+
+    function renderTables() {
+      const mainTbody = document.getElementById('main-tbody');
+      const weekTbody = document.getElementById('input-week-tbody');
+      const costTbody = document.getElementById('input-cost-tbody');
+      
+      mainTbody.innerHTML = ''; 
+      weekTbody.innerHTML = ''; 
+      costTbody.innerHTML = '';
+
+      currentTasks.forEach((t, i) => {
+        mainTbody.innerHTML += `
+          <tr>
+            <td>${i + 1}</td>
+            <td class="text-left pl-1"><input type="text" id="task_name_${i}" class="cell-input-text font-medium" value="${t.name}"></td>
+            <td id="prop_${i}" class="font-medium">${(parseFloat(t.proportion) || 0).toFixed(2)}</td>
+            <td id="prev_disp_${i}">-</td><td id="curr_disp_${i}">-</td><td id="accum_disp_${i}">-</td>
+            <td id="total_weight_${i}" class="font-bold text-slate-800">-</td>
+            <td class="no-print text-center"><button onclick="removeTaskRow(${i})" class="text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
+          </tr>`;
+        weekTbody.innerHTML += `<tr><td><input type="number" step="0.01" min="0" max="100" id="in_prev_${i}" class="cell-input-num" value="${t.prev || ''}" oninput="calculateAll()"></td><td><input type="number" step="0.01" min="0" max="100" id="in_curr_${i}" class="cell-input-num" value="${t.curr || ''}" oninput="calculateAll()"></td></tr>`;
+        costTbody.innerHTML += `<tr><td><input type="number" step="0.01" min="0" id="in_cost_${i}" class="cell-input-num text-right pr-2" value="${(parseFloat(t.cost) || 0).toFixed(2)}" oninput="calculateProportions()"></td></tr>`;
+      });
+      lucide.createIcons();
+      calculateProportions();
+    }
+
+    function addNewTaskRow() {
+      saveCurrentStateToMemory();
+      currentTasks.push({ name: "", cost: 0, proportion: 0, prev: "", curr: "" });
+      renderTables();
+    }
+
+    function removeTaskRow(i) {
+      if (currentTasks.length <= 1) return alert("ต้องมีรายการงานอย่างน้อย 1 รายการค่ะ");
+      saveCurrentStateToMemory();
+      currentTasks.splice(i, 1);
+      renderTables();
+    }
+
+    function saveCurrentStateToMemory() {
+      currentTasks.forEach((t, i) => {
+        const nameEl = document.getElementById(`task_name_${i}`);
+        const costEl = document.getElementById(`in_cost_${i}`);
+        const prevEl = document.getElementById(`in_prev_${i}`);
+        const currEl = document.getElementById(`in_curr_${i}`);
+        
+        t.name = nameEl ? nameEl.value : "";
+        t.cost = costEl ? (parseFloat(costEl.value) || 0) : 0;
+        t.prev = prevEl ? prevEl.value : "";
+        t.curr = currEl ? currEl.value : "";
+      });
+    }
+
+    function calculateProportions() {
+      let totalCost = 0;
+      currentTasks.forEach((_, i) => {
+        const costEl = document.getElementById(`in_cost_${i}`);
+        totalCost += costEl ? (parseFloat(costEl.value) || 0) : 0;
+      });
+      document.getElementById('sum-cost').textContent = totalCost.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+      
+      let sumProp = 0;
+      currentTasks.forEach((_, i) => {
+        const costEl = document.getElementById(`in_cost_${i}`);
+        const cost = costEl ? (parseFloat(costEl.value) || 0) : 0;
+        const prop = totalCost > 0 ? (cost / totalCost) * 100 : 0;
+        
+        const propEl = document.getElementById(`prop_${i}`);
+        if (propEl) propEl.textContent = prop.toFixed(2);
+        
+        currentTasks[i].proportion = prop;
+        sumProp += prop;
+      });
+      
+      document.getElementById('sum-proportion').textContent = sumProp.toFixed(2);
+      calculateAll();
+    }
+
+    function calculateAll() {
+      let sumTotalWeight = 0;
+      let hasValidationError = false;
+      
+      currentTasks.forEach((_, i) => {
+        const propEl = document.getElementById(`prop_${i}`);
+        const prevEl = document.getElementById(`in_prev_${i}`);
+        const currEl = document.getElementById(`in_curr_${i}`);
+        
+        let prev = prevEl ? (parseFloat(prevEl.value) || 0) : 0;
+        let curr = currEl ? (parseFloat(currEl.value) || 0) : 0;
+
+        if (prev < 0) prev = 0;
+        if (curr < 0) curr = 0;
+
+        const accum = prev + curr;
+        if (accum > 100.00) {
+          hasValidationError = true;
+        }
+
+        const prop = propEl ? (parseFloat(propEl.textContent) || 0) : 0;
+        
+        const prevDisp = document.getElementById(`prev_disp_${i}`);
+        const currDisp = document.getElementById(`curr_disp_${i}`);
+        const accumDisp = document.getElementById(`accum_disp_${i}`);
+        const totalWeightEl = document.getElementById(`total_weight_${i}`);
+        
+        if(prevDisp) prevDisp.textContent = prev > 0 ? prev.toFixed(2) : '-';
+        if(currDisp) currDisp.textContent = curr > 0 ? curr.toFixed(2) : '-';
+        if(accumDisp) accumDisp.textContent = accum > 0 ? accum.toFixed(2) : '-';
+        
+        const totalWeight = prop * (accum / 100);
+        if(totalWeightEl) totalWeightEl.textContent = totalWeight > 0 ? totalWeight.toFixed(2) : '-';
+        
+        sumTotalWeight += totalWeight;
+      });
+
+      if (hasValidationError) {
+        alert("คำเตือน: มีรายการงานที่มีผลงานสะสมเกิน 100% กรุณาตรวจสอบความถูกต้องค่ะ");
+      }
+      
+      document.getElementById('sum-total-weight').textContent = sumTotalWeight > 0 ? sumTotalWeight.toFixed(2) : '-';
+      updateSCurveAnalysis(sumTotalWeight);
+    }
+
+    function updateSCurveAnalysis(actualProgress) {
+      let plannedProgress = (currentWeek / totalContractWeeks) * 100;
+      if (plannedProgress > 100) plannedProgress = 100;
+
+      document.getElementById('lbl_planned_progress').textContent = plannedProgress.toFixed(2);
+
+      const diff = actualProgress - plannedProgress;
+      const banner = document.getElementById('scurve_alert_banner');
+      const badge = document.getElementById('lbl_status_badge');
+
+      if (diff >= 0) {
+        banner.className = "bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs sm:text-sm text-emerald-900 flex flex-wrap items-center justify-between gap-2 shadow-sm";
+        badge.className = "px-3 py-1 bg-emerald-200 text-emerald-800 rounded-full font-bold text-xs";
+        badge.textContent = `🟢 ผลงานเป็นไปตามแผน (เร็วกว่าแผน +${diff.toFixed(2)}%)`;
+      } else if (diff > -5.0) {
+        banner.className = "bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs sm:text-sm text-amber-900 flex flex-wrap items-center justify-between gap-2 shadow-sm";
+        badge.className = "px-3 py-1 bg-amber-200 text-amber-800 rounded-full font-bold text-xs";
+        badge.textContent = `🟡 ผลงานล่าช้ากว่าแผนเล็กน้อย (${diff.toFixed(2)}%)`;
+      } else {
+        banner.className = "bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs sm:text-sm text-rose-900 flex flex-wrap items-center justify-between gap-2 shadow-sm";
+        badge.className = "px-3 py-1 bg-rose-200 text-rose-800 rounded-full font-bold text-xs";
+        badge.textContent = `🔴 เตือนภัย: ผลงานล่าช้ากว่าแผนมาก (${diff.toFixed(2)}%)`;
+      }
+    }
+
+    function handleProblemCheck(type) {
+      if (type === 'none') {
+        document.getElementById('chk_has_problem').checked = false;
+      }
+      if (type === 'has') {
+        document.getElementById('chk_no_problem').checked = false;
+      }
+    }
+
+    function getFormData() {
+      saveCurrentStateToMemory();
+      const totalWeight = parseFloat(document.getElementById('sum-total-weight').textContent) || 0;
+      
+      const prob1 = document.getElementById('prob_line_1') ? document.getElementById('prob_line_1').value : "";
+      const prob2 = document.getElementById('prob_line_2') ? document.getElementById('prob_line_2').value : "";
+      
+      return {
+        weekIndex: currentWeek,
+        tasks: currentTasks,
+        totalWeightPercent: totalWeight,
+        hasProblem: document.getElementById('chk_has_problem').checked,
+        problems: [prob1, prob2]
+      };
+    }
+
+    async function saveProgressData() {
+      const btn = document.getElementById('btn-save');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังบันทึก...`;
+      lucide.createIcons();
+
+      try {
+        const payload = getFormData();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        
+        localStorage.setItem(`LATEST_PROGRESS_SUMMARY_${currentWeek}`, JSON.stringify({
+          totalWeight: payload.totalWeightPercent,
+          status: payload.totalWeightPercent >= 100 ? 'แล้วเสร็จ' : (payload.totalWeightPercent > 0 ? 'ปฏิบัติงาน' : 'ยังไม่ทำงาน')
+        }));
+
+        if (typeof syncDataToCloud === 'function') {
+          await syncDataToCloud('save_week_progress', payload);
+        }
+        alert(`บันทึกผลการดำเนินงานสัปดาห์ที่ ${currentWeek} และซิงก์ข้อมูลเรียบร้อยแล้วค่ะ`);
+      } catch (err) {
+        console.error(err);
+        alert(`บันทึกข้อมูลลงเครื่องสำเร็จ (แต่อาจไม่สามารถเชื่อมต่อระบบ Cloud ได้ในขณะนี้)`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล`;
+        lucide.createIcons();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      loadProjectContractData();
+      await pullProgressFromCloud();
+
+      const cached = localStorage.getItem(STORAGE_KEY);
+      if (cached) {
+        try {
+          const data = JSON.parse(cached);
+          if (data.tasks && data.tasks.length > 0) {
+            currentTasks = data.tasks;
+          }
+          if (data.hasProblem !== undefined) {
+            document.getElementById('chk_has_problem').checked = data.hasProblem;
+            if (data.hasProblem) document.getElementById('chk_no_problem').checked = false;
+          }
+          if (data.problems) {
+            if(document.getElementById('prob_line_1')) document.getElementById('prob_line_1').value = data.problems[0] || '';
+            if(document.getElementById('prob_line_2')) document.getElementById('prob_line_2').value = data.problems[1] || '';
+          }
+        } catch (e) {
+          console.error("Error parsing cached data:", e);
+        }
+      } else if (currentWeek > 1) {
+        const prevStorageKey = `WEEK_PROGRESS_DATA_${currentWeek - 1}`;
+        const prevRaw = localStorage.getItem(prevStorageKey);
+        if (prevRaw) {
+          try {
+            const prevData = JSON.parse(prevRaw);
+            if (prevData.tasks && Array.isArray(prevData.tasks)) {
+              currentTasks = prevData.tasks.map(pt => {
+                const pVal = parseFloat(pt.prev) || 0;
+                const cVal = parseFloat(pt.curr) || 0;
+                const accumPrev = pVal + cVal;
+                return {
+                  name: pt.name || "",
+                  cost: pt.cost || 0,
+                  proportion: pt.proportion || 0,
+                  prev: accumPrev > 0 ? accumPrev : "",
+                  curr: ""
+                };
+              });
+            }
+          } catch (e) {}
+        }
+      }
+
+      renderTables();
+    });
+  </script>
+</body>
+</html>

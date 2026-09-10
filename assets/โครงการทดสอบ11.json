@@ -1,0 +1,56 @@
+{
+  "LOCAL_BASIC_INFO": {
+    "action": "save_basic_info",
+    "organizationName": "",
+    "district": "",
+    "province": "",
+    "projectName": "โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายบ้านหนองแวง-หนองขาม หมู่ที่ 12 กว้าง 4.00 ม. ยาว 850 ม. หนา 0.15 ม. หรือมีพื้นที่คอนกรีตไม่น้อยกว่า 3,400 ตร.ม. องค์การบริหารส่วนตำบลโพนงาม อำเภอโกสุมพิสัย จังหวัดมหาสารคาม",
+    "projectLocation": "หมู่ที่ 12 ต.โพนงาม อ.โกสุมพิสัย จ.มหาสารคาม",
+    "projectScope": "ผิวจราจร คสล. กว้าง 4.00 ม. หนา 0.15 ม. ยาว 850 ม. หรือพื้นที่ไม่น้อยกว่า 3,400 ตร.ม. พร้อมลงลูกรังไหล่ทางตามแบบ อบต.โพนงาม",
+    "contractNo": "E1/2569",
+    "contractDate": "5 มิถุนายน 2569",
+    "contractPeriods": 1,
+    "installments": [
+      {
+        "amount": "2,849,260.00",
+        "year": "2569"
+      }
+    ],
+    "startDate": "2026-06-06",
+    "startDateTh": "6 มิถุนายน 2569",
+    "endDate": "2026-10-23",
+    "endDateTh": "23 ตุลาคม 2569",
+    "calcDays": "140",
+    "manualDays": "140",
+    "durationDays": "140",
+    "workPeriodSummary": 1,
+    "budgetAmount": "2,849,260.00",
+    "finePerDay": "7,123.00",
+    "extendContractDate": "",
+    "totalExtendedDays": "",
+    "designerName": "กองช่าง องค์การบริหารส่วนตำบลโพนงาม",
+    "contractorName": "ห้างหุ้นส่วนจำกัด เค.เค.มุกดาหารก่อสร้าง",
+    "contractorAddress": "31/1 หมู่ 5 ตำบลกุดแข้ อำเภอเมืองมุกดาหาร จังหวัดมุกดาหาร",
+    "committeeCount": 5,
+    "committees": [
+      "นางสาวถนอมนวล วะทวีก๊กนงข",
+      "จ่าเอกธีรพงษ์ ดรชานนท์",
+      "นางสาวปนัดดา ภูอาษา",
+      "นายวีระศักดิ์ ทับวิชร",
+      "นายอรรถวัต อดทน"
+    ],
+    "inspectorCount": 1,
+    "inspectors": [
+      {
+        "name": "นายพัทธิยะ วงษาซ้าย",
+        "pos": "ผู้ควบคุมงาน"
+      }
+    ],
+    "orderNo": "102/2569",
+    "orderDate": "11 พฤษภาคม 2569",
+    "contractorRepStatus": "ไม่ได้",
+    "contractorRepName": "",
+    "febDays": "28",
+    "updatedAt": "7/9/2569 07:41:05"
+  }
+}

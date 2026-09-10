@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>แผนที่แสดงที่ตั้งโครงการ - รายงานประจำเดือน</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../assets/gas-sync.js"></script>
+  <style>
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
+    @page { size: A4 portrait; margin: 0; }
+    body { font-family: 'THSarabunPSK', sans-serif; background-color: #94a3b8; margin: 0; padding: 0; }
+    
+    .sheet-doc {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 20mm 20mm 15mm 20mm;
+      margin: 20px auto;
+      background: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      color: #000;
+    }
+
+    .doc-title {
+      font-size: 24pt !important;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .project-desc {
+      font-size: 16pt !important;
+      line-height: 1.25;
+      text-align: center;
+      margin-bottom: 15px;
+      padding: 0 5mm;
+    }
+
+    .map-frame {
+      flex-grow: 1;
+      border: 1.5px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background: #f8fafc;
+      min-height: 180mm;
+    }
+
+    .map-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      cursor: pointer;
+    }
+
+    .map-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #64748b;
+      cursor: pointer;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .footer-org {
+      text-align: right;
+      font-size: 16pt !important;
+      margin-top: 10px;
+    }
+
+    @media print {
+      body { background: white !important; padding: 0 !important; }
+      .no-print { display: none !important; }
+      .sheet-doc { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 20mm 20mm 15mm 20mm !important; }
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-6 min-h-screen flex flex-col items-center">
+
+  <!-- ซ่อน input สำหรับอัปโหลดภาพแผนที่ -->
+  <input type="file" id="map_file_input" accept="image/*" class="hidden" onchange="processMapUpload(event)">
+
+  <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) - ปรับปุ่มให้ใหญ่ขึ้นเป็น 2xl -->
+  <div class="max-w-5xl w-full mb-4 bg-white p-5 rounded-2xl shadow-lg border border-slate-300 flex flex-wrap items-center justify-between gap-4 no-print">
+    <div class="flex items-center gap-3">
+      <a href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-2xl font-bold border border-slate-300 shadow-sm">
+        <i data-lucide="arrow-left" class="w-6 h-6"></i> กลับเมนู
+      </a>
+      <span class="font-bold text-slate-800 text-2xl">แผนที่แสดงที่ตั้งโครงการ</span>
+    </div>
+    
+    <div class="flex items-center gap-3 flex-wrap">
+      <button onclick="document.getElementById('map_file_input').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-2xl font-bold flex items-center gap-2 shadow">
+        <i data-lucide="image-plus" class="w-6 h-6"></i> อัปโหลดรูปแผนที่
+      </button>
+      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-2xl font-bold flex items-center gap-2 shadow">
+        <i data-lucide="printer" class="w-6 h-6"></i> พิมพ์แผนที่
+      </button>
+    </div>
+  </div>
+
+  <!-- แผ่นกระดาษ A4 -->
+  <div class="sheet-doc" id="doc-print">
+    <div>
+      <h2 class="doc-title">แผนที่แสดงที่ตั้งโครงการ</h2>
+      <p class="project-desc" id="lbl_project_desc">
+        กำลังโหลดข้อมูลโครงการจากฐานข้อมูล...
+      </p>
+    </div>
+
+    <!-- กรอบแสดงรูปภาพแผนที่ -->
+    <div class="map-frame" onclick="document.getElementById('map_file_input').click()" title="คลิกเพื่ออัปโหลดหรือเปลี่ยนรูปแผนที่">
+      <div id="map_placeholder" class="map-placeholder">
+        <i data-lucide="map" class="w-16 h-16 text-slate-400"></i>
+        <span class="text-lg font-bold">คลิกที่นี่เพื่ออัปโหลดรูปภาพแผนที่แสดงที่ตั้งโครงการ</span>
+        <span class="text-sm text-slate-500">(รองรับไฟล์รูปภาพ JPG, PNG)</span>
+      </div>
+      <img id="map_image_preview" class="map-img hidden" alt="แผนที่แสดงที่ตั้งโครงการ">
+    </div>
+
+    <div class="footer-org" id="lbl_footer_org">
+      องค์การบริหารส่วนตำบลโพนงาม
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    const MAP_STORAGE_KEY = 'PROJECT_MAP_IMAGE_DATA';
+
+    function processMapUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const base64Img = evt.target.result;
+        localStorage.setItem(MAP_STORAGE_KEY, base64Img);
+        displayMapImage(base64Img);
+        alert("อัปโหลดรูปภาพแผนที่สำเร็จแล้วค่ะ!");
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function displayMapImage(src) {
+      const img = document.getElementById('map_image_preview');
+      const placeholder = document.getElementById('map_placeholder');
+      img.src = src;
+      img.classList.remove('hidden');
+      placeholder.classList.add('hidden');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // 1. ดึงข้อมูลชื่อโครงการและหน่วยงานจากฐานข้อมูลกลาง (LOCAL_BASIC_INFO)
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          const projectData = JSON.parse(basicRaw);
+          if (projectData.projectName) {
+            document.getElementById('lbl_project_desc').textContent = projectData.projectName;
+          }
+          if (projectData.organizationName) {
+            document.getElementById('lbl_footer_org').textContent = projectData.organizationName;
+          }
+        } catch (e) {
+          console.error("Error loading project info:", e);
+        }
+      }
+
+      // 2. โหลดรูปภาพแผนที่ที่เคยอัปโหลดไว้ (ถ้ามี)
+      const savedMap = localStorage.getItem(MAP_STORAGE_KEY);
+      if (savedMap) {
+        displayMapImage(savedMap);
+      }
+    });
+  </script>
+</body>
+</html>

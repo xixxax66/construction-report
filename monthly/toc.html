@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สารบัญ - รายงานประจำเดือน</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../assets/gas-sync.js"></script>
+  <style>
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
+    @page { size: A4 portrait; margin: 0; }
+    body { font-family: 'THSarabunPSK', sans-serif; background-color: #94a3b8; margin: 0; padding: 0; font-size: 18pt; color: #000; }
+    
+    .sheet-doc {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 25mm 25mm 20mm 30mm;
+      margin: 20px auto;
+      background: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toc-title {
+      font-size: 24pt !important;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 20mm;
+    }
+
+    .toc-header-row {
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+      font-size: 18pt;
+      margin-bottom: 8mm;
+      padding-bottom: 2px;
+      border-bottom: 1.5px solid #000;
+    }
+
+    .toc-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 5mm;
+      font-size: 18pt;
+    }
+
+    .toc-dots {
+      flex-grow: 1;
+      border-bottom: 1px dotted #000;
+      margin: 0 10px;
+      position: relative;
+      top: -4px;
+    }
+
+    .toc-page {
+      min-width: 30px;
+      text-align: right;
+    }
+
+    .appendix-sub {
+      font-size: 16pt !important;
+      color: #334155;
+      margin-top: 2mm;
+      padding-left: 0;
+    }
+
+    @media print {
+      body { background: white !important; padding: 0 !important; }
+      .no-print { display: none !important; }
+      .sheet-doc { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 25mm 25mm 20mm 30mm !important; }
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-6 flex flex-col items-center min-h-screen">
+
+  <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
+  <div class="max-w-4xl w-full mb-4 bg-white p-4 rounded-xl shadow border border-slate-300 flex flex-wrap items-center justify-between gap-3 no-print">
+    <div class="flex items-center gap-2">
+      <a href="../Monthly_Reference.html" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1.5 text-sm font-bold">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i> กลับเมนู
+      </a>
+      <span class="font-bold text-slate-800 text-lg">หน้าสารบัญรายงานประจำเดือน</span>
+    </div>
+    
+    <div class="flex items-center gap-2">
+      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 shadow">
+        <i data-lucide="printer" class="w-4 h-4"></i> พิมพ์หน้าสารบัญ
+      </button>
+    </div>
+  </div>
+
+  <!-- แผ่นกระดาษ A4 สารบัญ -->
+  <div class="sheet-doc" id="doc-print">
+    
+    <div class="toc-title">สารบัญ</div>
+
+    <div class="toc-header-row">
+      <span>เรื่อง</span>
+      <span>หน้า</span>
+    </div>
+
+    <div class="space-y-2">
+      <div class="toc-item">
+        <span>รายงานผลการก่อสร้าง</span>
+        <div class="toc-dots"></div>
+        <span class="toc-page">1</span>
+      </div>
+
+      <div class="toc-item">
+        <span>แผนที่แสดงที่ตั้งโครงการ</span>
+        <div class="toc-dots"></div>
+        <span class="toc-page">2</span>
+      </div>
+
+      <div class="toc-item">
+        <span>ข้อมูลเกี่ยวกับงาน</span>
+        <div class="toc-dots"></div>
+        <span class="toc-page">3</span>
+      </div>
+
+      <div class="toc-item">
+        <span>ผลงานประจำเดือน</span>
+        <div class="toc-dots"></div>
+        <span class="toc-page">4</span>
+      </div>
+
+      <div class="toc-item">
+        <span>รายละเอียดงวดงานและการตรวจรับงาน</span>
+        <div class="toc-dots"></div>
+        <span class="toc-page">5</span>
+      </div>
+
+      <div class="toc-item">
+        <span>การทดสอบ/ขออนุมัติใช้วัสดุ</span>
+        <div class="toc-dots"></div>
+        <span class="toc-page">6</span>
+      </div>
+
+      <div class="toc-item">
+        <span>ปัญหา/อุปสรรคในการก่อสร้าง</span>
+        <div class="toc-dots"></div>
+        <span class="toc-page">7</span>
+      </div>
+
+      <div class="toc-item">
+        <span>สรุปผลการดำเนินงานถึงปัจจุบัน</span>
+        <div class="toc-dots"></div>
+        <span class="toc-page">7</span>
+      </div>
+
+      <div class="pt-4">
+        <div class="toc-item font-bold">
+          <span>ภาคผนวก</span>
+          <div class="toc-dots"></div>
+          <span class="toc-page"></span>
+        </div>
+        <div class="appendix-sub">
+          รวมเอกสารรายงานประจำสัปดาห์และเอกสารอื่นที่เกี่ยวข้อง
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

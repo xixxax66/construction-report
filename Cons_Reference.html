@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบข้อมูลเบื้องต้น - โปรแกรมรายงานผลการก่อสร้าง</title>
+  <!-- Google Fonts: Sarabun -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../assets/gas-sync.js"></script>
+  <style>
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background-color: #d1d5db;
+    }
+    .sheet-table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    .sheet-table th, .sheet-table td {
+      border: 1px solid #16a34a;
+      padding: 6px 8px;
+      font-size: 14px;
+    }
+    .th-green {
+      background-color: #10b981;
+      color: #ffffff;
+      font-weight: 600;
+      text-align: left;
+    }
+    .th-header-title {
+      background-color: #059669;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+      padding: 8px;
+      letter-spacing: 0.5px;
+    }
+    .cell-input {
+      background-color: #ffffff;
+      width: 100%;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-size: 14px;
+      padding: 3px 6px;
+      border-radius: 2px;
+      color: #1f2937;
+    }
+    .cell-input:focus {
+      background-color: #fef08a;
+      box-shadow: inset 0 0 0 1px #ca8a04;
+    }
+    .cell-calc {
+      background-color: #f3f4f6;
+      font-weight: 600;
+      color: #111827;
+      text-align: center;
+    }
+    .btn-3d {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-3d:active {
+      transform: translateY(2px);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body class="p-3 sm:p-6 min-h-screen">
+
+  <div class="max-w-6xl mx-auto bg-slate-200/80 p-4 sm:p-6 rounded-xl shadow-lg border border-slate-300">
+    
+    <!-- แถบด้านบน -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5 bg-white p-3 rounded-lg shadow-sm border border-slate-300">
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="text-sm font-semibold text-slate-700">ฐานข้อมูลโครงการก่อสร้าง</span>
+        <span id="sync-status" class="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-medium ml-2">พร้อมใช้งาน</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="saveToGoogleSheets()" id="btn-save" class="btn-3d flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold">
+          <i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล (Google Sheets)
+        </button>
+        <button onclick="loadFromGoogleSheets()" id="btn-load" class="btn-3d flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-semibold">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i> โหลดข้อมูลล่าสุด
+        </button>
+      </div>
+    </div>
+
+    <!-- โครงสร้างหลัก -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      
+      <!-- ฝั่งซ้าย: ตารางฟอร์มข้อมูล (8 Columns) -->
+      <div class="lg:col-span-8 space-y-5">
+        
+        <!-- ตารางข้อมูลเบื้องต้น -->
+        <div class="bg-white rounded-lg shadow border border-emerald-600 overflow-x-auto">
+          <table class="sheet-table">
+            <thead>
+              <tr>
+                <th colspan="6" class="th-header-title">กรอกข้อมูลเบื้องต้น</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="th-green whitespace-nowrap w-36 font-medium">ชื่อหน่วยงาน</td>
+                <td colspan="5" class="p-1 bg-white">
+                  <input type="text" id="organizationName" class="cell-input font-medium" value="องค์การบริหารส่วนตำบลโพนงาม">
+                </td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">อำเภอ / จังหวัด</td>
+                <td colspan="5" class="p-1 bg-white">
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="flex items-center gap-1">
+                      <span class="text-xs font-semibold text-slate-600">อ.</span>
+                      <input type="text" id="district" class="cell-input font-medium" value="โกสุมพิสัย">
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <span class="text-xs font-semibold text-slate-600">จ.</span>
+                      <input type="text" id="province" class="cell-input font-medium" value="มหาสารคาม">
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">ชื่อโครงการ</td>
+                <td colspan="5" class="p-1 bg-white">
+                  <input type="text" id="projectName" class="cell-input font-medium" value="โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายบ้านหนองแวง-หนองขาม หมู่ที่ 12 กว้าง 4.00 ม. ยาว 850 ม. หนา 0.15 ม. หรือมีพื้นที่คอนกรีตไม่น้อยกว่า 3,400 ตร.ม. องค์การบริหารส่วนตำบลโพนงาม อำเภอโกสุมพิสัย จังหวัดมหาสารคาม">
+                </td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">สถานที่ก่อสร้าง</td>
+                <td colspan="5" class="p-1 bg-white">
+                  <input type="text" id="projectLocation" class="cell-input" value="หมู่ที่ 12 ต.โพนงาม อ.โกสุมพิสัย จ.มหาสารคาม">
+                </td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">ปริมาณงาน</td>
+                <td colspan="5" class="p-1 bg-white">
+                  <input type="text" id="projectScope" class="cell-input" placeholder="ระบุปริมาณงาน" value="ผิวจราจร คสล. กว้าง 4.00 ม. หนา 0.15 ม. ยาว 850 ม. หรือพื้นที่ไม่น้อยกว่า 3,400 ตร.ม. พร้อมลงลูกรังไหล่ทางตามแบบ อบต.โพนงาม">
+                </td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">เลขที่สัญญา</td>
+                <td class="p-1 bg-white"><input type="text" id="contractNo" class="cell-input text-center font-semibold" value="E1/2569"></td>
+                <td class="th-green whitespace-nowrap text-center font-medium w-20">ลงวันที่</td>
+                <td class="p-1 bg-white"><input type="text" id="contractDate" class="cell-input text-center" value="5 มิถุนายน 2569"></td>
+                <td class="th-green whitespace-nowrap text-center font-medium w-28">จำนวนงวดงาน</td>
+                <td class="p-1 bg-white flex items-center justify-between">
+                  <input type="number" id="contractPeriods" class="cell-input text-center font-semibold" value="1" readonly>
+                  <span class="text-xs text-slate-600 ml-1 font-medium pr-1">งวด</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">วันเริ่มสัญญา</td>
+                <td colspan="2" class="p-1 bg-white">
+                  <input type="date" id="startDate" class="cell-input text-center" value="2026-06-06" onchange="calcDurationAuto()">
+                  <input type="text" id="startDateTh" class="cell-input text-center text-xs text-slate-500" value="6 มิถุนายน 2569">
+                </td>
+                <td class="th-green whitespace-nowrap text-center font-medium">วันสิ้นสุดสัญญา</td>
+                <td colspan="2" class="p-1 bg-white">
+                  <input type="date" id="endDate" class="cell-input text-center" value="2026-10-23" onchange="calcDurationAuto()">
+                  <input type="text" id="endDateTh" class="cell-input text-center text-xs text-slate-500" value="23 ตุลาคม 2569">
+                </td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">ระยะเวลาก่อสร้าง</td>
+                <td class="p-1 bg-slate-100 text-center">
+                  <input type="number" id="calcDays" class="cell-input cell-calc text-center font-bold text-emerald-700" value="140" readonly>
+                </td>
+                <td colspan="2" class="th-green text-xs font-normal">วัน (คำนวณให้อัตโนมัติ) หรือกรอกเอง</td>
+                <td class="p-1 bg-white"><input type="number" id="manualDays" class="cell-input text-center font-bold" value="140"></td>
+                <td class="th-green text-center font-medium">วัน</td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">จำนวนงวดงาน</td>
+                <td class="p-1 bg-white">
+                  <div class="flex items-center">
+                    <input type="number" id="workPeriodSummary" class="cell-input text-center font-semibold" value="1" readonly>
+                    <span class="text-xs ml-1 pr-1">งวด</span>
+                  </div>
+                </td>
+                <td class="th-green text-center font-medium">ค่างานรวม</td>
+                <td colspan="3" class="p-1 bg-slate-100">
+                  <input type="text" id="budgetAmount" class="cell-input text-right font-bold text-emerald-800" value="2,849,260.00" readonly>
+                </td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">ค่าปรับวันละ</td>
+                <td colspan="5" class="p-1 bg-white">
+                  <div class="flex items-center">
+                    <input type="text" id="finePerDay" class="cell-input text-right font-bold text-rose-600" value="7,124.00">
+                    <span class="text-xs ml-1 pr-1">บาท</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">ต่อสัญญาจ้างถึงวันที่</td>
+                <td colspan="2" class="p-1 bg-white">
+                  <input type="text" id="extendContractDate" class="cell-input" placeholder="ระบุวันที่ (ถ้ามี)">
+                </td>
+                <td class="th-green text-center font-medium">รวมระยะเวลา(วัน)</td>
+                <td class="p-1 bg-white">
+                  <input type="number" id="totalExtendedDays" class="cell-input text-center" placeholder="-">
+                </td>
+                <td class="th-green text-center font-medium">วัน</td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">ผู้ออกแบบ</td>
+                <td colspan="5" class="p-1 bg-white">
+                  <input type="text" id="designerName" class="cell-input" value="กองช่าง องค์การบริหารส่วนตำบลโพนงาม">
+                </td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">ผู้รับจ้าง</td>
+                <td colspan="5" class="p-1 bg-white">
+                  <input type="text" id="contractorName" class="cell-input font-medium" value="ห้างหุ้นส่วนจำกัด เค.เค.มุกดาหารก่อสร้าง">
+                </td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">ที่อยู่ของผู้รับจ้าง</td>
+                <td colspan="5" class="p-1 bg-white">
+                  <input type="text" id="contractorAddress" class="cell-input" value="31/1 หมู่ 5 ตำบลกุดแข้ อำเภอเมืองมุกดาหาร จังหวัดมุกดาหาร">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ตารางจัดการงวดงานและจำนวนเงินแต่ละงวด -->
+        <div class="bg-white rounded-lg shadow border border-emerald-600 overflow-hidden">
+          <table class="sheet-table">
+            <thead>
+              <tr>
+                <th colspan="3" class="th-header-title">
+                  <div class="flex items-center justify-between">
+                    <span>รายละเอียดงวดงานและจำนวนเงิน</span>
+                    <div class="flex gap-2">
+                      <button type="button" onclick="addPeriodRow()" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-2.5 py-1 rounded font-bold shadow flex items-center gap-1">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มงวด
+                      </button>
+                      <button type="button" onclick="removePeriodRow()" class="bg-rose-500 hover:bg-rose-600 text-white text-xs px-2.5 py-1 rounded font-bold shadow flex items-center gap-1">
+                        <i data-lucide="minus" class="w-3.5 h-3.5"></i> ลดงวด
+                      </button>
+                    </div>
+                  </div>
+                </th>
+              </tr>
+              <tr>
+                <th class="th-green text-center w-24">งวดที่</th>
+                <th class="th-green text-center">จำนวนเงิน (บาท)</th>
+                <th class="th-green text-center w-36">ปีงบประมาณ</th>
+              </tr>
+            </thead>
+            <tbody id="installmentRows">
+              <!-- แถวจะถูกสร้างอัตโนมัติ -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- กล่องตาราง: คณะกรรมการ และ ผู้ควบคุมงาน -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- ตารางคณะกรรมการตรวจรับพัสดุ -->
+          <div class="bg-white rounded-lg shadow border border-emerald-600 overflow-hidden">
+            <table class="sheet-table">
+              <thead>
+                <tr>
+                  <th colspan="2" class="th-header-title">คณะกรรมการตรวจรับพัสดุ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="th-green font-medium w-48">จำนวนกรรมการตรวจรับพัสดุ</td>
+                  <td class="p-1 bg-white flex items-center justify-between">
+                    <select id="committeeCount" class="cell-input font-bold text-center" onchange="renderCommitteeFields()">
+                      <option value="1">1</option>
+                      <option value="3">3</option>
+                      <option value="5" selected>5</option>
+                    </select>
+                    <span class="text-xs text-slate-600 font-medium pr-1">คน</span>
+                  </td>
+                </tr>
+              </tbody>
+              <tbody id="committeeRows">
+                <!-- แถวกรรมการ -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ตารางผู้ควบคุมงาน -->
+          <div class="bg-white rounded-lg shadow border border-emerald-600 overflow-hidden">
+            <table class="sheet-table">
+              <thead>
+                <tr>
+                  <th colspan="2" class="th-header-title">ผู้ควบคุมงาน</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="th-green font-medium w-44">จำนวนผู้ควบคุมงาน</td>
+                  <td class="p-1 bg-white flex items-center justify-between">
+                    <select id="inspectorCount" class="cell-input font-bold text-center" onchange="renderInspectorFields()">
+                      <option value="1" selected>1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                    </select>
+                    <span class="text-xs text-slate-600 font-medium pr-1">คน</span>
+                  </td>
+                </tr>
+              </tbody>
+              <tbody id="inspectorRows">
+                <!-- แถวผู้ควบคุมงาน -->
+              </tbody>
+              <tbody>
+                <tr>
+                  <td class="th-green whitespace-nowrap font-medium">เลขที่คำสั่ง</td>
+                  <td class="p-1 bg-white"><input type="text" id="orderNo" class="cell-input text-center font-semibold" value="102/2569"></td>
+                </tr>
+                <tr>
+                  <td class="th-green whitespace-nowrap font-medium">ลงวันที่</td>
+                  <td class="p-1 bg-white"><input type="text" id="orderDate" class="cell-input text-center" value="11 พฤษภาคม 2569"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <!-- กล่อง: ผู้รับจ้างหรือตัวแทน -->
+        <div class="bg-white rounded-lg shadow border border-emerald-600 overflow-hidden max-w-md">
+          <table class="sheet-table">
+            <thead>
+              <tr>
+                <th colspan="2" class="th-header-title">ผู้รับจ้างหรือตัวแทน</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium w-48">ระบุรายชื่อได้หรือไม่</td>
+                <td class="p-1 bg-white">
+                  <select id="contractorRepStatus" class="cell-input font-medium text-center">
+                    <option value="ไม่ได้" selected>ไม่ได้</option>
+                    <option value="ได้">ได้</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td class="th-green whitespace-nowrap font-medium">ชื่อ - นามสกุล</td>
+                <td class="p-1 bg-white"><input type="text" id="contractorRepName" class="cell-input" placeholder="ระบุชื่อตัวแทน (ถ้ามี)"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- ฝั่งขวา -->
+      <div class="lg:col-span-4 space-y-5">
+        <div class="bg-amber-50 rounded-lg shadow border-2 border-amber-800/40 overflow-hidden">
+          <div class="bg-[#dcd1b4] border-b border-amber-800/30 px-4 py-2 font-bold text-slate-800 text-center text-sm tracking-wide">
+            ข้อมูลควบคุมวันสิ้นเดือนเฉพาะเดือนกุมภาพันธ์
+          </div>
+          <div class="p-4 flex items-center justify-between gap-2">
+            <span class="text-sm font-semibold text-slate-700">เดือนกุมภาพันธ์ปีนี้มีจำนวนวัน</span>
+            <div class="flex items-center gap-1.5">
+              <input type="number" id="febDays" class="w-16 border-2 border-slate-300 rounded text-center text-rose-600 font-extrabold text-xl py-1 bg-white shadow-inner" value="28">
+              <span class="text-sm font-semibold text-slate-700">วัน</span>
+            </div>
+          </div>
+          <div class="px-4 py-2 bg-[#f4ecd8] border-t border-dashed border-amber-800/30 text-xs text-slate-600 italic text-center">
+            เป็นข้อมูลที่จัดทำไว้รองรับการเปลี่ยนวันที่ในปฏิทิน
+          </div>
+        </div>
+
+        <div class="p-1">
+          <a href="index.html" class="btn-3d flex items-center justify-center gap-3 w-full bg-gradient-to-b from-slate-100 via-slate-200 to-slate-300 hover:from-white hover:to-slate-200 border border-slate-400 rounded-xl py-3.5 px-6 text-slate-800 font-bold text-lg cursor-pointer">
+            <img src="https://cdn-icons-png.flaticon.com/512/619/619032.png" alt="Home" class="w-8 h-8 object-contain">
+            <span>กลับหน้าหลัก</span>
+          </a>
+        </div>
+
+        <div class="bg-white/80 backdrop-blur rounded-lg p-4 border border-slate-300 shadow-sm space-y-2">
+          <h4 class="font-bold text-slate-700 text-sm flex items-center gap-1.5">
+            <i data-lucide="info" class="w-4 h-4 text-emerald-600"></i> คำแนะนำการใช้งาน
+          </h4>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            เมื่อปรับเปลี่ยนจำนวนงวดงานหรือกรอกจำนวนเงินในแต่ละงวด ระบบจะใส่จุลภาคอัตโนมัติและรวมยอดค่างานทั้งหมดให้อัตโนมัติค่ะ
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    const STORAGE_KEY_GAS_URL = 'CONSTRUCTION_GAS_URL';
+    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
+    let currentGasUrl = localStorage.getItem(STORAGE_KEY_GAS_URL) || DEFAULT_GAS_URL;
+
+    let installmentListData = [
+      { amount: "2,849,260.00", year: "2569" }
+    ];
+
+    const defaultCommittees = [
+      "นางสาวถนอมนวล วะทวีก๊กนงข",
+      "จ่าเอกธีรพงษ์ ดรชานนท์",
+      "นางสาวปนัดดา ภูอาษา",
+      "นายวีระศักดิ์ ทับวิชร",
+      "นายอรรถวัต อดทน"
+    ];
+
+    const defaultInspectors = [
+      { name: "นายพัทธิยะ วงษาซ้าย", pos: "ผู้ควบคุมงาน" },
+      { name: "", pos: "ผู้ควบคุมงาน" },
+      { name: "", pos: "ผู้ควบคุมงาน" }
+    ];
+
+    function formatCurrencyInput(el) {
+      let val = el.value.replace(/,/g, '');
+      let parts = val.split('.');
+      let intPart = parts[0].replace(/\D/g, '');
+      if (intPart !== '') {
+        intPart = Number(intPart).toLocaleString('en-US');
+      }
+      if (parts.length > 1) {
+        el.value = intPart + '.' + parts[1].slice(0, 2);
+      } else if (val.endsWith('.')) {
+        el.value = intPart + '.';
+      } else {
+        el.value = intPart;
+      }
+      calcTotalBudget();
+    }
+
+    function renderInstallmentTable(list = null) {
+      if (list) installmentListData = list;
+      const tbody = document.getElementById('installmentRows');
+      tbody.innerHTML = '';
+
+      installmentListData.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="text-center font-bold bg-slate-50">${idx + 1}</td>
+          <td class="p-1 bg-white">
+            <input type="text" id="inst_amount_${idx}" class="cell-input text-right font-semibold" value="${item.amount || '0.00'}" oninput="formatCurrencyInput(this)">
+          </td>
+          <td class="p-1 bg-white">
+            <input type="text" id="inst_year_${idx}" class="cell-input text-center" value="${item.year || '2569'}">
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('contractPeriods').value = installmentListData.length;
+      document.getElementById('workPeriodSummary').value = installmentListData.length;
+      calcTotalBudget();
+    }
+
+    function addPeriodRow() {
+      installmentListData.push({ amount: "0.00", year: "2569" });
+      renderInstallmentTable();
+    }
+
+    function removePeriodRow() {
+      if (installmentListData.length > 1) {
+        installmentListData.pop();
+        renderInstallmentTable();
+      } else {
+        alert("ต้องมีงวดงานอย่างน้อย 1 งวดค่ะ");
+      }
+    }
+
+    function calcTotalBudget() {
+      let total = 0;
+      installmentListData.forEach((_, idx) => {
+        const el = document.getElementById(`inst_amount_${idx}`);
+        if (el) {
+          const val = parseFloat(el.value.replace(/,/g, '')) || 0;
+          total += val;
+          installmentListData[idx].amount = el.value;
+        }
+      });
+      document.getElementById('budgetAmount').value = total.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+      calcFine();
+    }
+
+    function renderCommitteeFields(existingList = null) {
+      const count = parseInt(document.getElementById('committeeCount').value) || 1;
+      const tbody = document.getElementById('committeeRows');
+      tbody.innerHTML = '';
+
+      for (let i = 0; i < count; i++) {
+        const tr = document.createElement('tr');
+        const roleTitle = (i === 0) ? 'ชื่อประธานกรรมการ' : `ชื่อกรรมการ`;
+        const val = existingList && existingList[i] !== undefined ? existingList[i] : (defaultCommittees[i] || '');
+
+        tr.innerHTML = `
+          <td class="th-green whitespace-nowrap font-medium">${roleTitle}</td>
+          <td class="p-1 bg-white">
+            <input type="text" id="comm_${i}" class="cell-input" value="${val}" placeholder="ระบุชื่อ-นามสกุล">
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function renderInspectorFields(existingList = null) {
+      const count = parseInt(document.getElementById('inspectorCount').value) || 1;
+      const tbody = document.getElementById('inspectorRows');
+      tbody.innerHTML = '';
+
+      for (let i = 0; i < count; i++) {
+        const item = existingList && existingList[i] ? existingList[i] : defaultInspectors[i] || { name: '', pos: 'ผู้ควบคุมงาน' };
+
+        tbody.innerHTML += `
+          <tr>
+            <td class="th-green whitespace-nowrap font-medium">ชื่อ-นามสกุล (${i+1})</td>
+            <td class="p-1 bg-white">
+              <input type="text" id="insp_name_${i}" class="cell-input font-medium" value="${item.name}" placeholder="ระบุชื่อผู้ควบคุมงาน">
+            </td>
+          </tr>
+          <tr>
+            <td class="th-green whitespace-nowrap font-medium">ตำแหน่ง (${i+1})</td>
+            <td class="p-1 bg-white">
+              <select id="insp_pos_${i}" class="cell-input font-medium">
+                <option value="ผู้ควบคุมงาน" ${item.pos === 'ผู้ควบคุมงาน' ? 'selected' : ''}>ผู้ควบคุมงาน</option>
+                <option value="หัวหน้าผู้ควบคุมงาน" ${item.pos === 'หัวหน้าผู้ควบคุมงาน' ? 'selected' : ''}>หัวหน้าผู้ควบคุมงาน</option>
+              </select>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function calcDurationAuto() {
+      const start = document.getElementById('startDate').value;
+      const end = document.getElementById('endDate').value;
+      if (start && end) {
+        const d1 = new Date(start);
+        const d2 = new Date(end);
+        const diffTime = d2.getTime() - d1.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        if (diffDays > 0) {
+          document.getElementById('calcDays').value = diffDays;
+          document.getElementById('manualDays').value = diffDays;
+        }
+      }
+    }
+
+    function calcFine() {
+      const rawVal = document.getElementById('budgetAmount').value.replace(/,/g, '');
+      const budget = parseFloat(rawVal);
+      if (!isNaN(budget) && budget > 0) {
+        const fine = Math.round(budget * 0.0025);
+        document.getElementById('finePerDay').value = fine.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+      }
+    }
+
+    function getFormData() {
+      const commCount = parseInt(document.getElementById('committeeCount').value) || 1;
+      const committees = [];
+      for (let i = 0; i < commCount; i++) {
+        const el = document.getElementById(`comm_${i}`);
+        committees.push(el ? el.value : '');
+      }
+
+      const inspCount = parseInt(document.getElementById('inspectorCount').value) || 1;
+      const inspectors = [];
+      for (let i = 0; i < inspCount; i++) {
+        const nameEl = document.getElementById(`insp_name_${i}`);
+        const posEl = document.getElementById(`insp_pos_${i}`);
+        inspectors.push({
+          name: nameEl ? nameEl.value : '',
+          pos: posEl ? posEl.value : 'ผู้ควบคุมงาน'
+        });
+      }
+
+      installmentListData.forEach((_, idx) => {
+        const amtEl = document.getElementById(`inst_amount_${idx}`);
+        const yrEl = document.getElementById(`inst_year_${idx}`);
+        if (amtEl) installmentListData[idx].amount = amtEl.value;
+        if (yrEl) installmentListData[idx].year = yrEl.value;
+      });
+
+      const manualDaysVal = document.getElementById('manualDays').value;
+
+      return {
+        action: 'save_basic_info',
+        organizationName: document.getElementById('organizationName').value,
+        district: document.getElementById('district').value,
+        province: document.getElementById('province').value,
+        projectName: document.getElementById('projectName').value,
+        projectLocation: document.getElementById('projectLocation').value,
+        projectScope: document.getElementById('projectScope').value,
+        contractNo: document.getElementById('contractNo').value,
+        contractDate: document.getElementById('contractDate').value,
+        contractPeriods: installmentListData.length,
+        installments: installmentListData,
+        startDate: document.getElementById('startDate').value,
+        startDateTh: document.getElementById('startDateTh').value,
+        endDate: document.getElementById('endDate').value,
+        endDateTh: document.getElementById('endDateTh').value,
+        calcDays: document.getElementById('calcDays').value,
+        manualDays: manualDaysVal,
+        durationDays: manualDaysVal,
+        workPeriodSummary: installmentListData.length,
+        budgetAmount: document.getElementById('budgetAmount').value,
+        finePerDay: document.getElementById('finePerDay').value,
+        extendContractDate: document.getElementById('extendContractDate').value,
+        totalExtendedDays: document.getElementById('totalExtendedDays').value,
+        designerName: document.getElementById('designerName').value,
+        contractorName: document.getElementById('contractorName').value,
+        contractorAddress: document.getElementById('contractorAddress').value,
+        
+        committeeCount: commCount,
+        committees: committees,
+
+        inspectorCount: inspCount,
+        inspectors: inspectors,
+
+        orderNo: document.getElementById('orderNo').value,
+        orderDate: document.getElementById('orderDate').value,
+
+        contractorRepStatus: document.getElementById('contractorRepStatus').value,
+        contractorRepName: document.getElementById('contractorRepName').value,
+        febDays: document.getElementById('febDays').value,
+        updatedAt: new Date().toLocaleString('th-TH')
+      };
+    }
+
+    function setFormData(data) {
+      if (!data) return;
+      for (const [key, value] of Object.entries(data)) {
+        if (key === 'committeeCount') {
+          document.getElementById('committeeCount').value = value;
+          renderCommitteeFields(data.committees);
+        } else if (key === 'inspectorCount') {
+          document.getElementById('inspectorCount').value = value;
+          renderInspectorFields(data.inspectors);
+        } else if (key === 'installments' && Array.isArray(value)) {
+          renderInstallmentTable(value);
+        } else {
+          const el = document.getElementById(key);
+          if (el) el.value = value;
+        }
+      }
+    }
+
+    async function saveToGoogleSheets() {
+      const btn = document.getElementById('btn-save');
+      const statusEl = document.getElementById('sync-status');
+      const payload = getFormData();
+
+      localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(payload));
+
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังบันทึก...`;
+      lucide.createIcons();
+
+      try {
+        const response = await fetch(currentGasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+          statusEl.textContent = 'บันทึกสำเร็จ (ซิงค์ชีตแล้ว)';
+          statusEl.className = 'text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium ml-2';
+          alert('บันทึกข้อมูลโครงการลง Google Sheets เรียบร้อยแล้วค่ะ');
+        } else {
+          throw new Error(result.message || 'บันทึกไม่สำเร็จ');
+        }
+      } catch (err) {
+        statusEl.textContent = 'บันทึกในเครื่องแล้ว';
+        statusEl.className = 'text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-medium ml-2';
+        alert('บันทึกข้อมูลลงเครื่องเรียบร้อยแล้วค่ะ');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล (Google Sheets)`;
+        lucide.createIcons();
+      }
+    }
+
+    async function loadFromGoogleSheets() {
+      const btn = document.getElementById('btn-load');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังโหลด...`;
+      lucide.createIcons();
+
+      try {
+        const response = await fetch(`${currentGasUrl}?action=get_basic_info`);
+        const res = await response.json();
+        if (res && res.data && Object.keys(res.data).length > 0) {
+          setFormData(res.data);
+          alert('ดึงข้อมูลล่าสุดจาก Google Sheets เรียบร้อยแล้วค่ะ');
+        } else {
+          throw new Error('ไม่พบข้อมูล');
+        }
+      } catch (err) {
+        const cached = localStorage.getItem('LOCAL_BASIC_INFO');
+        if (cached) {
+          setFormData(JSON.parse(cached));
+          alert('โหลดข้อมูลล่าสุดที่เก็บไว้ในเครื่องเรียบร้อยแล้วค่ะ');
+        } else {
+          alert('ยังไม่พบข้อมูลที่เคยบันทึกไว้ค่ะ');
+        }
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4"></i> โหลดข้อมูลล่าสุด`;
+        lucide.createIcons();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderCommitteeFields();
+      renderInspectorFields();
+
+      const cached = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setFormData(parsed);
+        } catch(e) {
+          renderInstallmentTable();
+        }
+      } else {
+        renderInstallmentTable();
+      }
+    });
+  </script>
+</body>
+</html>

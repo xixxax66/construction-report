@@ -1,0 +1,397 @@
+{
+  "LOCAL_BASIC_INFO": {
+    "action": "save_basic_info",
+    "organizationName": "องค์การบริหารส่วนตำบลดอนเงิน",
+    "district": "โกสุมพิสัย",
+    "province": "มหาสารคาม",
+    "projectName": "โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายบ้านหนองแวง-หนองขาม หมู่ที่ 12 กว้าง 4.00 ม. ยาว 850 ม. หนา 0.15 ม. หรือมีพื้นที่คอนกรีตไม่น้อยกว่า 3,400 ตร.ม. องค์การบริหารส่วนตำบลโพนงาม อำเภอโกสุมพิสัย จังหวัดมหาสารคาม",
+    "projectLocation": "หมู่ที่ 12 ต.โพนงาม อ.โกสุมพิสัย จ.มหาสารคาม",
+    "projectScope": "ผิวจราจร คสล. กว้าง 4.00 ม. หนา 0.15 ม. ยาว 850 ม. หรือพื้นที่ไม่น้อยกว่า 3,400 ตร.ม. พร้อมลงลูกรังไหล่ทางตามแบบ อบต.โพนงาม",
+    "contractNo": "E1/2569",
+    "contractDate": "5 มิถุนายน 2569",
+    "contractPeriods": 2,
+    "installments": [
+      {
+        "amount": "1,849,260.00",
+        "year": "2569"
+      },
+      {
+        "amount": "1,000,000",
+        "year": "2569"
+      }
+    ],
+    "startDate": "2026-06-06",
+    "startDateTh": "6 มิถุนายน 2569",
+    "endDate": "2026-11-22",
+    "endDateTh": "23 ตุลาคม 2569",
+    "calcDays": "170",
+    "manualDays": "170",
+    "durationDays": "170",
+    "workPeriodSummary": 2,
+    "budgetAmount": "2,849,260.00",
+    "finePerDay": "7,123.00",
+    "extendContractDate": "",
+    "totalExtendedDays": "",
+    "designerName": "กองช่าง องค์การบริหารส่วนตำบลโพนงาม",
+    "contractorName": "ห้างหุ้นส่วนจำกัด เค.เค.มุกดาหารก่อสร้าง",
+    "contractorAddress": "31/1 หมู่ 5 ตำบลกุดแข้ อำเภอเมืองมุกดาหาร จังหวัดมุกดาหาร",
+    "committeeCount": 5,
+    "committees": [
+      "นางสาวถนอมนวล วะทวีก๊กนงข",
+      "จ่าเอกธีรพงษ์ ดรชานนท์",
+      "นางสาวปนัดดา ภูอาษา",
+      "นายวีระศักดิ์ ทับวิชร",
+      "นายอรรถวัต อดทน"
+    ],
+    "inspectorCount": 1,
+    "inspectors": [
+      {
+        "name": "นายพัทธิยะ วงษาซ้าย",
+        "pos": "ผู้ควบคุมงาน"
+      }
+    ],
+    "orderNo": "102/2569",
+    "orderDate": "11 พฤษภาคม 2569",
+    "contractorRepStatus": "ไม่ได้",
+    "contractorRepName": "",
+    "febDays": "28",
+    "updatedAt": "7/9/2569 06:04:00"
+  },
+  "CONSTRUCTION_WEEKLY_REF_DB": [
+    {
+      "weekIndex": 1,
+      "seq": "1",
+      "week": "1",
+      "year": "2569",
+      "repDate": "15 มิถุนายน 2569",
+      "startDate": "7 มิถุนายน 2569",
+      "endDate": "13 มิถุนายน 2569",
+      "plan": "2.73"
+    },
+    {
+      "weekIndex": 2,
+      "seq": "2",
+      "week": "2",
+      "year": "2569",
+      "repDate": "22 มิถุนายน 2569",
+      "startDate": "14 มิถุนายน 2569",
+      "endDate": "20 มิถุนายน 2569",
+      "plan": "6.09"
+    },
+    {
+      "weekIndex": 3,
+      "seq": "3",
+      "week": "3",
+      "year": "2569",
+      "repDate": "29 มิถุนายน 2569",
+      "startDate": "21 มิถุนายน 2569",
+      "endDate": "27 มิถุนายน 2569",
+      "plan": "10"
+    },
+    {
+      "weekIndex": 4,
+      "seq": "4",
+      "week": "4",
+      "year": "2569",
+      "repDate": "26 พฤษภาคม 2568",
+      "startDate": "18 พฤษภาคม 2568",
+      "endDate": "24 พฤษภาคม 2568",
+      "plan": "15"
+    },
+    {
+      "weekIndex": 5,
+      "seq": "5",
+      "week": "5",
+      "year": "2568",
+      "repDate": "4 มิถุนายน 2568",
+      "startDate": "25 พฤษภาคม 2568",
+      "endDate": "31 พฤษภาคม 2568",
+      "plan": "20"
+    }
+  ],
+  "MONTHLY_REPORT_INFO_DATA": {
+    "month": "มิถุนายน",
+    "year": "2569",
+    "reportDate": "1 กรกฎาคม 2569",
+    "planWeek": "4",
+    "planPercent": "15.00",
+    "actualPercent": "58.66"
+  },
+  "WEEK_PROGRESS_DATA_1": {
+    "weekIndex": 1,
+    "tasks": [
+      {
+        "name": "1",
+        "cost": 10108.72,
+        "proportion": 0.3547840491917199,
+        "prev": "0",
+        "curr": "100",
+        "accum": "100.00",
+        "totalWeight": "0.35"
+      },
+      {
+        "name": "2",
+        "cost": 202174.44,
+        "proportion": 7.095682387707686,
+        "prev": "0",
+        "curr": "10",
+        "accum": "100.00",
+        "totalWeight": "7.10"
+      },
+      {
+        "name": "3",
+        "cost": 24883.01,
+        "proportion": 0.8733148256038409,
+        "prev": "0",
+        "curr": "10",
+        "accum": "100.00",
+        "totalWeight": "0.87"
+      },
+      {
+        "name": "4",
+        "cost": 149194.43,
+        "proportion": 5.2362518689063124,
+        "prev": "0",
+        "curr": "10",
+        "accum": "100.00",
+        "totalWeight": "5.24"
+      },
+      {
+        "name": "5",
+        "cost": 2392397.54,
+        "proportion": 83.9655749212076,
+        "prev": "0",
+        "curr": "10",
+        "accum": "100.00",
+        "totalWeight": "83.97"
+      },
+      {
+        "name": "6",
+        "cost": 70501.86,
+        "proportion": 2.4743919473828293,
+        "prev": "0",
+        "curr": "0",
+        "accum": "100.00",
+        "totalWeight": "2.47"
+      }
+    ],
+    "totalWeightPercent": 10.07,
+    "hasProblem": false,
+    "problems": [
+      "",
+      ""
+    ]
+  },
+  "WEEK_PROGRESS_DATA_2": {
+    "weekIndex": 2,
+    "tasks": [
+      {
+        "name": "1",
+        "cost": 10108.72,
+        "proportion": 0.3547840491917199,
+        "prev": "100",
+        "curr": ""
+      },
+      {
+        "name": "2",
+        "cost": 202174.44,
+        "proportion": 7.095682387707686,
+        "prev": "10",
+        "curr": ""
+      },
+      {
+        "name": "3",
+        "cost": 24883.01,
+        "proportion": 0.8733148256038409,
+        "prev": "10",
+        "curr": ""
+      },
+      {
+        "name": "4",
+        "cost": 149194.43,
+        "proportion": 5.2362518689063124,
+        "prev": "10",
+        "curr": ""
+      },
+      {
+        "name": "5",
+        "cost": 2392397.54,
+        "proportion": 83.9655749212076,
+        "prev": "10",
+        "curr": ""
+      },
+      {
+        "name": "6",
+        "cost": 70501.86,
+        "proportion": 2.4743919473828293,
+        "prev": "",
+        "curr": ""
+      }
+    ],
+    "totalWeightPercent": 10.07,
+    "hasProblem": false,
+    "problems": [
+      "",
+      ""
+    ]
+  },
+  "WEEK_PROGRESS_DATA_3": {
+    "weekIndex": 3,
+    "tasks": [
+      {
+        "name": "1",
+        "cost": 10108.72,
+        "proportion": 0.3547840491917199,
+        "prev": "100",
+        "curr": ""
+      },
+      {
+        "name": "2",
+        "cost": 202174.44,
+        "proportion": 7.095682387707686,
+        "prev": "10",
+        "curr": "30"
+      },
+      {
+        "name": "3",
+        "cost": 24883.01,
+        "proportion": 0.8733148256038409,
+        "prev": "10",
+        "curr": "30"
+      },
+      {
+        "name": "4",
+        "cost": 149194.43,
+        "proportion": 5.2362518689063124,
+        "prev": "10",
+        "curr": "30"
+      },
+      {
+        "name": "5",
+        "cost": 2392397.54,
+        "proportion": 83.9655749212076,
+        "prev": "10",
+        "curr": "30"
+      },
+      {
+        "name": "6",
+        "cost": 70501.86,
+        "proportion": 2.4743919473828293,
+        "prev": "",
+        "curr": ""
+      }
+    ],
+    "totalWeightPercent": 39.22,
+    "hasProblem": false,
+    "problems": [
+      "",
+      ""
+    ]
+  },
+  "WEEK_PROGRESS_DATA_4": {
+    "weekIndex": 4,
+    "tasks": [
+      {
+        "name": "1",
+        "cost": 10108.72,
+        "proportion": 0.3547840491917199,
+        "prev": "100",
+        "curr": ""
+      },
+      {
+        "name": "2",
+        "cost": 202174.44,
+        "proportion": 7.095682387707686,
+        "prev": "40",
+        "curr": "20"
+      },
+      {
+        "name": "3",
+        "cost": 24883.01,
+        "proportion": 0.8733148256038409,
+        "prev": "40",
+        "curr": "20"
+      },
+      {
+        "name": "4",
+        "cost": 149194.43,
+        "proportion": 5.2362518689063124,
+        "prev": "40",
+        "curr": "20"
+      },
+      {
+        "name": "5",
+        "cost": 2392397.54,
+        "proportion": 83.9655749212076,
+        "prev": "40",
+        "curr": "20"
+      },
+      {
+        "name": "6",
+        "cost": 70501.86,
+        "proportion": 2.4743919473828293,
+        "prev": "",
+        "curr": ""
+      }
+    ],
+    "totalWeightPercent": 58.66,
+    "hasProblem": false,
+    "problems": [
+      "",
+      ""
+    ]
+  },
+  "WEEK_PROGRESS_DATA_5": {
+    "weekIndex": 5,
+    "tasks": [
+      {
+        "name": "1",
+        "cost": 10108.72,
+        "proportion": 0.3547840491917199,
+        "prev": "100",
+        "curr": ""
+      },
+      {
+        "name": "2",
+        "cost": 202174.44,
+        "proportion": 7.095682387707686,
+        "prev": "30",
+        "curr": ""
+      },
+      {
+        "name": "3",
+        "cost": 24883.01,
+        "proportion": 0.8733148256038409,
+        "prev": "30",
+        "curr": ""
+      },
+      {
+        "name": "4",
+        "cost": 149194.43,
+        "proportion": 5.2362518689063124,
+        "prev": "30",
+        "curr": ""
+      },
+      {
+        "name": "5",
+        "cost": 2392397.54,
+        "proportion": 83.9655749212076,
+        "prev": "30",
+        "curr": ""
+      },
+      {
+        "name": "6",
+        "cost": 70501.86,
+        "proportion": 2.4743919473828293,
+        "prev": "",
+        "curr": ""
+      }
+    ],
+    "totalWeightPercent": 29.5,
+    "hasProblem": false,
+    "problems": [
+      "",
+      ""
+    ]
+  }
+}

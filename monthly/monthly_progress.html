@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ผลงานการดำเนินงานประจำเดือน - รายงานประจำเดือน</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../assets/gas-sync.js"></script>
+  <style>
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
+    @page { size: A4 portrait; margin: 0; }
+    body { font-family: 'THSarabunPSK', sans-serif; background-color: #94a3b8; margin: 0; padding: 0; }
+    
+    .sheet-workspace {
+      width: 100%;
+      max-width: 210mm;
+      min-height: 297mm;
+      margin: 15px auto;
+      background: white;
+      padding: 15mm 15mm 15mm 20mm;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      box-sizing: border-box;
+      position: relative;
+      color: #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .sheet-top-content {
+      width: 100%;
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 16pt !important;
+      margin-bottom: 10px;
+    }
+
+    .table-progress {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #000;
+      margin-top: 5px;
+    }
+
+    .table-progress th, .table-progress td {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      font-size: 15pt !important;
+      vertical-align: middle;
+    }
+
+    .table-progress th {
+      text-align: center;
+      font-weight: bold;
+    }
+
+    @media print {
+      body { background: white !important; padding: 0 !important; }
+      .no-print { display: none !important; }
+      .sheet-workspace { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 15mm 15mm 15mm 20mm !important; }
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-4 min-h-screen flex flex-col items-center">
+
+  <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
+  <div class="max-w-[210mm] w-full mb-4 bg-white p-5 rounded-2xl shadow-lg border border-slate-300 flex flex-wrap items-center justify-between gap-4 no-print">
+    <div class="flex items-center gap-3">
+      <a href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-2xl font-bold border border-slate-300 shadow-sm">
+        <i data-lucide="arrow-left" class="w-6 h-6"></i> กลับเมนู
+      </a>
+      <span class="font-bold text-slate-800 text-2xl">ผลงานการดำเนินงานประจำเดือน</span>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <button onclick="loadProgressData()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-2xl font-bold flex items-center gap-2 shadow">
+        <i data-lucide="refresh-cw" class="w-6 h-6"></i> ปรับปรุงข้อมูล
+      </button>
+      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-2xl font-bold flex items-center gap-2 shadow">
+        <i data-lucide="printer" class="w-6 h-6"></i> พิมพ์ / PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- แผ่นกระดาษ A4 Workspace -->
+  <div class="sheet-workspace" id="doc-print">
+    <div class="sheet-top-content">
+      <div class="header-row">
+        <span class="font-bold">๒ ผลงานการดำเนินงานประจำเดือน</span>
+        <span id="lbl_org_name">องค์การบริหารส่วนตำบลโพนงาม</span>
+      </div>
+
+      <!-- ตารางผลงานการดำเนินงาน -->
+      <table class="table-progress">
+        <thead>
+          <tr>
+            <th rowspan="2" class="w-12">ที่</th>
+            <th rowspan="2">งานที่ดำเนินการ</th>
+            <th rowspan="2" class="w-24">สัดส่วนของ<br>งาน (%)</th>
+            <th colspan="3">ผลงาน %</th>
+            <th rowspan="2" class="w-24">ผลงานรวม<br>%</th>
+          </tr>
+          <tr>
+            <th class="w-20">ถึงเดือนก่อน</th>
+            <th class="w-20">ในเดือน</th>
+            <th class="w-20">สะสม</th>
+          </tr>
+        </thead>
+        <tbody id="progress_table_body">
+          <!-- ข้อมูลถูกเติมผ่าน Script -->
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" class="text-center font-bold">รวม</td>
+            <td class="text-center font-bold" id="total_weight_sum">๑๐๐.๐๐</td>
+            <td class="text-center" id="total_prev_sum">-</td>
+            <td class="text-center" id="total_month_sum">-</td>
+            <td class="text-center font-bold" id="total_accumulated_sum">-</td>
+            <td class="text-center font-bold" id="total_result_sum">-</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- ส่วนท้ายกระดาษ -->
+    <div></div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function toThaiNumber(numStr) {
+      if (numStr === null || numStr === undefined) return '';
+      const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+      return numStr.toString().replace(/[0-9]/g, (w) => thaiNums[w]);
+    }
+
+    function loadProgressData() {
+      try {
+        // 1. โหลดชื่อหน่วยงาน
+        const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+        if (basicRaw) {
+          const data = JSON.parse(basicRaw);
+          if (data.organizationName) {
+            document.getElementById('lbl_org_name').textContent = data.organizationName;
+          }
+        }
+
+        // 2. ตรวจสอบสัปดาห์ที่เลือกจากหน้า Monthly_Reference (MONTHLY_REPORT_INFO_DATA)
+        let targetWeek = 5; // ค่าเริ่มต้นสัปดาห์ที่ 5
+        const monthlyRaw = localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+        if (monthlyRaw) {
+          const mData = JSON.parse(monthlyRaw);
+          if (mData.planWeek !== undefined && mData.planWeek !== '') {
+            targetWeek = parseInt(mData.planWeek) || 5;
+          }
+        }
+
+        // 3. ดึงข้อมูลผลงานจริงจากสัปดาห์ที่ถูกเลือก
+        let currentMonthProgress = 0;
+        const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
+        if (progressRaw) {
+          const progData = JSON.parse(progressRaw);
+          currentMonthProgress = parseFloat(progData.totalWeightPercent) || 0;
+        } else {
+          // ถ้าสัปดาห์ที่เลือกไม่มีข้อมูล ให้ดึงจากสัปดาห์ล่าสุดที่มีในระบบแทน
+          for (let w = 5; w >= 1; w--) {
+            const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+            if (wRaw) {
+              const wData = JSON.parse(wRaw);
+              currentMonthProgress = parseFloat(wData.totalWeightPercent) || 0;
+              break;
+            }
+          }
+        }
+
+        // 4. รายการหมวดงานมาตรฐานตามแบบ
+        const defaultItems = [
+          { name: "งานถางป่าและขุดตอ ขนาดเบา", weight: 0.35 },
+          { name: "งานทรายรองใต้ผิวคอนกรีต", weight: 7.10 },
+          { name: "expansion joint", weight: 0.87 },
+          { name: "contraction joint", weight: 5.24 },
+          { name: "งานผิวทางพอร์ตแลนด์คอนกรีตเสริมเหล็ก", weight: 83.97 },
+          { name: "งานไหล่ทางวัสดุมวลรวม", weight: 2.47 }
+        ];
+
+        const tbody = document.getElementById('progress_table_body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        let sumMonth = 0;
+
+        defaultItems.forEach((item, idx) => {
+          const mVal = (currentMonthProgress * item.weight) / 100;
+          sumMonth += mVal;
+
+          const mStr = currentMonthProgress > 0 ? toThaiNumber(mVal.toFixed(2)) : '-';
+          const weightTh = toThaiNumber(item.weight.toFixed(2));
+          const idxTh = toThaiNumber(idx + 1);
+
+          tbody.innerHTML += `
+            <tr>
+              <td class="text-center">${idxTh}</td>
+              <td>${item.name}</td>
+              <td class="text-center">${weightTh}</td>
+              <td class="text-center">-</td>
+              <td class="text-center">${mStr}</td>
+              <td class="text-center">${mStr}</td>
+              <td class="text-center">${mStr}</td>
+            </tr>
+          `;
+        });
+
+        const totalStr = currentMonthProgress > 0 ? toThaiNumber(sumMonth.toFixed(2)) : '-';
+        document.getElementById('total_month_sum').textContent = totalStr;
+        document.getElementById('total_accumulated_sum').textContent = totalStr;
+        document.getElementById('total_result_sum').textContent = totalStr;
+
+      } catch (err) {
+        console.error("Error loading progress data:", err);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadProgressData);
+  </script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบรายงานผลการปฏิบัติงานและควบคุมงานก่อสร้าง</title>
+  <!-- Google Fonts: Sarabun -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="assets/gas-sync.js"></script>
+  <style>
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background-color: #cbd5e1;
+    }
+    .btn-3d {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-3d:active {
+      transform: translateY(2px);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body class="p-4 sm:p-8 min-h-screen flex items-center justify-center">
+
+  <div class="max-w-4xl w-full bg-slate-100 p-6 sm:p-8 rounded-3xl shadow-2xl border border-slate-300 space-y-6">
+    
+    <!-- ส่วนหัวระบบ -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-300 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md">
+          <i data-lucide="hard-hat" class="w-7 h-7"></i>
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold text-slate-800">ระบบรายงานผลการปฏิบัติงานและควบคุมงานก่อสร้าง</h1>
+          <p class="text-xs sm:text-sm text-slate-500" id="org-subtitle">องค์การบริหารส่วนตำบลโพนงาม อำเภอโกสุมพิสัย จังหวัดมหาสารคาม</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="sync-status" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">พร้อมใช้งาน</span>
+      </div>
+    </div>
+
+    <!-- เมนูหลัก 3 ส่วนสำคัญ -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+      <!-- 1. ข้อมูลพื้นฐานโครงการ -->
+      <a href="Cons_Reference.html" class="btn-3d bg-white hover:bg-emerald-50 p-6 rounded-2xl shadow border border-slate-300 flex flex-col items-center text-center group transition">
+        <div class="w-16 h-16 rounded-2xl bg-emerald-100 group-hover:bg-emerald-600 text-emerald-600 group-hover:text-white flex items-center justify-center transition mb-3 shadow-inner">
+          <i data-lucide="file-spreadsheet" class="w-8 h-8"></i>
+        </div>
+        <h2 class="font-bold text-slate-800 group-hover:text-emerald-700 text-lg mb-1">1. ข้อมูลเบื้องต้นโครงการ</h2>
+        <p class="text-xs text-slate-500">จัดการสัญญาจ้าง, คณะกรรมการตรวจรับ และผู้ควบคุมงาน</p>
+      </a>
+
+      <!-- 2. รายงานรายสัปดาห์ -->
+      <a href="Weekly_Reference.html" class="btn-3d bg-white hover:bg-amber-50 p-6 rounded-2xl shadow border border-slate-300 flex flex-col items-center text-center group transition">
+        <div class="w-16 h-16 rounded-2xl bg-amber-100 group-hover:bg-amber-600 text-amber-600 group-hover:text-white flex items-center justify-center transition mb-3 shadow-inner">
+          <i data-lucide="calendar-days" class="w-8 h-8"></i>
+        </div>
+        <h2 class="font-bold text-slate-800 group-hover:text-amber-700 text-lg mb-1">2. รายงานผลรายสัปดาห์</h2>
+        <p class="text-xs text-slate-500">บันทึกผลงาน, สภาพการปฏิบัติงาน และภาพถ่ายรายสัปดาห์ (1-5)</p>
+      </a>
+
+      <!-- 3. รายงานประจำเดือน -->
+      <a href="Monthly_Reference.html" class="btn-3d bg-white hover:bg-blue-50 p-6 rounded-2xl shadow border border-slate-300 flex flex-col items-center text-center group transition">
+        <div class="w-16 h-16 rounded-2xl bg-blue-100 group-hover:bg-blue-600 text-blue-600 group-hover:text-white flex items-center justify-center transition mb-3 shadow-inner">
+          <i data-lucide="file-text" class="w-8 h-8"></i>
+        </div>
+        <h2 class="font-bold text-slate-800 group-hover:text-blue-700 text-lg mb-1">3. รายงานผลประจำเดือน</h2>
+        <p class="text-xs text-slate-500">สรุปผลงานประจำเดือน, ตรวจรับงวดงาน และวัสดุก่อสร้าง</p>
+      </a>
+
+    </div>
+
+    <!-- แผงจัดการฐานข้อมูลโครงการ (Backup & Database Management) -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-300 space-y-4">
+      <h3 class="font-bold text-slate-800 text-base flex items-center gap-2 border-b pb-2">
+        <i data-lucide="database" class="w-5 h-5 text-emerald-600"></i> จัดการฐานข้อมูลโครงการ (แยกตามโครงการ/รายเดือน)
+      </h3>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+        <!-- ปุ่มสำรองข้อมูล Local & Cloud -->
+        <button onclick="saveProjectToCloudAndLocal()" id="btn-cloud-backup" class="btn-3d bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer">
+          <i data-lucide="cloud-upload" class="w-4 h-4"></i> สำรองข้อมูล
+        </button>
+
+        <!-- ปุ่ม Export JSON ลงเครื่อง -->
+        <button onclick="downloadProjectJSON()" class="btn-3d bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer">
+          <i data-lucide="download" class="w-4 h-4"></i> ส่งออกไฟล์ (.JSON)
+        </button>
+
+        <!-- ปุ่ม Import JSON เข้าสู่ระบบ -->
+        <label class="btn-3d bg-amber-600 hover:bg-amber-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer">
+          <i data-lucide="upload" class="w-4 h-4"></i> นำเข้าไฟล์
+          <input type="file" id="import-file-input" accept=".json" onchange="importProjectJSON(event)" class="hidden">
+        </label>
+
+        <!-- ปุ่มล้างข้อมูลปัจจุบัน (Clean File) -->
+        <button onclick="clearCurrentProjectData()" class="btn-3d bg-rose-600 hover:bg-rose-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer">
+          <i data-lucide="trash-2" class="w-4 h-4"></i> ล้างข้อมูลปัจจุบัน
+        </button>
+      </div>
+      <p class="text-xs text-slate-500 text-center">
+        * สามารถส่งออกข้อมูลเก็บไว้เป็นประวัติของแต่ละโครงการ แล้วนำเข้ากลับมาใช้งาน หรือล้างข้อมูลเพื่อเริ่มโครงการใหม่ได้ตลอดเวลา
+      </p>
+    </div>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    const STORAGE_KEY_GAS_URL = 'CONSTRUCTION_GAS_URL';
+    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
+    const currentGasUrl = localStorage.getItem(STORAGE_KEY_GAS_URL) || DEFAULT_GAS_URL;
+
+    // รายชื่อ Key ทั้งหมดในระบบที่ครอบคลุมทุกหน้าและทุกฟังก์ชัน
+    const ALL_SYSTEM_KEYS = [
+      'LOCAL_BASIC_INFO',
+      'CONSTRUCTION_WEEKLY_REF_DB',
+      'MONTHLY_REPORT_INFO_DATA',
+      'MONTHLY_INSPECTION_DATES_DB',
+      'MONTHLY_MATERIAL_REPORT_DB',
+      'MONTHLY_PROBLEM_SUMMARY_DB',
+      'LOCAL_START_DATE_RECORD',
+      'LOCAL_EXPEDITE_RECORD',
+      'LOCAL_DELIVERY_RECORD',
+      'PROJECT_FULL_BACKUP_SNAPSHOT'
+    ];
+
+    function exportAllProjectData() {
+      const projectDatabase = {};
+      
+      // ดึง Key หลัก
+      ALL_SYSTEM_KEYS.forEach(key => {
+        const val = localStorage.getItem(key);
+        if (val) {
+          try { projectDatabase[key] = JSON.parse(val); } catch (e) { projectDatabase[key] = val; }
+        }
+      });
+
+      // ดึง Key ที่มีลักษณะเป็น Dynamic ตามสัปดาห์ (WEEK_PROGRESS_DATA, WEEK_REPORT_INSTALLMENTS, WEEK_PHOTO_DATA ฯลฯ)
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (
+          k.startsWith('WEEK_PROGRESS_DATA_') || 
+          k.startsWith('WEEK_REPORT_INSTALLMENTS_') || 
+          k.startsWith('WEEK_REPORT_ACCEPTED_') || 
+          k.startsWith('WEEK_LOG_DATA_') || 
+          k.startsWith('WEEK_PHOTO_DATA_') ||
+          k.startsWith('LATEST_PROGRESS_SUMMARY_')
+        ) {
+          const val = localStorage.getItem(k);
+          if (val) {
+            try { projectDatabase[k] = JSON.parse(val); } catch (e) { projectDatabase[k] = val; }
+          }
+        }
+      }
+
+      return projectDatabase;
+    }
+
+    // สำรองข้อมูลคู่ขนาน (LocalStorage + Google Drive / Cloud)
+    async function saveProjectToCloudAndLocal() {
+      const btn = document.getElementById('btn-cloud-backup');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังสำรองข้อมูล...`;
+        lucide.createIcons();
+      }
+
+      const backupData = exportAllProjectData();
+      localStorage.setItem('PROJECT_FULL_BACKUP_SNAPSHOT', JSON.stringify(backupData));
+
+      const payload = {
+        action: 'save_full_project_database',
+        timestamp: new Date().toLocaleString('th-TH'),
+        database: backupData
+      };
+
+      try {
+        const response = await fetch(currentGasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          alert('สำรองข้อมูลลงในเครื่องและซิงค์ขึ้น Google Drive / Cloud เรียบร้อยแล้วค่ะ!');
+        } else {
+          throw new Error(result.message || 'เกิดข้อผิดพลาด');
+        }
+      } catch (err) {
+        alert('บันทึกสำรองข้อมูลลงในเครื่อง (Local Storage) เรียบร้อยแล้วค่ะ');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> สำรองข้อมูล`;
+          lucide.createIcons();
+        }
+      }
+    }
+
+    // ดาวน์โหลดไฟล์ JSON เก็บไว้ที่เครื่อง
+    function downloadProjectJSON() {
+      const data = exportAllProjectData();
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `Project_Database_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    // นำเข้าไฟล์ JSON เข้าสู่ระบบ
+    function importProjectJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          for (const [key, value] of Object.entries(importedData)) {
+            const valueToStore = typeof value === 'object' ? JSON.stringify(value) : value;
+            localStorage.setItem(key, valueToStore);
+          }
+          alert('นำเข้าฐานข้อมูลโครงการสำเร็จ! ระบบได้โหลดข้อมูลเข้าสู่เครื่องเรียบร้อยแล้วค่ะ');
+          location.reload();
+        } catch (err) {
+          alert('ไฟล์ฐานข้อมูลไม่ถูกต้อง หรือรูปแบบไฟล์เสียหายค่ะ');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // ฟังก์ชันล้างข้อมูลปัจจุบันเพื่อเคลียร์ไฟล์เป็นค่าว่าง (Clean File สำหรับทุกหน้า)
+    function clearCurrentProjectData() {
+      if (confirm('คำเตือน: คุณต้องการล้างข้อมูลโครงการปัจจุบันทั้งหมดทุกหน้าใช่ไหมคะ? (แนะนำให้สำรองข้อมูลหรือส่งออกไฟล์ JSON เก็บไว้ก่อนดำเนินการ)')) {
+        // 1. ลบ Key หลักทั้งหมด
+        ALL_SYSTEM_KEYS.forEach(key => {
+          localStorage.removeItem(key);
+        });
+
+        // 2. ค้นหาและลบ Key แบบ Dynamic (รายสัปดาห์ / รายเดือนทั้งหมด)
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (
+            k.startsWith('WEEK_PROGRESS_DATA_') || 
+            k.startsWith('WEEK_REPORT_INSTALLMENTS_') || 
+            k.startsWith('WEEK_REPORT_ACCEPTED_') || 
+            k.startsWith('WEEK_LOG_DATA_') || 
+            k.startsWith('WEEK_PHOTO_DATA_') ||
+            k.startsWith('LATEST_PROGRESS_SUMMARY_')
+          ) {
+            keysToRemove.push(k);
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+
+        alert('ล้างข้อมูลปัจจุบันทุกหน้าเรียบร้อยแล้วค่ะ! เว็บไซต์พร้อมเริ่มโครงการใหม่เป็น Clean File แล้วค่ะ');
+        location.reload();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          const data = JSON.parse(basicRaw);
+          if (data.organizationName) {
+            document.getElementById('org-subtitle').textContent = data.organizationName;
+          }
+        } catch(e){}
+      }
+    });
+  </script>
+</body>
+</html>

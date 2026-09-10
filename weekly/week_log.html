@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>บันทึกการปฏิบัติงานของผู้รับจ้าง</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../assets/gas-sync.js"></script>
+  <style>
+    @font-face {
+      font-family: 'THSarabunPSK';
+      src: url('../assets/THSarabun.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'THSarabunPSK';
+      src: url('../assets/THSarabun Bold.ttf') format('truetype');
+      font-weight: bold;
+      font-style: normal;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    body {
+      font-family: 'THSarabunPSK', sans-serif;
+      background-color: #94a3b8;
+      margin: 0;
+      padding: 0;
+      font-size: 15pt;
+    }
+
+    .sheet-doc {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 10mm 15mm 8mm 20mm;
+      margin: 15px auto;
+      background: white;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      box-sizing: border-box;
+      line-height: 1.15;
+      color: #000;
+    }
+
+    .table-job {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 6px;
+    }
+
+    .table-job th, .table-job td {
+      border: 1px solid #000;
+      padding: 2px 4px;
+      font-size: 13.5pt;
+      vertical-align: middle;
+    }
+
+    .table-job th {
+      font-weight: bold;
+      text-align: center;
+      background-color: #f8fafc;
+    }
+
+    .auto-expand-area {
+      width: 100%;
+      min-height: 24px;
+      height: 24px;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 13pt;
+      line-height: 1.2;
+      padding: 2px;
+      resize: none;
+      overflow: hidden;
+      display: block;
+      box-sizing: border-box;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .auto-expand-area:focus {
+      background-color: #fef08a;
+    }
+
+    .cell-input-text {
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 12pt;
+      padding: 0 1px;
+      text-align: center;
+    }
+
+    .cell-input-num {
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 13.5pt;
+      text-align: center;
+      padding: 0;
+    }
+
+    .cell-input-num:focus, .cell-input-text:focus {
+      background-color: #fef08a;
+    }
+
+    .btn-3d {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-3d:active {
+      transform: translateY(2px);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    @media print {
+      body {
+        background: white !important;
+        padding: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .sheet-doc {
+        box-shadow: none !important;
+        margin: 0 !important;
+        width: 210mm !important;
+        height: 297mm !important;
+        padding: 8mm 15mm 8mm 20mm !important;
+        page-break-after: avoid;
+        page-break-inside: avoid;
+      }
+      .auto-expand-area {
+        overflow: visible !important;
+        height: auto !important;
+      }
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-4 min-h-screen flex flex-col items-center">
+
+  <!-- แถบควบคุมด้านบน -->
+  <div class="max-w-[210mm] w-full mb-3 flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl shadow border border-slate-300 no-print">
+    <div class="flex items-center gap-2">
+      <a href="../Weekly_Reference.html" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1 text-sm font-bold">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i> กลับ
+      </a>
+      <span class="font-bold text-slate-800 text-lg">บันทึกการปฏิบัติงาน</span>
+      <span id="badge-week" class="px-2.5 py-0.5 bg-orange-100 text-orange-800 rounded-full font-bold text-sm">สัปดาห์ที่ 1</span>
+      <span id="txt-date-range" class="text-xs text-slate-500 font-medium ml-2">ช่วงวันที่: -</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="saveLogData()" id="btn-save" class="btn-3d flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-bold cursor-pointer">
+        <i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล
+      </button>
+      <button onclick="window.print()" class="btn-3d flex items-center gap-1 bg-slate-700 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg text-sm font-bold cursor-pointer">
+        <i data-lucide="printer" class="w-4 h-4"></i> พิมพ์ / PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- หน้าเอกสาร A4 -->
+  <div class="sheet-doc" id="doc-print">
+    
+    <div class="text-center font-bold text-xl mb-1 tracking-wide">
+      บันทึกการปฏิบัติงานของผู้รับจ้าง
+    </div>
+
+    <!-- 1. ตารางบันทึกการปฏิบัติงานประจำวัน 7 วัน -->
+    <table class="table-job mb-2">
+      <thead>
+        <tr>
+          <th style="width: 24%;">วัน เดือน ปี</th>
+          <th style="width: 58%;">รายละเอียด</th>
+          <th style="width: 18%;">หมายเหตุ</th>
+        </tr>
+      </thead>
+      <tbody id="daily-log-rows">
+        <!-- แถวจะถูกสร้างอัตโนมัติ -->
+      </tbody>
+    </table>
+
+    <!-- 2. บัญชีแสดงจำนวนแรงงาน -->
+    <div class="mb-2">
+      <div class="text-[11pt] font-bold text-slate-800 mb-0.5" id="lbl-org-labor">องค์การบริหารส่วนตำบลโพนงาม</div>
+      <table class="table-job text-center">
+        <thead>
+          <tr>
+            <th colspan="9" class="text-center py-0.5 font-bold">บัญชีแสดงจำนวนแรงงาน</th>
+          </tr>
+          <tr class="bg-slate-50 text-[12pt]">
+            <th class="w-48 text-left pl-2">ประเภทแรงงาน</th>
+            <th class="w-10 header-day-0">-</th>
+            <th class="w-10 header-day-1">-</th>
+            <th class="w-10 header-day-2">-</th>
+            <th class="w-10 header-day-3">-</th>
+            <th class="w-10 header-day-4">-</th>
+            <th class="w-10 header-day-5">-</th>
+            <th class="w-10 header-day-6">-</th>
+            <th class="w-24">หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left pl-2 font-medium">หัวหน้าคนงาน/ช่าง</td>
+            <td><input type="text" id="lead_0" class="cell-input-num labor-lead" oninput="calcLaborSum(0)"></td>
+            <td><input type="text" id="lead_1" class="cell-input-num labor-lead" oninput="calcLaborSum(1)"></td>
+            <td><input type="text" id="lead_2" class="cell-input-num labor-lead" oninput="calcLaborSum(2)"></td>
+            <td><input type="text" id="lead_3" class="cell-input-num labor-lead" oninput="calcLaborSum(3)"></td>
+            <td><input type="text" id="lead_4" class="cell-input-num labor-lead" oninput="calcLaborSum(4)"></td>
+            <td><input type="text" id="lead_5" class="cell-input-num labor-lead" oninput="calcLaborSum(5)"></td>
+            <td><input type="text" id="lead_6" class="cell-input-num labor-lead" oninput="calcLaborSum(6)"></td>
+            <td><input type="text" id="lead_note" class="cell-input-text text-center text-xs"></td>
+          </tr>
+          <tr>
+            <td class="text-left pl-2 font-medium">คนงาน</td>
+            <td><input type="text" id="worker_0" class="cell-input-num labor-worker" oninput="calcLaborSum(0)"></td>
+            <td><input type="text" id="worker_1" class="cell-input-num labor-worker" oninput="calcLaborSum(1)"></td>
+            <td><input type="text" id="worker_2" class="cell-input-num labor-worker" oninput="calcLaborSum(2)"></td>
+            <td><input type="text" id="worker_3" class="cell-input-num labor-worker" oninput="calcLaborSum(3)"></td>
+            <td><input type="text" id="worker_4" class="cell-input-num labor-worker" oninput="calcLaborSum(4)"></td>
+            <td><input type="text" id="worker_5" class="cell-input-num labor-worker" oninput="calcLaborSum(5)"></td>
+            <td><input type="text" id="worker_6" class="cell-input-num labor-worker" oninput="calcLaborSum(6)"></td>
+            <td><input type="text" id="worker_note" class="cell-input-text text-center text-xs"></td>
+          </tr>
+          <tr class="font-bold bg-slate-50">
+            <td class="text-center font-bold">รวม (คน)</td>
+            <td id="labor_sum_0">-</td>
+            <td id="labor_sum_1">-</td>
+            <td id="labor_sum_2">-</td>
+            <td id="labor_sum_3">-</td>
+            <td id="labor_sum_4">-</td>
+            <td id="labor_sum_5">-</td>
+            <td id="labor_sum_6">-</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 3. ตารางสภาพอากาศ -->
+    <div class="mb-2">
+      <div class="text-[11pt] font-bold text-slate-800 mb-0.5" id="lbl-org-weather">องค์การบริหารส่วนตำบลโพนงาม</div>
+      <table class="table-job text-center">
+        <thead>
+          <tr>
+            <th colspan="10" class="text-center py-0.5 font-bold">ตารางสภาพอากาศ</th>
+          </tr>
+          <tr class="bg-slate-50 text-[12pt]">
+            <th colspan="2" class="w-48 text-left pl-2">สภาพอากาศ / วันที่</th>
+            <th class="w-10 header-day-0">-</th>
+            <th class="w-10 header-day-1">-</th>
+            <th class="w-10 header-day-2">-</th>
+            <th class="w-10 header-day-3">-</th>
+            <th class="w-10 header-day-4">-</th>
+            <th class="w-10 header-day-5">-</th>
+            <th class="w-10 header-day-6">-</th>
+            <th class="w-24">หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- สภาพท้องฟ้า -->
+          <tr>
+            <td rowspan="2" class="w-20 font-bold bg-slate-50 text-center">สภาพท้องฟ้า</td>
+            <td class="text-left pl-2 font-medium">แจ่มใส</td>
+            <td><input type="checkbox" id="chk_clear_0" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 0)"></td>
+            <td><input type="checkbox" id="chk_clear_1" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 1)"></td>
+            <td><input type="checkbox" id="chk_clear_2" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 2)"></td>
+            <td><input type="checkbox" id="chk_clear_3" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 3)"></td>
+            <td><input type="checkbox" id="chk_clear_4" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 4)"></td>
+            <td><input type="checkbox" id="chk_clear_5" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 5)"></td>
+            <td><input type="checkbox" id="chk_clear_6" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 6)"></td>
+            <td><input type="text" id="sky_note_1" class="cell-input-text text-center text-xs"></td>
+          </tr>
+          <tr>
+            <td class="text-left pl-2 font-medium">มีเมฆมาก</td>
+            <td><input type="checkbox" id="chk_cloudy_0" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 0)"></td>
+            <td><input type="checkbox" id="chk_cloudy_1" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 1)"></td>
+            <td><input type="checkbox" id="chk_cloudy_2" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 2)"></td>
+            <td><input type="checkbox" id="chk_cloudy_3" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 3)"></td>
+            <td><input type="checkbox" id="chk_cloudy_4" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 4)"></td>
+            <td><input type="checkbox" id="chk_cloudy_5" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 5)"></td>
+            <td><input type="checkbox" id="chk_cloudy_6" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 6)"></td>
+            <td><input type="text" id="sky_note_2" class="cell-input-text text-center text-xs"></td>
+          </tr>
+
+          <!-- สภาพฝนตก -->
+          <tr>
+            <td rowspan="3" class="w-20 font-bold bg-slate-50 text-center">ฝนตก</td>
+            <td class="text-left pl-2 text-[12pt]">เล็กน้อย</td>
+            <td><input type="checkbox" id="chk_light_0" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 0)"></td>
+            <td><input type="checkbox" id="chk_light_1" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 1)"></td>
+            <td><input type="checkbox" id="chk_light_2" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 2)"></td>
+            <td><input type="checkbox" id="chk_light_3" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 3)"></td>
+            <td><input type="checkbox" id="chk_light_4" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 4)"></td>
+            <td><input type="checkbox" id="chk_light_5" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 5)"></td>
+            <td><input type="checkbox" id="chk_light_6" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 6)"></td>
+            <td><input type="text" id="rain_note_1" class="cell-input-text text-center text-xs"></td>
+          </tr>
+          <tr>
+            <td class="text-left pl-2 text-[12pt]">ปานกลาง</td>
+            <td><input type="checkbox" id="chk_med_0" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 0)"></td>
+            <td><input type="checkbox" id="chk_med_1" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 1)"></td>
+            <td><input type="checkbox" id="chk_med_2" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 2)"></td>
+            <td><input type="checkbox" id="chk_med_3" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 3)"></td>
+            <td><input type="checkbox" id="chk_med_4" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 4)"></td>
+            <td><input type="checkbox" id="chk_med_5" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 5)"></td>
+            <td><input type="checkbox" id="chk_med_6" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 6)"></td>
+            <td><input type="text" id="rain_note_2" class="cell-input-text text-center text-xs"></td>
+          </tr>
+          <tr>
+            <td class="text-left pl-2 text-[12pt]">หนัก</td>
+            <td><input type="checkbox" id="chk_heavy_0" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 0)"></td>
+            <td><input type="checkbox" id="chk_heavy_1" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 1)"></td>
+            <td><input type="checkbox" id="chk_heavy_2" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 2)"></td>
+            <td><input type="checkbox" id="chk_heavy_3" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 3)"></td>
+            <td><input type="checkbox" id="chk_heavy_4" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 4)"></td>
+            <td><input type="checkbox" id="chk_heavy_5" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 5)"></td>
+            <td><input type="checkbox" id="chk_heavy_6" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 6)"></td>
+            <td><input type="text" id="rain_note_3" class="cell-input-text text-center text-xs"></td>
+          </tr>
+          <tr>
+            <td colspan="2" class="text-left pl-2 font-semibold text-[11pt]">ฝนตกเวลา (เช่น เช้า/บ่าย หรือ ตลอดวัน)</td>
+            <td><input type="text" id="w_time_0" class="cell-input-text" placeholder="ระบุ..."></td>
+            <td><input type="text" id="w_time_1" class="cell-input-text" placeholder="ระบุ..."></td>
+            <td><input type="text" id="w_time_2" class="cell-input-text" placeholder="ระบุ..."></td>
+            <td><input type="text" id="w_time_3" class="cell-input-text" placeholder="ระบุ..."></td>
+            <td><input type="text" id="w_time_4" class="cell-input-text" placeholder="ระบุ..."></td>
+            <td><input type="text" id="w_time_5" class="cell-input-text" placeholder="ระบุ..."></td>
+            <td><input type="text" id="w_time_6" class="cell-input-text" placeholder="ระบุ..."></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4. ตารางบัญชีแสดงจำนวนเครื่องจักร -->
+    <div class="mb-2">
+      <div class="flex items-center justify-between mb-0.5">
+        <span class="text-[11pt] font-bold text-slate-800">บัญชีแสดงจำนวนเครื่องจักร เครื่องมือ วัสดุและอุปกรณ์</span>
+        <div class="flex items-center gap-1.5 no-print">
+          <select id="sel_standard_mach" class="text-xs p-1 border rounded bg-white text-slate-800">
+            <option value="รถเกรดเดอร์">รถเกรดเดอร์</option>
+            <option value="รถขุดดิน-ตักดิน">รถขุดดิน-ตักดิน</option>
+            <option value="รถไถ">รถไถ</option>
+            <option value="รถผสมปูน">รถผสมปูน</option>
+            <option value="รถบดอัดดิน">รถบดอัดดิน</option>
+            <option value="รถบรรทุกน้ำ">รถบรรทุกน้ำ</option>
+            <option value="รถบรรทุก 6 ล้อ">รถบรรทุก 6 ล้อ</option>
+            <option value="เครื่องตบดิน">เครื่องตบดิน</option>
+            <option value="เครื่องเขย่าคอนกรีต">เครื่องเขย่าคอนกรีต</option>
+            <option value="CUSTOM">-- อื่นๆ (พิมพ์เพิ่มเอง) --</option>
+          </select>
+          <button onclick="handleAddMachineryClick()" class="px-2.5 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold flex items-center gap-1 shadow cursor-pointer">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มเครื่องจักร
+          </button>
+        </div>
+      </div>
+
+      <table class="table-job text-center">
+        <thead>
+          <tr>
+            <th colspan="10" class="text-center py-0.5 font-bold">บัญชีแสดงจำนวนเครื่องจักร เครื่องมือ วัสดุและอุปกรณ์</th>
+          </tr>
+          <tr class="bg-slate-50 text-[12pt]">
+            <th class="w-48 text-left pl-2">รายการเครื่องจักร / เครื่องมือ</th>
+            <th class="w-10 header-day-0">-</th>
+            <th class="w-10 header-day-1">-</th>
+            <th class="w-10 header-day-2">-</th>
+            <th class="w-10 header-day-3">-</th>
+            <th class="w-10 header-day-4">-</th>
+            <th class="w-10 header-day-5">-</th>
+            <th class="w-10 header-day-6">-</th>
+            <th class="w-20">หมายเหตุ</th>
+            <th class="w-8 no-print">ลบ</th>
+          </tr>
+        </thead>
+        <tbody id="machinery-tbody">
+          <!-- รายการเครื่องจักรจะแสดงที่นี่ -->
+        </tbody>
+        <tfoot>
+          <tr class="font-bold bg-slate-50">
+            <td class="text-center font-bold">รวม (หน่วย)</td>
+            <td id="mach_sum_0">-</td>
+            <td id="mach_sum_1">-</td>
+            <td id="mach_sum_2">-</td>
+            <td id="mach_sum_3">-</td>
+            <td id="mach_sum_4">-</td>
+            <td id="mach_sum_5">-</td>
+            <td id="mach_sum_6">-</td>
+            <td></td>
+            <td class="no-print"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- ส่วนลงชื่อผู้ควบคุมงาน -->
+    <div class="flex justify-end pt-1 pr-8 text-center text-base">
+      <div class="space-y-0.5">
+        <p>(ลงชื่อ)........................................................... <span id="txt-inspector-pos">ผู้ควบคุมงาน</span></p>
+        <p class="font-medium">(<span id="txt-inspector-name">นายพัทธิยะ วงษาซ้าย</span>)</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function autoExpandTextarea(element) {
+      element.style.height = 'auto';
+      element.style.height = Math.max(element.scrollHeight, 24) + 'px';
+    }
+
+    const thaiMonths = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentWeekIndex = parseInt(urlParams.get('week')) || 1;
+    const WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentWeekIndex}`;
+    const GOOGLE_SCRIPT_URL = localStorage.getItem('CONSTRUCTION_GAS_URL') || 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
+
+    document.getElementById('badge-week').textContent = `สัปดาห์ที่ ${currentWeekIndex}`;
+
+    // 1. สร้าง 7 วันแบบไดนามิก
+    function buildDynamicDays() {
+      let startDateStr = "";
+      const refDataRaw = localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+      
+      if (refDataRaw) {
+        const weeks = JSON.parse(refDataRaw);
+        const wItem = weeks.find(w => parseInt(w.weekIndex) === currentWeekIndex);
+        if (wItem && wItem.startDate) {
+          startDateStr = wItem.startDate;
+          document.getElementById('txt-date-range').textContent = `ช่วงวันที่: ${wItem.startDate} ถึง ${wItem.endDate}`;
+        }
+      }
+
+      let baseDate = new Date(2026, 5, 7);
+      if (startDateStr) {
+        const parts = startDateStr.split(' ');
+        if (parts.length >= 3) {
+          const d = parseInt(parts[0]);
+          const m = thaiMonths.indexOf(parts[1]);
+          const y = parseInt(parts[2]) - 543;
+          if (!isNaN(d) && m !== -1 && !isNaN(y)) {
+            baseDate = new Date(y, m, d);
+          }
+        }
+      }
+
+      const dailyRowsTbody = document.getElementById('daily-log-rows');
+      dailyRowsTbody.innerHTML = '';
+
+      for (let i = 0; i < 7; i++) {
+        const curDate = new Date(baseDate);
+        curDate.setDate(baseDate.getDate() + i);
+
+        const dNum = curDate.getDate();
+        const mName = thaiMonths[curDate.getMonth()];
+        const yThai = curDate.getFullYear() + 543;
+        const fullDateTh = `${dNum} ${mName} ${yThai}`;
+
+        document.querySelectorAll(`.header-day-${i}`).forEach(el => {
+          el.textContent = dNum;
+        });
+
+        dailyRowsTbody.innerHTML += `
+          <tr>
+            <td class="font-bold text-center bg-slate-50/60 align-top pt-2">${fullDateTh}</td>
+            <td class="p-1 align-top">
+              <div class="flex items-center gap-6 text-[12.5pt] mb-1">
+                <label class="flex items-center gap-1.5 cursor-pointer font-medium select-none">
+                  <input type="checkbox" id="chk_no_work_${i}" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleWorkCheck('no', ${i})">
+                  <span>ไม่มีการทำงานของผู้รับจ้าง</span>
+                </label>
+                <label class="flex items-center gap-1.5 cursor-pointer font-medium select-none">
+                  <input type="checkbox" id="chk_has_work_${i}" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleWorkCheck('yes', ${i})">
+                  <span>ผู้รับจ้างทำงานโดยมีรายละเอียด ดังนี้</span>
+                </label>
+              </div>
+              <textarea id="work_desc_${i}" rows="1" class="auto-expand-area" placeholder="ระบุงานที่ทำ (ถ้ามี)..." oninput="autoExpandTextarea(this)"></textarea>
+            </td>
+            <td class="p-1 align-top">
+              <textarea id="work_note_${i}" rows="1" class="auto-expand-area text-center" placeholder="-" oninput="autoExpandTextarea(this)"></textarea>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function handleWorkCheck(type, dayIdx) {
+      const chkNo = document.getElementById(`chk_no_work_${dayIdx}`);
+      const chkHas = document.getElementById(`chk_has_work_${dayIdx}`);
+      const descInput = document.getElementById(`work_desc_${dayIdx}`);
+
+      if (type === 'no') {
+        if (chkNo.checked) {
+          chkHas.checked = false;
+          descInput.placeholder = "ระบุงานที่ทำ (ถ้ามี)...";
+        }
+      } else if (type === 'yes') {
+        if (chkHas.checked) {
+          chkNo.checked = false;
+          descInput.focus();
+          descInput.placeholder = "ระบุงานที่ดำเนินการ...";
+        } else {
+          descInput.placeholder = "ระบุงานที่ทำ (ถ้ามี)...";
+        }
+      }
+    }
+
+    function calcLaborSum(dayIdx) {
+      const lead = parseFloat(document.getElementById(`lead_${dayIdx}`).value) || 0;
+      const worker = parseFloat(document.getElementById(`worker_${dayIdx}`).value) || 0;
+      const sum = lead + worker;
+      const displayEl = document.getElementById(`labor_sum_${dayIdx}`);
+      displayEl.textContent = sum > 0 ? sum : '-';
+    }
+
+    function handleSkyCheck(type, dayIdx) {
+      const chkClear = document.getElementById(`chk_clear_${dayIdx}`);
+      const chkCloudy = document.getElementById(`chk_cloudy_${dayIdx}`);
+
+      if (type === 'clear' && chkClear.checked) {
+        chkCloudy.checked = false;
+      } else if (type === 'cloudy' && chkCloudy.checked) {
+        chkClear.checked = false;
+      }
+    }
+
+    function handleRainCheck(type, dayIdx) {
+      const rains = ['light', 'med', 'heavy'];
+      const targetChk = document.getElementById(`chk_${type}_${dayIdx}`);
+      if (targetChk.checked) {
+        rains.forEach(r => {
+          if (r !== type) {
+            document.getElementById(`chk_${r}_${dayIdx}`).checked = false;
+          }
+        });
+      }
+    }
+
+    function handleAddMachineryClick() {
+      const sel = document.getElementById('sel_standard_mach');
+      const selectedValue = sel.value;
+
+      if (selectedValue === "CUSTOM") {
+        addMachineryRow("", ["","","","","","",""], "", true);
+      } else {
+        addMachineryRow(selectedValue, ["","","","","","",""], "", false);
+      }
+    }
+
+    function addMachineryRow(name = "", counts = ["","","","","","",""], note = "", isEditable = false) {
+      const tbody = document.getElementById('machinery-tbody');
+      const tr = document.createElement('tr');
+      tr.className = 'mach-row';
+
+      let titleHTML = '';
+      if (isEditable || name === "") {
+        titleHTML = `<input type="text" class="cell-input-text font-medium text-slate-800 mach-name-input" placeholder="พิมพ์ชื่อเครื่องจักร..." value="${name}">`;
+      } else {
+        titleHTML = `<span class="font-medium text-slate-800 mach-name-label">${name}</span>`;
+      }
+
+      let dayInputsHTML = '';
+      for (let d = 0; d < 7; d++) {
+        dayInputsHTML += `<td><input type="text" class="cell-input-num m-val" data-day="${d}" value="${counts[d] || ''}" oninput="calcMachSum(${d})"></td>`;
+      }
+
+      tr.innerHTML = `
+        <td class="text-left pl-2">${titleHTML}</td>
+        ${dayInputsHTML}
+        <td><input type="text" class="cell-input-text text-center text-xs" value="${note}"></td>
+        <td class="no-print text-center">
+          <button onclick="removeMachineryRow(this)" class="text-rose-500 hover:text-rose-700 font-bold p-1">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+      lucide.createIcons();
+      for (let d = 0; d < 7; d++) calcMachSum(d);
+    }
+
+    function removeMachineryRow(btn) {
+      const tr = btn.closest('tr');
+      tr.remove();
+      for (let d = 0; d < 7; d++) calcMachSum(d);
+    }
+
+    function calcMachSum(dayIdx) {
+      let total = 0;
+      document.querySelectorAll(`.m-val[data-day="${dayIdx}"]`).forEach(input => {
+        total += parseFloat(input.value) || 0;
+      });
+      const sumEl = document.getElementById(`mach_sum_${dayIdx}`);
+      sumEl.textContent = total > 0 ? total : '-';
+    }
+
+    function getFormData() {
+      const data = {
+        weekIndex: currentWeekIndex,
+        dailyLogs: [],
+        labor: {
+          lead: [], worker: [],
+          leadNote: document.getElementById('lead_note').value,
+          workerNote: document.getElementById('worker_note').value
+        },
+        weather: {
+          clear: [], cloudy: [], light: [], med: [], heavy: [], time: [],
+          skyNote1: document.getElementById('sky_note_1').value,
+          skyNote2: document.getElementById('sky_note_2').value,
+          rainNote1: document.getElementById('rain_note_1').value,
+          rainNote2: document.getElementById('rain_note_2').value,
+          rainNote3: document.getElementById('rain_note_3').value
+        },
+        machinery: [],
+        updatedAt: new Date().toLocaleString('th-TH')
+      };
+
+      for (let i = 0; i < 7; i++) {
+        data.dailyLogs.push({
+          hasNoWork: document.getElementById(`chk_no_work_${i}`).checked,
+          hasWork: document.getElementById(`chk_has_work_${i}`).checked,
+          desc: document.getElementById(`work_desc_${i}`).value,
+          note: document.getElementById(`work_note_${i}`).value
+        });
+
+        data.labor.lead.push(document.getElementById(`lead_${i}`).value);
+        data.labor.worker.push(document.getElementById(`worker_${i}`).value);
+
+        data.weather.clear.push(document.getElementById(`chk_clear_${i}`).checked);
+        data.weather.cloudy.push(document.getElementById(`chk_cloudy_${i}`).checked);
+        data.weather.light.push(document.getElementById(`chk_light_${i}`).checked);
+        data.weather.med.push(document.getElementById(`chk_med_${i}`).checked);
+        data.weather.heavy.push(document.getElementById(`chk_heavy_${i}`).checked);
+        data.weather.time.push(document.getElementById(`w_time_${i}`).value);
+      }
+
+      document.querySelectorAll('.mach-row').forEach(tr => {
+        const nameInput = tr.querySelector('.mach-name-input');
+        const nameLabel = tr.querySelector('.mach-name-label');
+        const machName = nameLabel ? nameLabel.textContent : (nameInput ? nameInput.value : '');
+        const isCustom = !!nameInput;
+
+        const rowCounts = [];
+        tr.querySelectorAll('.m-val').forEach(inp => rowCounts.push(inp.value));
+        const noteInput = tr.querySelector('td:nth-last-child(2) input');
+        
+        data.machinery.push({
+          name: machName,
+          counts: rowCounts,
+          note: noteInput ? noteInput.value : '',
+          isCustom: isCustom
+        });
+      });
+
+      return data;
+    }
+
+    function setFormData(data) {
+      if (!data) return;
+
+      for (let i = 0; i < 7; i++) {
+        if (data.dailyLogs && data.dailyLogs[i]) {
+          const chkNo = document.getElementById(`chk_no_work_${i}`);
+          const chkHas = document.getElementById(`chk_has_work_${i}`);
+          
+          chkNo.checked = !!data.dailyLogs[i].hasNoWork;
+          chkHas.checked = !!data.dailyLogs[i].hasWork;
+
+          const descEl = document.getElementById(`work_desc_${i}`);
+          const noteEl = document.getElementById(`work_note_${i}`);
+          descEl.value = data.dailyLogs[i].desc || '';
+          noteEl.value = data.dailyLogs[i].note || '';
+          autoExpandTextarea(descEl);
+          autoExpandTextarea(noteEl);
+        }
+
+        if (data.labor) {
+          if (data.labor.lead && data.labor.lead[i]) document.getElementById(`lead_${i}`).value = data.labor.lead[i];
+          if (data.labor.worker && data.labor.worker[i]) document.getElementById(`worker_${i}`).value = data.labor.worker[i];
+          calcLaborSum(i);
+        }
+
+        if (data.weather) {
+          if (data.weather.clear) document.getElementById(`chk_clear_${i}`).checked = !!data.weather.clear[i];
+          if (data.weather.cloudy) document.getElementById(`chk_cloudy_${i}`).checked = !!data.weather.cloudy[i];
+          if (data.weather.light) document.getElementById(`chk_light_${i}`).checked = !!data.weather.light[i];
+          if (data.weather.med) document.getElementById(`chk_med_${i}`).checked = !!data.weather.med[i];
+          if (data.weather.heavy) document.getElementById(`chk_heavy_${i}`).checked = !!data.weather.heavy[i];
+          if (data.weather.time) document.getElementById(`w_time_${i}`).value = data.weather.time[i] || '';
+        }
+      }
+
+      if (data.labor) {
+        if (data.labor.leadNote) document.getElementById('lead_note').value = data.labor.leadNote;
+        if (data.labor.workerNote) document.getElementById('worker_note').value = data.labor.workerNote;
+      }
+
+      if (data.weather) {
+        if (data.weather.skyNote1) document.getElementById('sky_note_1').value = data.weather.skyNote1;
+        if (data.weather.skyNote2) document.getElementById('sky_note_2').value = data.weather.skyNote2;
+        if (data.weather.rainNote1) document.getElementById('rain_note_1').value = data.weather.rainNote1;
+        if (data.weather.rainNote2) document.getElementById('rain_note_2').value = data.weather.rainNote2;
+        if (data.weather.rainNote3) document.getElementById('rain_note_3').value = data.weather.rainNote3;
+      }
+
+      const tbody = document.getElementById('machinery-tbody');
+      tbody.innerHTML = '';
+      if (data.machinery && data.machinery.length > 0) {
+        data.machinery.forEach(m => addMachineryRow(m.name, m.counts, m.note, m.isCustom));
+      } else {
+        addMachineryRow("รถเกรดเดอร์", ["","","","","","",""], "", false);
+        addMachineryRow("รถไถ", ["","","","","","",""], "", false);
+        addMachineryRow("รถบรรทุก 6 ล้อ", ["","","","","","",""], "", false);
+      }
+    }
+
+    async function saveLogData() {
+      const btn = document.getElementById('btn-save');
+      const payload = getFormData();
+
+      localStorage.setItem(WEEK_STORAGE_KEY, JSON.stringify(payload));
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> บันทึก...`;
+
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'save_week_log', ...payload })
+        });
+        alert(`บันทึกข้อมูลการปฏิบัติงานสัปดาห์ที่ ${currentWeekIndex} เรียบร้อยแล้วค่ะ`);
+      } catch (err) {
+        alert(`บันทึกลงในระบบเครื่องเรียบร้อยแล้วค่ะ (สัปดาห์ที่ ${currentWeekIndex})`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล`;
+        lucide.createIcons();
+      }
+    }
+
+    function loadProjectData() {
+      const raw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data.inspectors && data.inspectors[0]) {
+          document.getElementById('txt-inspector-name').textContent = data.inspectors[0].name;
+          document.getElementById('txt-inspector-pos').textContent = data.inspectors[0].pos;
+        }
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      buildDynamicDays();
+      loadProjectData();
+      
+      const cached = localStorage.getItem(WEEK_STORAGE_KEY);
+      if (cached) {
+        setFormData(JSON.parse(cached));
+      } else {
+        addMachineryRow("รถเกรดเดอร์", ["","","","","","",""], "", false);
+        addMachineryRow("รถไถ", ["","","","","","",""], "", false);
+        addMachineryRow("รถบรรทุก 6 ล้อ", ["","","","","","",""], "", false);
+      }
+    });
+  </script>
+</body>
+</html>

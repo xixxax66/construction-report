@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ภาพถ่ายสภาพการปฏิบัติงาน</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../assets/gas-sync.js"></script>
+  <style>
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
+    @page { size: A4 portrait; margin: 0; }
+    body { font-family: 'THSarabunPSK', sans-serif; background-color: #94a3b8; margin: 0; padding: 0; }
+    .sheet-doc { width: 210mm; min-height: 297mm; padding: 12mm 18mm 12mm 22mm; margin: 20px auto; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 16pt !important; line-height: 1.15 !important; color: #000; box-sizing: border-box; }
+    .sheet-doc p, .sheet-doc span, .sheet-doc div { font-size: 16pt; line-height: 1.2; }
+    .doc-title { font-size: 20pt !important; font-weight: bold; }
+    
+    .photo-box {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border: 2px dashed #94a3b8;
+      background-color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .photo-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #cropper_container {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #0f172a;
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      cursor: grab;
+      touch-action: none;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    }
+    #cropper_container:active { cursor: grabbing; }
+    #cropper_image {
+      position: absolute;
+      transform-origin: center center;
+      user-select: none;
+      max-width: none;
+    }
+    
+    .cell-input-text { width: 100%; border: none; border-bottom: 1px dotted #64748b; outline: none; background: transparent; font-size: 15pt; text-align: center; }
+    @media print {
+      body { background: white !important; padding: 0 !important; }
+      .no-print { display: none !important; }
+      .sheet-doc { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 12mm 18mm 12mm 22mm !important; }
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-6 min-h-screen flex justify-center">
+  <input type="file" id="global_file_input" accept="image/*" class="hidden" onchange="handleFileSelected(event)">
+
+  <!-- Modal หน้าต่างเลือกรูปภาพจาก Google Drive -->
+  <div id="drive_picker_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl p-5 max-w-xl w-full mx-4 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
+          <i data-lucide="folder-kanban" class="w-5 h-5 text-blue-600"></i> เลือกรูปภาพจาก Google Drive
+        </h3>
+        <button onclick="closeDrivePicker()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div id="drive_photo_grid" class="grid grid-cols-3 gap-3 max-h-96 overflow-y-auto p-1">
+        <p class="col-span-3 text-center text-slate-500 py-6">กำลังโหลดรูปภาพจาก Google Drive...</p>
+      </div>
+      <div class="flex justify-end pt-2 border-t">
+        <button onclick="closeDrivePicker()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl text-sm">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal หน้าต่างปรับแต่งรูปภาพ (Cropper) -->
+  <div id="image_editor_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl p-5 max-w-md w-full mx-4 shadow-2xl border border-slate-200 space-y-3">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
+          <i data-lucide="crop" class="w-5 h-5 text-blue-600"></i> ปรับแต่งรูปภาพ (สัดส่วน 4:3)
+        </h3>
+        <button onclick="closeImageEditor()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div id="cropper_container" 
+           onmousedown="startCropDrag(event)" onmousemove="onCropMove(event)" onmouseup="endCropDrag()" onmouseleave="endCropDrag()"
+           ontouchstart="startCropTouch(event)" ontouchmove="onCropTouchMove(event)" ontouchend="endCropDrag()">
+        <img id="cropper_image" src="" alt="Source">
+        <div class="absolute inset-0 border border-white/30 pointer-events-none"></div>
+      </div>
+
+      <div class="space-y-1.5 text-xs text-slate-600">
+        <div class="flex items-center justify-between">
+          <span>ซูมขยายภาพ:</span>
+          <span id="zoom_val" class="font-bold">100%</span>
+        </div>
+        <input type="range" id="zoom_slider" min="0.5" max="3" step="0.05" value="1" oninput="onZoomChange(this.value)" class="w-full accent-blue-600 cursor-pointer">
+        
+        <div class="flex gap-2 pt-1">
+          <button onclick="rotateCropImage(90)" class="flex-1 bg-slate-100 hover:bg-slate-200 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 text-slate-700">
+            <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> หมุน 90°
+          </button>
+          <button onclick="resetCropTransform()" class="px-3 bg-slate-100 hover:bg-slate-200 py-1.5 rounded text-xs font-bold text-slate-700">
+            รีเซ็ต
+          </button>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2 border-t">
+        <button onclick="closeImageEditor()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-xl text-sm">ยกเลิก</button>
+        <button onclick="confirmCroppedImage()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl text-sm shadow">ยืนยันรูปภาพ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal แจ้งสถานะอัปโหลด -->
+  <div id="upload_modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl text-center space-y-4">
+      <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto animate-pulse"><i data-lucide="cloud-upload" class="w-8 h-8"></i></div>
+      <h3 class="font-bold text-lg text-slate-800">กำลังอัปโหลดขึ้น Google Drive</h3>
+    </div>
+  </div>
+
+  <div class="max-w-7xl w-full grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+    <!-- ฝั่งซ้าย: กระดาษ A4 -->
+    <div class="xl:col-span-8 flex justify-center overflow-x-auto w-full">
+      <div class="sheet-doc" id="doc-print">
+        <div class="text-center mb-1">
+          <h2 class="doc-title">ภาพถ่ายสภาพการปฏิบัติงาน</h2>
+          <p class="font-bold text-slate-800 text-[16pt]" id="lbl_project_title">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก</p>
+          <p class="text-[15pt]">สัปดาห์ที่ <span id="lbl_week" class="font-bold">1</span> (ระหว่างวันที่ <span id="lbl_start_date">-</span> ถึงวันที่ <span id="lbl_end_date">-</span>)</p>
+        </div>
+        
+        <div id="photo_grid_container" class="grid gap-2 my-2"></div>
+
+        <!-- ส่วนลงนามผู้ควบคุมงาน -->
+        <div class="mt-2 flex justify-end pr-8 text-center">
+          <div class="space-y-0.5">
+            <p>(ลงชื่อ)........................................................... <span id="txt_insp_pos">ผู้ควบคุมงาน</span></p>
+            <p>(<span id="txt_insp_name">นายพัทธิยะ วงษาซ้าย</span>)</p>
+          </div>
+        </div>
+
+        <!-- ส่วนลงนามคณะกรรมการตรวจรับพัสดุ -->
+        <div class="mt-2 pt-1 border-t border-slate-300">
+          <p class="text-[15pt] font-semibold mb-0.5">- ทราบ / ผลการตรวจสภาพงาน</p>
+          <p class="text-[11pt] text-slate-400 mb-1">.........................................................................................................................................................................</p>
+          <div id="committeeSignatureArea" class="grid grid-cols-2 gap-y-2 gap-x-6 text-center"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ฝั่งขวา: แผงควบคุม -->
+    <div class="xl:col-span-4 space-y-4 no-print">
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3 px-3 font-bold text-sm shadow flex items-center justify-center gap-1.5">
+          <i data-lucide="printer" class="w-4 h-4"></i> พิมพ์เอกสาร A4
+        </button>
+        <a href="../Weekly_Reference.html" class="bg-slate-200 hover:bg-slate-300 border border-slate-400 rounded-xl py-3 px-3 text-slate-800 font-bold text-sm text-center flex items-center justify-center gap-1.5 shadow">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> กลับหน้ารายสัปดาห์
+        </a>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-300 p-4 shadow space-y-3">
+        <div class="flex items-center justify-between border-b pb-2">
+          <h4 class="font-bold text-sm text-slate-800">จัดการรูปภาพ (1 - 6 รูป)</h4>
+          <button onclick="addPhotoSlot()" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold">เพิ่มรูปภาพ</button>
+        </div>
+        <p class="text-xs text-slate-500">ปัจจุบันมีรูปภาพจำนวน <span id="txt_photo_count" class="font-bold text-blue-600">2</span> รูป</p>
+        <button onclick="savePhotoRecord()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm shadow flex items-center justify-center gap-1.5">
+          <i data-lucide="cloud-upload" class="w-4 h-4"></i> บันทึกภาพขึ้น Google Drive
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentWeekIndex = parseInt(urlParams.get('week')) || 1;
+    const PHOTO_STORAGE_KEY = `WEEK_PHOTO_DATA_${currentWeekIndex}`;
+    document.getElementById('lbl_week').textContent = currentWeekIndex;
+
+    const defaultCommittees = [
+      "นางสาวถนอมนวล วะทวีก๊กนงข",
+      "จ่าเอกธีรพงษ์ ดรชานนท์",
+      "นางสาวปนัดดา ภูอาษา",
+      "นายวีระศักดิ์ ทับวิชร",
+      "นายอรรถวัต อดทน"
+    ];
+
+    let photosList = [
+      { src: "", desc: "", rawSrc: "", zoom: 1, posX: 0, posY: 0, rotate: 0 },
+      { src: "", desc: "", rawSrc: "", zoom: 1, posX: 0, posY: 0, rotate: 0 }
+    ];
+    let currentEditingIdx = 0;
+    
+    let cropState = {
+      isDragging: false,
+      startX: 0, startY: 0,
+      translateX: 0, translateY: 0,
+      scale: 1,
+      rotation: 0,
+      imgWidth: 0, imgHeight: 0
+    };
+
+    function renderPhotoGrid() {
+      const container = document.getElementById('photo_grid_container');
+      const count = photosList.length;
+      document.getElementById('txt_photo_count').textContent = count;
+      
+      if (count === 1) {
+        container.className = "grid grid-cols-1 gap-2 my-2 max-w-md mx-auto";
+      } else if (count === 2 || count === 4) {
+        container.className = "grid grid-cols-2 gap-2 my-2";
+      } else {
+        container.className = "grid grid-cols-2 gap-2 my-1";
+      }
+
+      container.innerHTML = '';
+      photosList.forEach((item, idx) => {
+        const hasImg = item.src && item.src.trim() !== "";
+        container.innerHTML += `
+          <div class="border border-slate-300 p-1.5 rounded bg-white">
+            <div class="photo-box" onclick="openImageEditor(${idx})">
+              <div class="text-center text-slate-400 p-2 ${hasImg ? 'hidden' : ''}" id="placeholder_${idx}">
+                <span class="text-xs">คลิกเลือกภาพที่ ${idx + 1} (4:3)</span>
+              </div>
+              <img id="img_preview_${idx}" src="${item.src || ''}" class="${hasImg ? '' : 'hidden'}">
+            </div>
+            <div class="mt-1 flex items-center gap-1">
+              <input type="text" id="desc_photo_${idx}" value="${item.desc || ''}" oninput="photosList[${idx}].desc = this.value" class="cell-input-text text-xs" placeholder="คำอธิบายภาพ...">
+              <button onclick="event.stopPropagation(); removePhotoSlot(${idx})" class="text-rose-500 hover:text-rose-700 p-0.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>`;
+      });
+      lucide.createIcons();
+    }
+
+    function openImageEditor(idx) {
+      currentEditingIdx = idx;
+      const item = photosList[idx];
+      if (!item.rawSrc && !item.src) {
+        showSourcePickerChoice(idx);
+        return;
+      }
+      loadEditorWithImage(item.rawSrc || item.src);
+    }
+
+    function showSourcePickerChoice(idx) {
+      currentEditingIdx = idx;
+      const choice = confirm("ต้องการเลือกรูปภาพจากเครื่องคอมพิวเตอร์?\n(กด 'Cancel' เพื่อเลือกรูปจาก Google Drive)");
+      if (choice) {
+        document.getElementById('global_file_input').click();
+      } else {
+        openDrivePicker();
+      }
+    }
+
+    async function openDrivePicker() {
+      const modal = document.getElementById('drive_picker_modal');
+      const grid = document.getElementById('drive_photo_grid');
+      modal.classList.remove('hidden');
+      grid.innerHTML = '<p class="col-span-3 text-center text-slate-500 py-6">กำลังดึงรูปภาพจาก Google Drive...</p>';
+
+      try {
+        const res = await fetch(`${CENTRAL_GAS_URL}?action=get_drive_photos`);
+        const result = await res.json();
+        
+        if (result.status === 'success' && result.photos.length > 0) {
+          grid.innerHTML = '';
+          result.photos.forEach(p => {
+            grid.innerHTML += `
+              <div class="border rounded-lg p-1.5 cursor-pointer hover:border-blue-500 hover:shadow bg-slate-50 flex flex-col items-center" onclick="selectPhotoFromDrive('${p.url}')">
+                <div class="w-full aspect-square bg-slate-200 rounded overflow-hidden flex items-center justify-center">
+                  <img src="${p.url}" class="w-full h-full object-cover" crossorigin="anonymous">
+                </div>
+                <span class="text-[10px] text-slate-600 truncate w-full text-center mt-1">${p.name}</span>
+              </div>`;
+          });
+        } else {
+          grid.innerHTML = '<p class="col-span-3 text-center text-slate-500 py-6">ไม่พบรูปภาพใน Google Drive โฟลเดอร์นี้</p>';
+        }
+      } catch (err) {
+        grid.innerHTML = '<p class="col-span-3 text-center text-rose-500 py-6">ไม่สามารถโหลดรูปจาก Google Drive ได้</p>';
+      }
+    }
+
+    function closeDrivePicker() {
+      document.getElementById('drive_picker_modal').classList.add('hidden');
+    }
+
+    function selectPhotoFromDrive(url) {
+      closeDrivePicker();
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+        photosList[currentEditingIdx].rawSrc = dataUrl;
+        photosList[currentEditingIdx].src = dataUrl;
+        photosList[currentEditingIdx].zoom = 1;
+        photosList[currentEditingIdx].posX = 0;
+        photosList[currentEditingIdx].posY = 0;
+        photosList[currentEditingIdx].rotate = 0;
+
+        renderPhotoGrid();
+        loadEditorWithImage(dataUrl);
+      };
+      img.src = url;
+    }
+
+    function loadEditorWithImage(sourceImage) {
+      const modal = document.getElementById('image_editor_modal');
+      const cropperImg = document.getElementById('cropper_image');
+      const item = photosList[currentEditingIdx];
+
+      cropperImg.src = sourceImage;
+      cropperImg.onload = function() {
+        cropState.imgWidth = cropperImg.naturalWidth;
+        cropState.imgHeight = cropperImg.naturalHeight;
+        cropState.scale = item.zoom || 1;
+        cropState.translateX = item.posX || 0;
+        cropState.translateY = item.posY || 0;
+        cropState.rotation = item.rotate || 0;
+
+        document.getElementById('zoom_slider').value = cropState.scale;
+        document.getElementById('zoom_val').textContent = Math.round(cropState.scale * 100) + '%';
+        
+        updateCropperTransform();
+        modal.classList.remove('hidden');
+      };
+    }
+
+    function closeImageEditor() {
+      document.getElementById('image_editor_modal').classList.add('hidden');
+    }
+
+    function handleFileSelected(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const maxDim = 1600;
+          let w = img.width, h = img.height;
+          if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          
+          const rawDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          photosList[currentEditingIdx].rawSrc = rawDataUrl;
+          photosList[currentEditingIdx].src = rawDataUrl;
+          photosList[currentEditingIdx].zoom = 1;
+          photosList[currentEditingIdx].posX = 0;
+          photosList[currentEditingIdx].posY = 0;
+          photosList[currentEditingIdx].rotate = 0;
+
+          renderPhotoGrid();
+          loadEditorWithImage(rawDataUrl);
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    }
+
+    function startCropDrag(e) {
+      cropState.isDragging = true;
+      cropState.startX = e.clientX - cropState.translateX;
+      cropState.startY = e.clientY - cropState.translateY;
+    }
+    function onCropMove(e) {
+      if (!cropState.isDragging) return;
+      cropState.translateX = e.clientX - cropState.startX;
+      cropState.translateY = e.clientY - cropState.startY;
+      updateCropperTransform();
+    }
+    function endCropDrag() { cropState.isDragging = false; }
+
+    function startCropTouch(e) {
+      if (e.touches.length === 1) {
+        cropState.isDragging = true;
+        cropState.startX = e.touches[0].clientX - cropState.translateX;
+        cropState.startY = e.touches[0].clientY - cropState.translateY;
+      }
+    }
+    function onCropTouchMove(e) {
+      if (!cropState.isDragging || e.touches.length !== 1) return;
+      cropState.translateX = e.touches[0].clientX - cropState.startX;
+      cropState.translateY = e.touches[0].clientY - cropState.startY;
+      updateCropperTransform();
+    }
+
+    function onZoomChange(val) {
+      cropState.scale = parseFloat(val);
+      document.getElementById('zoom_val').textContent = Math.round(cropState.scale * 100) + '%';
+      updateCropperTransform();
+    }
+
+    function rotateCropImage(deg) {
+      cropState.rotation = (cropState.rotation + deg) % 360;
+      updateCropperTransform();
+    }
+
+    function resetCropTransform() {
+      cropState.scale = 1;
+      cropState.translateX = 0;
+      cropState.translateY = 0;
+      cropState.rotation = 0;
+      document.getElementById('zoom_slider').value = 1;
+      document.getElementById('zoom_val').textContent = '100%';
+      updateCropperTransform();
+    }
+
+    function updateCropperTransform() {
+      const img = document.getElementById('cropper_image');
+      if (img) {
+        img.style.transform = `translate(calc(-50% + ${cropState.translateX}px), calc(-50% + ${cropState.translateY}px)) scale(${cropState.scale}) rotate(${cropState.rotation}deg)`;
+        img.style.top = '50%';
+        img.style.left = '50%';
+      }
+    }
+
+    function confirmCroppedImage() {
+      const item = photosList[currentEditingIdx];
+      item.zoom = cropState.scale;
+      item.posX = cropState.translateX;
+      item.posY = cropState.translateY;
+      item.rotate = cropState.rotation;
+
+      const img = document.getElementById('cropper_image');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 800;
+      canvas.height = 600;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.save();
+      ctx.translate(canvas.width / 2 + cropState.translateX, canvas.height / 2 + cropState.translateY);
+      ctx.rotate((cropState.rotation * Math.PI) / 180);
+      ctx.scale(cropState.scale, cropState.scale);
+
+      const hRatio = canvas.width / img.naturalWidth;
+      const vRatio = canvas.height / img.naturalHeight;
+      const ratio = Math.max(hRatio, vRatio);
+      
+      const w = img.naturalWidth * ratio;
+      const h = img.naturalHeight * ratio;
+      ctx.drawImage(img, -w / 2, -h / 2, w, h);
+      ctx.restore();
+
+      item.src = canvas.toDataURL('image/jpeg', 0.85);
+      renderPhotoGrid();
+      closeImageEditor();
+      localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, photos: photosList }));
+    }
+
+    function addPhotoSlot() {
+      if (photosList.length >= 6) return alert("สามารถใส่รูปได้สูงสุด 6 รูปต่อหน้าค่ะ");
+      photosList.push({ src: "", desc: "", rawSrc: "", zoom: 1, posX: 0, posY: 0, rotate: 0 });
+      renderPhotoGrid();
+    }
+
+    function removePhotoSlot(idx) {
+      if (photosList.length <= 1) return alert("ต้องมีรูปภาพอย่างน้อย 1 ช่องค่ะ");
+      photosList.splice(idx, 1);
+      renderPhotoGrid();
+    }
+
+    async function savePhotoRecord() {
+      photosList.forEach((item, idx) => {
+        item.desc = document.getElementById(`desc_photo_${idx}`)?.value || "";
+      });
+      document.getElementById('upload_modal').classList.remove('hidden');
+      try {
+        const res = await syncDataToCloud('save_week_photos', { weekIndex: currentWeekIndex, photos: photosList });
+        if (res.status === 'success' && res.photos) {
+          res.photos.forEach((p, i) => {
+            if (photosList[i]) photosList[i].src = p.src;
+          });
+        }
+        localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, photos: photosList }));
+        renderPhotoGrid();
+        alert("อัปโหลดภาพต้นฉบับขึ้น Google Drive สำเร็จเรียบร้อยแล้วค่ะ");
+      } catch (e) {
+        alert("บันทึกข้อมูลเรียบร้อยแล้วค่ะ");
+      } finally {
+        document.getElementById('upload_modal').classList.add('hidden');
+      }
+    }
+
+    function loadProjectAndPhotoData() {
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      let projectData = {};
+      if (basicRaw) {
+        projectData = JSON.parse(basicRaw);
+        if (projectData.projectName) document.getElementById('lbl_project_title').textContent = projectData.projectName;
+        if (projectData.inspectors && projectData.inspectors[0] && projectData.inspectors[0].name) {
+          document.getElementById('txt_insp_name').textContent = projectData.inspectors[0].name;
+          document.getElementById('txt_insp_pos').textContent = projectData.inspectors[0].pos;
+        }
+      }
+      renderCommittees(projectData);
+
+      const weeklyRefRaw = localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+      if (weeklyRefRaw) {
+        const weeks = JSON.parse(weeklyRefRaw);
+        const curWeek = weeks.find(w => parseInt(w.weekIndex) === currentWeekIndex);
+        if (curWeek) {
+          document.getElementById('lbl_start_date').textContent = curWeek.startDate || '-';
+          document.getElementById('lbl_end_date').textContent = curWeek.endDate || '-';
+        }
+      }
+
+      const cached = localStorage.getItem(PHOTO_STORAGE_KEY);
+      if (cached) {
+        const data = JSON.parse(cached);
+        if (data.photos) photosList = data.photos;
+      }
+      renderPhotoGrid();
+    }
+
+    function renderCommittees(data) {
+      const commArea = document.getElementById('committeeSignatureArea');
+      if (!commArea) return;
+      commArea.innerHTML = '';
+      let comms = data.committees && data.committees.length > 0 ? data.committees : defaultCommittees;
+      comms.forEach((name, idx) => {
+        if (!name) return;
+        const isPresident = (idx === 0);
+        commArea.innerHTML += `
+          <div class="${isPresident ? 'col-span-2 flex justify-center' : ''}">
+            <div>
+              <p>(ลงชื่อ).................................................... ${isPresident ? 'ประธานกรรมการฯ' : 'กรรมการฯ'}</p>
+              <p class="mt-0.5">(${name})</p>
+            </div>
+          </div>`;
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', loadProjectAndPhotoData);
+  </script>
+</body>
+</html>

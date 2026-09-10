@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ข้อมูลเกี่ยวกับงาน - รายงานประจำเดือน</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../assets/gas-sync.js"></script>
+  <style>
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
+    @page { size: A4 portrait; margin: 0; }
+    body { font-family: 'THSarabunPSK', sans-serif; background-color: #94a3b8; margin: 0; padding: 0; }
+    .sheet-workspace { width: 100%; max-width: 210mm; min-height: 297mm; margin: 15px auto; background: white; padding: 15mm 20mm 15mm 25mm; box-shadow: 0 4px 15px rgba(0,0,0,0.3); box-sizing: border-box; position: relative; color: #000; }
+    .sheet-workspace p, .sheet-workspace span, .sheet-workspace div { font-size: 16pt; line-height: 1.25; }
+    .doc-title { font-size: 20pt !important; font-weight: bold; margin-bottom: 12px; }
+    .section-title { font-size: 18pt !important; font-weight: bold; margin-top: 10px; margin-bottom: 4px; }
+    .row-item { display: flex; margin-bottom: 3px; padding-left: 25px; }
+    .row-label { width: 180px; flex-shrink: 0; }
+    .row-value { flex-grow: 1; }
+    @media print {
+      body { background: white !important; padding: 0 !important; }
+      .no-print { display: none !important; }
+      .sheet-workspace { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 15mm 20mm 15mm 25mm !important; }
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-4 min-h-screen flex flex-col items-center">
+
+  <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
+  <div class="max-w-[210mm] w-full mb-3 flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl shadow border border-slate-300 no-print">
+    <div class="flex items-center gap-2">
+      <a href="../Monthly_Reference.html" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1 text-sm font-bold">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i> กลับเมนู
+      </a>
+      <span class="font-bold text-slate-800 text-lg">ข้อมูลเกี่ยวกับงาน</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="window.print()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-bold shadow">
+        <i data-lucide="printer" class="w-4 h-4"></i> พิมพ์ / PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- แผ่นกระดาษ A4 Workspace -->
+  <div class="sheet-workspace" id="doc-print">
+    <div class="doc-title">1 ข้อมูลเกี่ยวกับงาน</div>
+
+    <!-- 1.1 ผู้ดำเนินการ -->
+    <div class="section-title">1.1 ผู้ดำเนินการ</div>
+    <div class="row-item"><div class="row-label">ผู้ว่าจ้าง</div><div class="row-value" id="lbl_employer">องค์การบริหารส่วนตำบลโพนงาม</div></div>
+    <div class="row-item"><div class="row-label">ผู้ออกแบบ</div><div class="row-value" id="lbl_designer">กองช่าง องค์การบริหารส่วนตำบลโพนงาม</div></div>
+    <div class="row-item"><div class="row-label">ผู้รับจ้าง</div><div class="row-value" id="lbl_contractor">ห้างหุ้นส่วนจำกัด เค.เค.มุกดาหารก่อสร้าง</div></div>
+    <div class="row-item"><div class="row-label">สถานที่ตั้ง</div><div class="row-value" id="lbl_contractor_address">31/1 หมู่ 5 ตำบลกุดแข้ อำเภอเมืองมุกดาหาร จังหวัดมุกดาหาร</div></div>
+
+    <!-- 1.2 สัญญาจ้าง -->
+    <div class="section-title">1.2 สัญญาจ้าง</div>
+    <div class="row-item"><div class="row-label">ชื่อสัญญา</div><div class="row-value" id="lbl_project_title">-</div></div>
+    <div class="row-item"><div class="row-label">สถานที่ก่อสร้าง</div><div class="row-value" id="lbl_location">-</div></div>
+    <div class="row-item">
+      <div class="row-label">สัญญาจ้างเลขที่</div>
+      <div class="row-value flex gap-12">
+        <span id="lbl_contract_no">-</span>
+        <span>ลงวันที่ <span id="lbl_contract_date">-</span></span>
+      </div>
+    </div>
+    <div class="row-item"><div class="row-label">เริ่มสัญญาจ้าง</div><div class="row-value" id="lbl_start_date">-</div></div>
+    <div class="row-item"><div class="row-label">สิ้นสุดสัญญาจ้าง</div><div class="row-value" id="lbl_end_date">-</div></div>
+    <div class="row-item">
+      <div class="row-label">ระยะเวลาก่อสร้างรวม</div>
+      <div class="row-value flex gap-8">
+        <span id="lbl_duration">-</span>
+        <span>วัน</span>
+      </div>
+    </div>
+    <div class="row-item">
+      <div class="row-label">จำนวนงวดงานตามสัญญา</div>
+      <div class="row-value flex gap-8">
+        <span id="lbl_periods">-</span>
+        <span>งวด</span>
+      </div>
+    </div>
+    <div class="row-item"><div class="row-label">ต่อสัญญาถึงวันที่</div><div class="row-value" id="lbl_extend_date">-</div></div>
+    <div class="row-item">
+      <div class="row-label">รวมระยะเวลาที่ต่อสัญญา</div>
+      <div class="row-value flex gap-8">
+        <span id="lbl_extend_days">-</span>
+        <span>วัน</span>
+      </div>
+    </div>
+    <div class="row-item">
+      <div class="row-label">ราคาค่าก่อสร้าง</div>
+      <div class="row-value flex gap-8">
+        <span id="lbl_budget">-</span>
+        <span>บาท</span>
+      </div>
+    </div>
+    <div class="row-item">
+      <div class="row-label">ค่าปรับวันละ</div>
+      <div class="row-value flex gap-8">
+        <span id="lbl_fine">-</span>
+        <span>บาท</span>
+      </div>
+    </div>
+
+    <!-- 1.3 ลักษณะและขอบเขตงาน -->
+    <div class="section-title">1.3 ลักษณะและขอบเขตงาน</div>
+    <div class="row-item"><div class="row-label">งานก่อสร้าง</div><div class="row-value" id="lbl_scope">-</div></div>
+
+    <!-- 1.4 คณะกรรมการตรวจการจ้าง -->
+    <div class="section-title">1.4 คณะกรรมการตรวจการจ้าง</div>
+    <div id="committee_container"></div>
+
+    <!-- 1.5 ผู้ควบคุมงานของผู้ว่าจ้าง -->
+    <div class="section-title">1.5 ผู้ควบคุมงานของผู้ว่าจ้าง</div>
+    <div id="inspector_container"></div>
+
+    <!-- 1.6 ผู้แทนผู้ว่าจ้าง -->
+    <div class="section-title">1.6 ผู้แทนผู้ว่าจ้าง</div>
+    <div class="row-item"><div class="row-value" id="lbl_rep">-ไม่มี-</div></div>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          const data = JSON.parse(basicRaw);
+          
+          // ดึงชื่อหน่วยงานจากช่อง organizationName (หรือ fallback หากยังไม่ได้ตั้งค่า)
+          if (data.organizationName) {
+            document.getElementById('lbl_employer').textContent = data.organizationName;
+          }
+          if (data.designerName) document.getElementById('lbl_designer').textContent = data.designerName;
+          if (data.contractorName) document.getElementById('lbl_contractor').textContent = data.contractorName;
+          if (data.contractorAddress) document.getElementById('lbl_contractor_address').textContent = data.contractorAddress;
+
+          if (data.projectName) document.getElementById('lbl_project_title').textContent = data.projectName;
+          if (data.projectLocation) document.getElementById('lbl_location').textContent = data.projectLocation;
+          if (data.contractNo) document.getElementById('lbl_contract_no').textContent = data.contractNo;
+          if (data.contractDate) document.getElementById('lbl_contract_date').textContent = data.contractDate;
+          
+          if (data.startDateTh) document.getElementById('lbl_start_date').textContent = data.startDateTh;
+          if (data.endDateTh) document.getElementById('lbl_end_date').textContent = data.endDateTh;
+          if (data.manualDays || data.calcDays) document.getElementById('lbl_duration').textContent = data.manualDays || data.calcDays;
+          if (data.contractPeriods) document.getElementById('lbl_periods').textContent = data.contractPeriods;
+          
+          document.getElementById('lbl_extend_date').textContent = data.extendContractDate || '-';
+          document.getElementById('lbl_extend_days').textContent = data.totalExtendedDays || '-';
+          
+          if (data.budgetAmount) document.getElementById('lbl_budget').textContent = data.budgetAmount;
+          if (data.finePerDay) document.getElementById('lbl_fine').textContent = data.finePerDay;
+
+          if (data.projectScope) document.getElementById('lbl_scope').textContent = data.projectScope;
+
+          // Committees
+          const commContainer = document.getElementById('committee_container');
+          commContainer.innerHTML = '';
+          const comms = data.committees && data.committees.length > 0 ? data.committees : [
+            "นางสาวถนอมนวล วะทวีก้านตรงฯ",
+            "จ่าเอกธีรพงษ์ ดรชานนท์",
+            "นางสาวปนัดดา ภูอาษา",
+            "นายวีระศักดิ์ ทับวิชร",
+            "นายอรรถวัต อดทน"
+          ];
+          comms.forEach((name, idx) => {
+            if (!name) return;
+            const role = (idx === 0) ? 'ประธานกรรมการ' : 'กรรมการ';
+            commContainer.innerHTML += `
+              <div class="row-item" style="padding-left: 25px;">
+                <div style="width: 30px; text-align: right; margin-right: 20px;">${idx + 1}</div>
+                <div style="width: 280px;">${name}</div>
+                <div>${role}</div>
+              </div>
+            `;
+          });
+
+          // Inspectors
+          const inspContainer = document.getElementById('inspector_container');
+          inspContainer.innerHTML = '';
+          const inspList = data.inspectors && data.inspectors.length > 0 ? data.inspectors : [{ name: "นายพัทธิยะ วงษาซ้าย", pos: "ผู้ควบคุมงาน" }];
+          inspList.forEach((insp, idx) => {
+            if (!insp.name) return;
+            inspContainer.innerHTML += `
+              <div class="row-item" style="padding-left: 25px;">
+                <div style="width: 30px; text-align: right; margin-right: 20px;">${idx + 1}</div>
+                <div style="width: 280px;">${insp.name}</div>
+                <div>${insp.pos || 'ผู้ควบคุมงาน'}</div>
+              </div>
+            `;
+          });
+
+          // Representative
+          if (data.contractorRepStatus === 'ได้' && data.contractorRepName) {
+            document.getElementById('lbl_rep').textContent = data.contractorRepName;
+          } else {
+            document.getElementById('lbl_rep').textContent = '-ไม่มี-';
+          }
+
+        } catch (e) {
+          console.error("Error parsing local basic info:", e);
+        }
+      }
+    });
+  </script>
+</body>
+</html>

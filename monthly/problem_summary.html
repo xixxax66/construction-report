@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ปัญหา/อุปสรรคและสรุปผลการดำเนินงาน - รายงานประจำเดือน</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../assets/gas-sync.js"></script>
+  <style>
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
+    @page { size: A4 portrait; margin: 0; }
+    body { font-family: 'THSarabunPSK', sans-serif; background-color: #94a3b8; margin: 0; padding: 0; }
+    
+    .sheet-workspace {
+      width: 100%;
+      max-width: 210mm;
+      min-height: 297mm;
+      margin: 15px auto;
+      background: white;
+      padding: 15mm 15mm 15mm 20mm;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      box-sizing: border-box;
+      position: relative;
+      color: #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .sheet-top-content {
+      width: 100%;
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 16pt !important;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+
+    .sub-option {
+      font-size: 16pt !important;
+      margin-left: 20px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .table-problem {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #000;
+      margin-top: 4px;
+      margin-bottom: 12px;
+    }
+
+    .table-problem th, .table-problem td {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      font-size: 15pt !important;
+      vertical-align: middle;
+    }
+
+    .table-problem th {
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .editable-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      width: 100%;
+      font-family: inherit;
+      font-size: inherit;
+    }
+    .editable-input:focus {
+      background-color: #fef08a;
+    }
+
+    .summary-section {
+      font-size: 16pt !important;
+    }
+
+    .summary-row {
+      display: flex;
+      margin-bottom: 3px;
+      padding-left: 20px;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    .summary-label {
+      width: 260px;
+      flex-shrink: 0;
+    }
+
+    .summary-value {
+      width: 60px;
+      text-align: right;
+      flex-shrink: 0;
+      padding-right: 8px;
+      font-weight: bold;
+    }
+
+    .summary-unit {
+      width: 50px;
+      flex-shrink: 0;
+    }
+
+    .signature-box {
+      margin-top: 15px;
+      display: flex;
+      justify-content: flex-end;
+      padding-right: 50px;
+      font-size: 16pt !important;
+    }
+
+    .custom-checkbox {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid #000;
+      border-radius: 3px;
+      background-color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+    .custom-checkbox:checked {
+      background-color: #2563eb;
+      border-color: #2563eb;
+    }
+    .custom-checkbox:checked::after {
+      content: '✔';
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    @media print {
+      body { background: white !important; padding: 0 !important; }
+      .no-print { display: none !important; }
+      .sheet-workspace { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 15mm 15mm 15mm 20mm !important; }
+      .editable-input { background: transparent !important; }
+      .custom-checkbox { border-color: #000 !important; }
+      .custom-checkbox:checked { background-color: #000 !important; border-color: #000 !important; }
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-4 min-h-screen flex flex-col items-center">
+
+  <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
+  <div class="max-w-[210mm] w-full mb-3 flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl shadow border border-slate-300 no-print">
+    <div class="flex items-center gap-2">
+      <a href="../Monthly_Reference.html" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1 text-base font-bold">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i> กลับเมนู
+      </a>
+      <span class="font-bold text-slate-800 text-xl">ปัญหา/อุปสรรคและสรุปผลการดำเนินงาน</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="loadProblemData(true)" class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-base font-bold shadow cursor-pointer">
+        <i data-lucide="refresh-cw" class="w-5 h-5"></i> ปรับปรุงข้อมูล
+      </button>
+      <button onclick="window.print()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-base font-bold shadow cursor-pointer">
+        <i data-lucide="printer" class="w-5 h-5"></i> พิมพ์ / PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- แผ่นกระดาษ A4 Workspace -->
+  <div class="sheet-workspace" id="doc-print">
+    <div class="sheet-top-content">
+      
+      <!-- หัวข้อที่ 5 ปัญหา/อุปสรรคในการก่อสร้าง -->
+      <div class="header-row">
+        <span>๕ ปัญหา/อุปสรรคในการก่อสร้าง</span>
+        <span id="lbl_org_name" class="font-normal">องค์การบริหารส่วนตำบลโพนงาม</span>
+      </div>
+      <div class="sub-option" onclick="toggleHasProblem(false)">
+        <input type="checkbox" id="chk_no" class="custom-checkbox" onclick="event.stopPropagation(); toggleHasProblem(false);"> ไม่มี
+      </div>
+      <div class="sub-option" onclick="toggleHasProblem(true)">
+        <input type="checkbox" id="chk_yes" class="custom-checkbox" onclick="event.stopPropagation(); toggleHasProblem(true);"> มี รายละเอียดดังนี้
+      </div>
+
+      <!-- ตารางปัญหา อุปสรรค -->
+      <table class="table-problem" id="problem_table_container">
+        <thead>
+          <tr>
+            <th class="w-12">ที่</th>
+            <th>ปัญหา - อุปสรรค - การแก้ไข</th>
+            <th class="w-56">หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody id="problem_table_tbody">
+          <!-- เติมแถวผ่าน Script -->
+        </tbody>
+      </table>
+
+      <!-- หัวข้อที่ 6 สรุปผลการดำเนินงานถึงปัจจุบัน -->
+      <div class="header-row mb-2">
+        <span>๖ สรุปผลการดำเนินงานถึงปัจจุบัน</span>
+      </div>
+
+      <div class="summary-section">
+        <div class="summary-row">
+          <div class="summary-label">๖.๑ ผลการก่อสร้างประจำเดือน</div>
+          <div class="summary-value" id="val_monthly_prog">๐.๐๐</div>
+          <div class="summary-unit">%</div>
+        </div>
+        <div class="summary-row">
+          <div class="summary-label">๖.๒ ผลงานก่อสร้างรวมถึงปัจจุบัน</div>
+          <div class="summary-value" id="val_total_prog">๐.๐๐</div>
+          <div class="summary-unit">%</div>
+        </div>
+        <div class="summary-row">
+          <div class="summary-label">๖.๓ ผลงานก่อสร้างตามแผน</div>
+          <div class="summary-value" id="val_plan_prog">๐.๐๐</div>
+          <div class="summary-unit">%</div>
+        </div>
+        <div class="summary-row">
+          <div class="summary-label">๖.๔ ผลการก่อสร้าง</div>
+          <div class="summary-value"></div>
+          <div class="summary-unit"></div>
+        </div>
+        <div class="pl-10 space-y-1 text-base my-1">
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="status_not_started" disabled class="custom-checkbox"> ยังไม่ดำเนินการ
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="status_delayed" disabled class="custom-checkbox"> ช้า
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="status_ahead" disabled class="custom-checkbox"> เร็ว
+          </div>
+        </div>
+        <div class="summary-row mt-2">
+          <div class="summary-label">๖.๕ ระยะเวลาก่อสร้างคงเหลือ</div>
+          <div class="summary-value" id="val_remaining_days">๑๑๕</div>
+          <div class="summary-unit">วัน</div>
+        </div>
+        <div class="summary-row">
+          <div class="summary-label">๖.๖ งานก่อสร้างแล้วเสร็จรวม</div>
+          <div class="summary-value" id="val_total_periods">-</div>
+          <div class="summary-unit" style="width: 40px;">งวด</div>
+          <div style="width: 140px; text-align: right; padding-right: 10px; flex-shrink: 0;">คิดเป็นมูลค่างาน</div>
+          <div class="summary-value" id="val_paid_percent">-</div>
+          <div class="summary-unit">%</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ส่วนลงนามผู้ควบคุมงาน -->
+    <div class="signature-box">
+      <div class="text-center">
+        <p>(ลงชื่อ)..................................................................... ผู้ควบคุมงาน</p>
+        <p class="font-medium mt-0.5">(<span id="txt_insp_name">นายพัทธิยะ วงษาซ้าย</span>)</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    const STORAGE_KEY_PROBLEM = 'MONTHLY_PROBLEM_SUMMARY_DB';
+
+    let problemData = {
+      hasProblem: true,
+      problems: [
+        { desc: "", notifyContractor: false, reportPresident: false },
+        { desc: "", notifyContractor: false, reportPresident: false },
+        { desc: "", notifyContractor: false, reportPresident: false }
+      ]
+    };
+
+    function toThaiNumber(numStr) {
+      if (numStr === null || numStr === undefined) return '';
+      const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+      return numStr.toString().replace(/[0-9]/g, (w) => thaiNums[w]);
+    }
+
+    function toggleHasProblem(status) {
+      problemData.hasProblem = status;
+      saveAndRender();
+    }
+
+    function loadProblemData(isManualAlert = false) {
+      try {
+        let orgName = "องค์การบริหารส่วนตำบลโพนงาม";
+        let targetWeek = 5;
+
+        const monthlyRaw = localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+        let monthlyData = {};
+        if (monthlyRaw) {
+          try {
+            monthlyData = JSON.parse(monthlyRaw);
+            if (monthlyData.planWeek) {
+              targetWeek = parseInt(monthlyData.planWeek) || 5;
+            }
+          } catch(e){}
+        }
+
+        let installments = [];
+        let totalBudget = 0;
+        const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+        if (basicRaw) {
+          const data = JSON.parse(basicRaw);
+          if (data.organizationName) orgName = data.organizationName;
+          if (data.inspectors && data.inspectors[0] && data.inspectors[0].name) {
+            document.getElementById('txt_insp_name').textContent = data.inspectors[0].name;
+          }
+          if (data.budgetAmount) {
+            totalBudget = parseFloat(data.budgetAmount.toString().replace(/,/g, '').replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
+          }
+          if (data.installments && Array.isArray(data.installments)) {
+            installments = data.installments;
+          }
+        }
+        document.getElementById('lbl_org_name').textContent = orgName;
+
+        // ดึงข้อมืองวดงานจาก WEEK_REPORT_INSTALLMENTS ถ้ามี
+        const savedWeekInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${targetWeek}`);
+        if (savedWeekInst) {
+          try { installments = JSON.parse(savedWeekInst); } catch(e){}
+        }
+
+        // ตรวจสอบงวดงานที่แล้วเสร็จจาก WEEK_REPORT_ACCEPTED หรือ MONTHLY_INSPECTION_DATES_DB
+        let completedCount = 0;
+        let completedAmountSum = 0;
+
+        const savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${targetWeek}`);
+        if (savedAccepted && savedAccepted !== '-' && savedAccepted.trim() !== '') {
+          completedCount = parseInt(savedAccepted.toString().replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
+        }
+
+        let savedDates = {};
+        const savedDatesRaw = localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
+        if (savedDatesRaw) {
+          try { savedDates = JSON.parse(savedDatesRaw); } catch(e){}
+        }
+
+        installments.forEach((inst, idx) => {
+          const endDate = savedDates[`end_${idx}`];
+          const acceptDate = savedDates[`accept_${idx}`];
+          if ((endDate && endDate !== '-' && endDate.trim() !== '') || (acceptDate && acceptDate !== '-' && acceptDate.trim() !== '')) {
+            if (completedCount === 0) completedCount++;
+            const amt = parseFloat((inst.amount || '0').toString().replace(/,/g, '').replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
+            completedAmountSum += amt;
+          }
+        });
+
+        if (completedCount > 0) {
+          document.getElementById('val_total_periods').textContent = toThaiNumber(completedCount);
+          let paidPercent = totalBudget > 0 ? (completedAmountSum / totalBudget) * 100 : 0;
+          document.getElementById('val_paid_percent').textContent = toThaiNumber(paidPercent.toFixed(2));
+        } else {
+          document.getElementById('val_total_periods').textContent = '-';
+          document.getElementById('val_paid_percent').textContent = '-';
+        }
+
+        const saved = localStorage.getItem(STORAGE_KEY_PROBLEM);
+        if (saved) {
+          problemData = JSON.parse(saved);
+        }
+
+        let planProg = parseFloat(monthlyData.planPercent) || 0;
+        if (planProg === 0) {
+          const weeklyRefRaw = localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+          if (weeklyRefRaw) {
+            try {
+              const weeksArray = JSON.parse(weeklyRefRaw);
+              const targetWeekObj = weeksArray.find(w => parseInt(w.weekIndex) === targetWeek);
+              if (targetWeekObj && targetWeekObj.plan) {
+                planProg = parseFloat(targetWeekObj.plan) || 0;
+              }
+            } catch(e){}
+          }
+        }
+
+        let actualProg = parseFloat(monthlyData.actualPercent) || 0;
+        if (actualProg === 0) {
+          const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
+          if (progressRaw) {
+            try {
+              const progData = JSON.parse(progressRaw);
+              actualProg = parseFloat(progData.totalWeightPercent) || 0;
+            } catch(e){}
+          }
+        }
+
+        if (actualProg === 0) {
+          for (let w = 5; w >= 1; w--) {
+            const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+            if (wRaw) {
+              const wData = JSON.parse(wRaw);
+              actualProg = parseFloat(wData.totalWeightPercent) || 0;
+              break;
+            }
+          }
+        }
+
+        const actTh = toThaiNumber(actualProg.toFixed(2));
+        const planTh = toThaiNumber(planProg > 0 ? planProg.toFixed(2) : actTh);
+
+        document.getElementById('val_monthly_prog').textContent = actTh;
+        document.getElementById('val_total_prog').textContent = actTh;
+        document.getElementById('val_plan_prog').textContent = planTh;
+
+        let statusType = 'ahead';
+        if (actualProg <= 0) {
+          statusType = 'not_started';
+        } else if (actualProg < planProg) {
+          statusType = 'delayed';
+        } else {
+          statusType = 'ahead';
+        }
+
+        document.getElementById('status_not_started').checked = (statusType === 'not_started');
+        document.getElementById('status_delayed').checked = (statusType === 'delayed');
+        document.getElementById('status_ahead').checked = (statusType === 'ahead');
+
+        renderUI();
+
+        if (isManualAlert) {
+          alert("ดึงข้อมูลและปรับปรุงรายงานสำเร็จแล้วค่ะ!");
+        }
+      } catch(e) {
+        console.error("Error loading problem data:", e);
+        if (isManualAlert) {
+          alert("เกิดข้อผิดพลาดในการปรับปรุงข้อมูลค่ะ");
+        }
+      }
+    }
+
+    function renderUI() {
+      const chkYes = document.getElementById('chk_yes');
+      const chkNo = document.getElementById('chk_no');
+      if (chkYes && chkNo) {
+        chkYes.checked = problemData.hasProblem;
+        chkNo.checked = !problemData.hasProblem;
+      }
+
+      const container = document.getElementById('problem_table_container');
+      if (container) {
+        container.style.display = problemData.hasProblem ? 'table' : 'none';
+      }
+
+      const tbody = document.getElementById('problem_table_tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      problemData.problems.forEach((item, idx) => {
+        const idxTh = toThaiNumber(idx + 1);
+        
+        tbody.innerHTML += `
+          <tr style="height: 25mm;">
+            <td class="text-center font-bold">${idxTh}</td>
+            <td><textarea class="editable-input resize-none h-full" rows="3" onchange="updateProblemDesc(${idx}, this.value)">${item.desc || ''}</textarea></td>
+            <td class="text-xs">
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" class="custom-checkbox" ${item.notifyContractor ? 'checked' : ''} onchange="toggleCheck(${idx}, 'notifyContractor', this.checked)"> แจ้งผู้รับจ้างดำเนินการ
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer select-none mt-1">
+                <input type="checkbox" class="custom-checkbox" ${item.reportPresident ? 'checked' : ''} onchange="toggleCheck(${idx}, 'reportPresident', this.checked)"> รายงานประธานฯ
+              </label>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function updateProblemDesc(idx, val) {
+      problemData.problems[idx].desc = val;
+      localStorage.setItem(STORAGE_KEY_PROBLEM, JSON.stringify(problemData));
+    }
+
+    function toggleCheck(idx, field, val) {
+      problemData.problems[idx][field] = val;
+      localStorage.setItem(STORAGE_KEY_PROBLEM, JSON.stringify(problemData));
+    }
+
+    function saveAndRender() {
+      localStorage.setItem(STORAGE_KEY_PROBLEM, JSON.stringify(problemData));
+      renderUI();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => loadProblemData(false));
+  </script>
+</body>
+</html>

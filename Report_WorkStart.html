@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายงานวันกำหนดเริ่มงานของผู้รับจ้างตามสัญญา</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../assets/gas-sync.js"></script>
+    <style>
+      /* ดึงฟอนต์จากไฟล์ในโฟลเดอร์ */
+      @font-face {
+        font-family: 'THSarabunPSK';
+        src: url('assets/THSarabun.ttf') format('truetype');
+        font-weight: normal;
+      }
+      @font-face {
+        font-family: 'THSarabunPSK';
+        src: url('assets/THSarabun Bold.ttf') format('truetype');
+        font-weight: bold;
+      }
+
+      /* ตั้งค่าหน้ากระดาษ A4 ให้ตรงกับ Word */
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+
+      body {
+        font-family: 'THSarabunPSK', 'Sarabun', sans-serif;
+        background-color: #94a3b8;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* ตัวแผ่นกระดาษเอกสาร */
+      .sheet-doc {
+        width: 210mm;
+        min-height: 297mm;
+        /* ขอบกระดาษ: บน 1.5 ซม., ขวา 2 ซม., ล่าง 1.5 ซม., ซ้าย 2.5 ซม. */
+        padding: 15mm 20mm 15mm 25mm;
+        margin: 20px auto;
+        background: white;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        box-sizing: border-box;
+        
+        /* บังคับขนาดฟอนต์ 16pt เท่า Microsoft Word 100% */
+        font-size: 16pt !important;
+        line-height: 1.15 !important;
+        color: #000;
+      }
+
+      /* คลุมทับแท็กย่อยทั้งหมดในแผ่นงานให้เป็น 16pt ตาม Word */
+      .sheet-doc p,
+      .sheet-doc span,
+      .sheet-doc td,
+      .sheet-doc label,
+      .sheet-doc div {
+        font-size: 16pt;
+        line-height: 1.2;
+      }
+
+      /* ตัวหนังสือหนา */
+      .sheet-doc .font-bold,
+      .sheet-doc b,
+      .sheet-doc strong {
+        font-family: 'THSarabunPSK', sans-serif;
+        font-weight: bold;
+      }
+
+      /* หัวข้อคำว่า บันทึกข้อความ (ขนาด 24-29pt ตามระเบียบ) */
+      .sheet-doc .doc-title {
+        font-size: 26pt !important;
+        font-weight: bold;
+        line-height: 1;
+      }
+
+      /* ตราครุฑขนาดมาตรฐาน (สูงประมาณ 1.5 ซม. สำหรับบันทึกข้อความ) */
+      .garuda-img {
+        width: 1.5cm;
+        height: auto;
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+
+      /* ย่อหน้ามาตรฐานเท่ากับการกด Tab ใน Word (ประมาณ 1.5 - 2 ซม.) */
+      .indent-word {
+        text-indent: 1.8cm !important;
+      }
+
+      .dotted-line {
+        border-bottom: 1px dotted #000;
+      }
+
+      /* ปุ่มกด 3D และกล่องด้านขวา */
+      .btn-3d {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      }
+      .custom-table td, .purple-table td {
+        font-size: 14pt !important;
+      }
+
+      /* ตั้งค่าการพิมพ์ออกกระดาษ A4 ให้ตัดส่วนเกินออก */
+      @media print {
+        body {
+          background: white !important;
+          padding: 0 !important;
+        }
+        .no-print {
+          display: none !important;
+        }
+        .sheet-doc {
+          box-shadow: none !important;
+          margin: 0 !important;
+          width: 210mm !important;
+          height: 297mm !important;
+          padding: 15mm 20mm 15mm 25mm !important;
+          page-break-after: avoid;
+          page-break-inside: avoid;
+        }
+      }
+    </style>
+</head>
+<body class="p-2 sm:p-6 min-h-screen flex justify-center">
+  <div class="max-w-7xl w-full grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+    <div class="xl:col-span-8 flex justify-center overflow-x-auto w-full">
+      <div class="sheet-doc relative" id="doc-print">
+        <div class="relative text-center mb-4">
+         <img src="assets/Krut.png" alt="ตราครุฑ" class="garuda-img">
+         <h2 class="doc-title pt-1">บันทึกข้อความ</h2>
+        </div>
+        <div class="space-y-1 text-base">
+          <div class="flex flex-wrap items-baseline">
+            <span class="font-bold w-24">ส่วนราชการ</span>
+            <span class="flex-1 font-medium" id="doc_org">กองช่าง องค์การบริหารส่วนตำบลโพนงาม</span>
+          </div>
+          <div class="flex justify-between items-baseline">
+            <div class="flex items-baseline flex-1">
+              <span class="font-bold w-12">ที่</span>
+              <span class="flex-1" id="doc_docNo">-</span>
+            </div>
+            <div class="flex-1 text-left">
+              <span class="font-bold mr-2">วันที่</span>
+              <span id="doc_reportDateText" class="font-medium">24 มิถุนายน 2569</span>
+            </div>
+          </div>
+          <div class="flex items-baseline justify-between pb-1 dotted-line">
+            <div class="flex items-baseline flex-1">
+              <span class="font-bold w-12">เรื่อง</span>
+              <span class="flex-1 font-medium">รายงานวันกำหนดเริ่มงานของผู้รับจ้างตามสัญญา ตามระเบียบกระทรวงการคลังว่าด้วยการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ พ.ศ. 2560 ข้อ 178(4)</span>
+            </div>
+          </div>
+        </div>
+        <div class="mt-2 text-base">
+          <p><span class="font-bold">เรียน</span> ประธานกรรมการตรวจรับพัสดุ</p>
+        </div>
+        <div class="mt-2 text-base leading-relaxed text-justify space-y-2">
+          <p class="indent-16">
+            ตามคำสั่งองค์การบริหารส่วนตำบลโพนงาม ที่ <span id="p_orderNo" class="font-semibold">102/2569</span> ลงวันที่ <span id="p_orderDate" class="font-semibold">11 พฤษภาคม 2569</span> แต่งตั้งข้าพเจ้า เป็นผู้ควบคุมงาน และสัญญาจ้างเลขที่ <span id="p_contractNo" class="font-semibold">E1/2569</span> ลงวันที่ <span id="p_contractDate" class="font-semibold">5 มิถุนายน 2569</span> ว่าจ้าง <span id="p_contractor" class="font-semibold">ห้างหุ้นส่วนจำกัด เค.เค.มุกดาหารก่อสร้าง</span> ทำงาน<span id="p_projectTitle">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายบ้านหนองแวง-หนองขาม หมู่ที่ 12 กว้าง 4.00 ม. ยาว 850 ม. หนา 0.15 ม. หรือมีพื้นที่คอนกรีตไม่น้อยกว่า 3,400 ตร.ม. องค์การบริหารส่วนตำบลโพนงาม อำเภอโกสุมพิสัย จังหวัดมหาสารคาม</span> สถานที่ก่อสร้าง <span id="p_location">หมู่ที่ 12 ต.โพนงาม อ.โกสุมพิสัย จ.มหาสารคาม</span> นั้น
+          </p>
+          <p class="indent-16">
+            ผู้ควบคุมงานเมื่อได้รับทราบคำสั่ง/รายละเอียดของสัญญา เมื่อวันที่ <span id="txt_knowDate" class="font-semibold">7 มิถุนายน 2569</span> แล้วได้เข้าตรวจสอบสถานที่ก่อสร้างเมื่อวันที่ <span id="txt_checkDate" class="font-semibold">23 มิถุนายน 2569</span> ปรากฏว่าผู้รับจ้าง
+          </p>
+          <div class="indent-16 pl-6 space-y-1 text-base">
+            <label class="flex items-start gap-2 cursor-pointer">
+              <span><input type="checkbox" id="chk_not_started" class="mt-1"> ยังไม่เข้าดำเนินการ ณ สถานที่ก่อสร้าง</span>
+            </label>
+            <div>
+              <label class="flex items-start gap-2 cursor-pointer">
+                <span><input type="checkbox" id="chk_started" checked class="mt-1"> เข้าดำเนินการแล้ว ตั้งแต่วันที่ <span id="txt_actionDate" class="font-semibold border-b border-dotted border-slate-700">21 มิถุนายน 2569</span> ซึ่ง</span>
+              </label>
+              <div class="pl-8 space-y-0.5 mt-0.5 text-base">
+                <label class="flex items-start gap-2 cursor-pointer">
+                  <span><input type="checkbox" id="chk_on_time" checked> เป็นไปตามข้อกำหนดของสัญญา</span>
+                </label>
+                <label class="flex items-start gap-2 cursor-pointer">
+                  <span><input type="checkbox" id="chk_late"> เกินข้อกำหนดของสัญญา จำนวน ............... วัน</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <p class="indent-16">
+            โดยผู้รับจ้างได้ดำเนินการ ส่งหนังสือแต่งตั้งผู้แทนและขอรับมอบพื้นที่ หนังสือลงวันที่ <span id="txt_bookDate" class="font-semibold">12 มิถุนายน 2569</span> พร้อมแจ้งแผนการดำเนินงานการใช้วัสดุในการก่อสร้าง
+          </p>
+          <p class="text-xs text-slate-600 pl-8 dotted-line pb-0.5"></p>
+          <p class="indent-16 pt-0.5">
+            จึงเรียนมาเพื่อโปรดทราบและพิจารณา
+          </p>
+        </div>
+        <div id="inspectorSignatureArea" class="mt-3 flex flex-wrap justify-end gap-x-8 gap-y-3 pr-6 text-center text-base"></div>
+        <div class="mt-3 pt-2 border-t border-slate-300">
+          <p class="text-base font-semibold mb-1">- ทราบ</p>
+          <p class="text-xs text-slate-400 mb-2">.........................................................................................................................................................................</p>
+          <div id="committeeSignatureArea" class="grid grid-cols-2 gap-y-4 gap-x-4 text-center text-base"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- แผงควบคุมด้านขวา -->
+    <div class="xl:col-span-4 space-y-4 no-print">
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="window.print()" class="btn-3d flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3 px-3 font-bold text-sm shadow">
+          <i data-lucide="printer" class="w-5 h-5"></i>
+          <span>พิมพ์บันทึกข้อความ</span>
+        </button>
+        <a href="index.html" class="btn-3d flex items-center justify-center gap-2 bg-gradient-to-b from-slate-100 to-slate-300 hover:to-slate-200 border border-slate-400 rounded-xl py-3 px-3 text-slate-800 font-bold text-sm shadow">
+          <img src="https://cdn-icons-png.flaticon.com/512/619/619032.png" alt="Home" class="w-5 h-5 object-contain">
+          <span>กลับหน้าหลัก</span>
+        </a>
+      </div>
+      <div class="bg-white rounded-xl border-2 border-purple-800 shadow-md overflow-hidden">
+        <div class="bg-purple-800 text-white text-xs font-bold px-3 py-1.5 flex justify-between items-center">
+          <span>กำหนดวันที่ในเอกสาร</span>
+          <i data-lucide="calendar" class="w-4 h-4"></i>
+        </div>
+        <table class="w-full text-sm purple-table">
+          <tr>
+            <td class="bg-purple-100 font-bold text-purple-900 w-44">วันที่รายงาน</td>
+            <td class="bg-white p-1"><input type="text" id="in_reportDate" oninput="updateDoc()" class="w-full p-1 text-center font-semibold border rounded" value="24 มิถุนายน 2569"></td>
+          </tr>
+          <tr>
+            <td class="bg-purple-100 font-bold text-purple-900">วันที่ทราบคำสั่ง/สัญญา</td>
+            <td class="bg-white p-1"><input type="text" id="in_knowDate" oninput="updateDoc()" class="w-full p-1 text-center font-semibold border rounded" value="7 มิถุนายน 2569"></td>
+          </tr>
+          <tr>
+            <td class="bg-purple-100 font-bold text-purple-900">วันที่เข้าตรวจสอบหน้างาน</td>
+            <td class="bg-white p-1"><input type="text" id="in_checkDate" oninput="updateDoc()" class="w-full p-1 text-center font-semibold border rounded" value="23 มิถุนายน 2569"></td>
+          </tr>
+          <tr>
+            <td class="bg-purple-100 font-bold text-purple-900">ผู้รับจ้างเข้าดำเนินการวันที่</td>
+            <td class="bg-white p-1"><input type="text" id="in_actionDate" oninput="updateDoc()" class="w-full p-1 text-center font-semibold border rounded" value="21 มิถุนายน 2569"></td>
+          </tr>
+        </table>
+        <div class="p-2 bg-slate-50 border-t flex justify-end">
+          <button onclick="saveStartDateRecord()" class="text-xs bg-purple-700 hover:bg-purple-800 text-white font-medium py-1 px-3 rounded shadow">บันทึกการเปลี่ยนแปลง</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    function renderSignatures(data) {
+      const inspArea = document.getElementById('inspectorSignatureArea');
+      if (inspArea) {
+        inspArea.innerHTML = '';
+        const inspectors = data.inspectors && data.inspectors.length > 0 ? data.inspectors : [{ name: data.inspName1 || 'นายพัทธิยะ วงษาซ้าย', pos: 'ผู้ควบคุมงาน' }];
+        inspectors.forEach(insp => {
+          if (insp.name) {
+            inspArea.innerHTML += `
+              <div class="space-y-0.5 text-center min-w-[220px]">
+                <p>(ลงชื่อ)........................................................... ${insp.pos}</p>
+                <p class="font-medium">(${insp.name})</p>
+              </div>
+            `;
+          }
+        });
+      }
+      const commArea = document.getElementById('committeeSignatureArea');
+      if (commArea) {
+        commArea.innerHTML = '';
+        const comms = data.committees && data.committees.length > 0 ? data.committees : [
+          data.commPresident, data.comm1, data.comm2, data.comm3, data.comm4
+        ].filter(Boolean);
+        comms.forEach((name, idx) => {
+          if (!name) return;
+          const isPresident = (idx === 0);
+          const roleText = isPresident ? 'ประธานกรรมการฯ' : 'กรรมการฯ';
+          const colSpanClass = isPresident ? 'col-span-2 flex justify-center mb-0.5' : '';
+          commArea.innerHTML += `
+            <div class="${colSpanClass}">
+              <div>
+                <p>(ลงชื่อ).................................................... ${roleText}</p>
+                <p class="font-medium mt-0.5">(${name})</p>
+              </div>
+            </div>
+          `;
+        });
+      }
+    }
+    function loadProjectData() {
+      const raw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.contractNo) document.getElementById('p_contractNo').textContent = data.contractNo;
+      if (data.contractDate) document.getElementById('p_contractDate').textContent = data.contractDate;
+      if (data.contractorName) document.getElementById('p_contractor').textContent = data.contractorName;
+      if (data.projectName) document.getElementById('p_projectTitle').textContent = data.projectName;
+      if (data.projectLocation) document.getElementById('p_location').textContent = data.projectLocation;
+      if (data.orderNo) document.getElementById('p_orderNo').textContent = data.orderNo;
+      if (data.orderDate) document.getElementById('p_orderDate').textContent = data.orderDate;
+      renderSignatures(data);
+    }
+    function updateDoc() {
+      document.getElementById('doc_reportDateText').textContent = document.getElementById('in_reportDate').value;
+      document.getElementById('txt_knowDate').textContent = document.getElementById('in_knowDate').value;
+      document.getElementById('txt_checkDate').textContent = document.getElementById('in_checkDate').value;
+      document.getElementById('txt_actionDate').textContent = document.getElementById('in_actionDate').value;
+    }
+    function saveStartDateRecord() {
+      updateDoc();
+      const payload = {
+        reportDate: document.getElementById('in_reportDate').value,
+        knowDate: document.getElementById('in_knowDate').value,
+        checkDate: document.getElementById('in_checkDate').value,
+        actionDate: document.getElementById('in_actionDate').value
+      };
+      localStorage.setItem('LOCAL_START_DATE_RECORD', JSON.stringify(payload));
+      alert('บันทึกข้อมูลรายงานวันเริ่มงานเรียบร้อยแล้วค่ะ');
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+      loadProjectData();
+      const cached = localStorage.getItem('LOCAL_START_DATE_RECORD');
+      if (cached) {
+        const item = JSON.parse(cached);
+        if (item.reportDate) document.getElementById('in_reportDate').value = item.reportDate;
+        if (item.knowDate) document.getElementById('in_knowDate').value = item.knowDate;
+        if (item.checkDate) document.getElementById('in_checkDate').value = item.checkDate;
+        if (item.actionDate) document.getElementById('in_actionDate').value = item.actionDate;
+      }
+      updateDoc();
+    });
+  </script>
+</body>
+</html>

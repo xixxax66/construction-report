@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ข้อมูลรายงานรายสัปดาห์ - กำหนดข้อมูลเบื้องต้น</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../assets/gas-sync.js"></script>
+  <style>
+    @font-face {
+      font-family: 'THSarabunPSK';
+      src: url('assets/THSarabun.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'THSarabunPSK';
+      src: url('assets/THSarabun Bold.ttf') format('truetype');
+      font-weight: bold;
+      font-style: normal;
+    }
+
+    body {
+      font-family: 'THSarabunPSK', sans-serif;
+      background-color: #e2e8f0;
+      font-size: 18pt;
+    }
+
+    .sheet-box {
+      border-collapse: collapse;
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    .sheet-box td, .sheet-box th {
+      border: 1px solid rgba(0, 0, 0, 0.25);
+      padding: 7px 10px;
+      font-size: 17pt;
+      vertical-align: middle;
+    }
+
+    .cell-input {
+      background-color: #ffffff;
+      width: 100%;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-size: 17pt;
+      font-weight: bold;
+      padding: 3px 6px;
+      text-align: center;
+      color: #111827;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    .cell-input:focus {
+      background-color: #fef08a;
+      box-shadow: inset 0 0 0 2px #ca8a04;
+    }
+
+    .btn-3d {
+      box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(255, 255, 255, 0.7);
+      transition: all 0.15s ease-in-out;
+    }
+
+    .btn-3d:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px -1px rgba(0, 0, 0, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+    }
+
+    .btn-3d:active {
+      transform: translateY(1px);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body class="p-3 sm:p-6 min-h-screen">
+
+  <div class="max-w-[1600px] mx-auto bg-[#edf2f7] p-5 sm:p-8 rounded-3xl shadow-2xl border border-slate-300">
+    
+    <!-- แถบควบคุมด้านบน -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6 bg-white p-4 sm:p-5 rounded-2xl shadow-md border border-slate-300">
+      <div class="flex items-center gap-3">
+        <span class="w-4 h-4 rounded-full bg-amber-500 animate-pulse"></span>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">ระบบกำหนดข้อมูลเบื้องต้นของแต่ละสัปดาห์ในหนึ่งเดือน</h1>
+        <span id="sync-status" class="text-base px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold ml-2 shadow-sm">พร้อมใช้งาน</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="saveWeeklyBatch()" id="btn-save-all" class="btn-3d flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-lg shadow">
+          <i data-lucide="save" class="w-5 h-5"></i> บันทึกข้อมูลทั้งหมด (Google Sheets)
+        </button>
+        <button onclick="loadWeeklyBatch()" id="btn-load-all" class="btn-3d flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-lg shadow">
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i> โหลดข้อมูลล่าสุด
+        </button>
+      </div>
+    </div>
+
+    <!-- โครงสร้างหลัก 2 คอลัมน์ -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+      
+      <!-- คอลัมน์ซ้าย: กล่องข้อมูล 5 สัปดาห์ -->
+      <div class="xl:col-span-7 space-y-6">
+
+        <!-- สัปดาห์ที่ 1 -->
+        <div class="flex flex-col sm:flex-row gap-4 items-stretch bg-amber-50/90 p-3.5 rounded-2xl border-2 border-amber-300 shadow-sm">
+          <div class="flex-1 bg-gradient-to-br from-[#d97706] to-[#b45309] p-4 rounded-2xl shadow text-white">
+            <div class="text-center font-bold text-xl mb-3 pb-1.5 border-b border-amber-300/40">ข้อมูลรายงาน สัปดาห์ที่ 1 ของเดือน ตามปฏิทิน</div>
+            <table class="sheet-box text-slate-900">
+              <colgroup><col style="width: 42%;"><col style="width: 58%;"></colgroup>
+              <tr><td class="text-white font-bold whitespace-nowrap">ครั้งที่</td><td class="bg-white p-1"><input type="text" id="w1_seq" class="cell-input" value="1"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">สัปดาห์ที่</td><td class="bg-white p-1"><div class="flex items-center gap-1"><input type="text" id="w1_week" class="cell-input" value="1"><span class="text-slate-600 font-bold text-lg">/</span><input type="text" id="w1_year" class="cell-input" value="2569"></div></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">วันที่รายงาน</td><td class="bg-white p-1"><input type="text" id="w1_repDate" class="cell-input font-bold" value="15 มิถุนายน 2569"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">ตั้งแต่วันที่</td><td class="bg-white p-1"><input type="text" id="w1_startDate" class="cell-input" value="7 มิถุนายน 2569"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">ถึงวันที่</td><td class="bg-white p-1"><input type="text" id="w1_endDate" class="cell-input" value="13 มิถุนายน 2569"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">แผนงานถึงปัจจุบัน(%)</td><td class="bg-white p-1"><input type="text" id="w1_plan" class="cell-input font-bold text-rose-600 text-xl" value="2.73"></td></tr>
+            </table>
+          </div>
+          <div class="w-full sm:w-80 flex flex-col justify-between gap-2.5 py-0.5">
+            <a href="weekly/week_log.html?week=1" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              บันทึกสภาพการปฏิบัติงาน
+            </a>
+            <a href="weekly/week_photo.html?week=1" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              ภาพถ่ายสภาพการปฏิบัติงาน
+            </a>
+            <a href="weekly/week_progress.html?week=1" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              ผลการดำเนินงานในสัปดาห์
+            </a>
+            <a href="weekly/week_report.html?week=1" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              รายงานผลการก่อสร้างประจำ
+            </a>
+          </div>
+        </div>
+
+        <!-- สัปดาห์ที่ 2 -->
+        <div class="flex flex-col sm:flex-row gap-4 items-stretch bg-cyan-50/90 p-3.5 rounded-2xl border-2 border-cyan-300 shadow-sm">
+          <div class="flex-1 bg-gradient-to-br from-[#0e7490] to-[#155e75] p-4 rounded-2xl shadow text-white">
+            <div class="text-center font-bold text-xl mb-3 pb-1.5 border-b border-cyan-300/40">ข้อมูลรายงาน สัปดาห์ที่ 2 ของเดือน ตามปฏิทิน</div>
+            <table class="sheet-box text-slate-900">
+              <colgroup><col style="width: 42%;"><col style="width: 58%;"></colgroup>
+              <tr><td class="text-white font-bold whitespace-nowrap">ครั้งที่</td><td class="bg-white p-1"><input type="text" id="w2_seq" class="cell-input" value="2"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">สัปดาห์ที่</td><td class="bg-white p-1"><div class="flex items-center gap-1"><input type="text" id="w2_week" class="cell-input" value="2"><span class="text-slate-600 font-bold text-lg">/</span><input type="text" id="w2_year" class="cell-input" value="2569"></div></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">วันที่รายงาน</td><td class="bg-white p-1"><input type="text" id="w2_repDate" class="cell-input font-bold" value="22 มิถุนายน 2569"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">ตั้งแต่วันที่</td><td class="bg-white p-1"><input type="text" id="w2_startDate" class="cell-input" value="14 มิถุนายน 2569"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">ถึงวันที่</td><td class="bg-white p-1"><input type="text" id="w2_endDate" class="cell-input" value="20 มิถุนายน 2569"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">แผนงานถึงปัจจุบัน(%)</td><td class="bg-white p-1"><input type="text" id="w2_plan" class="cell-input font-bold text-rose-600 text-xl" value="6.09"></td></tr>
+            </table>
+          </div>
+          <div class="w-full sm:w-80 flex flex-col justify-between gap-2.5 py-0.5">
+            <a href="weekly/week_log.html?week=2" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-700 hover:from-cyan-500 hover:to-teal-600 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              บันทึกสภาพการปฏิบัติงาน
+            </a>
+            <a href="weekly/week_photo.html?week=2" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-700 hover:from-cyan-500 hover:to-teal-600 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              ภาพถ่ายสภาพการปฏิบัติงาน
+            </a>
+            <a href="weekly/week_progress.html?week=2" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-700 hover:from-cyan-500 hover:to-teal-600 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              ผลการดำเนินงานในสัปดาห์
+            </a>
+            <a href="weekly/week_report.html?week=2" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-700 hover:from-cyan-500 hover:to-teal-600 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              รายงานผลการก่อสร้างประจำ
+            </a>
+          </div>
+        </div>
+
+        <!-- สัปดาห์ที่ 3 -->
+        <div class="flex flex-col sm:flex-row gap-4 items-stretch bg-purple-50/90 p-3.5 rounded-2xl border-2 border-purple-300 shadow-sm">
+          <div class="flex-1 bg-gradient-to-br from-[#6b21a8] to-[#581c87] p-4 rounded-2xl shadow text-white">
+            <div class="text-center font-bold text-xl mb-3 pb-1.5 border-b border-purple-300/40">ข้อมูลรายงาน สัปดาห์ที่ 3 ของเดือน ตามปฏิทิน</div>
+            <table class="sheet-box text-slate-900">
+              <colgroup><col style="width: 42%;"><col style="width: 58%;"></colgroup>
+              <tr><td class="text-white font-bold whitespace-nowrap">ครั้งที่</td><td class="bg-white p-1"><input type="text" id="w3_seq" class="cell-input" value="3"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">สัปดาห์ที่</td><td class="bg-white p-1"><div class="flex items-center gap-1"><input type="text" id="w3_week" class="cell-input" value="3"><span class="text-slate-600 font-bold text-lg">/</span><input type="text" id="w3_year" class="cell-input" value="2569"></div></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">วันที่รายงาน</td><td class="bg-white p-1"><input type="text" id="w3_repDate" class="cell-input font-bold" value="29 มิถุนายน 2569"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">ตั้งแต่วันที่</td><td class="bg-white p-1"><input type="text" id="w3_startDate" class="cell-input" value="21 มิถุนายน 2569"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">ถึงวันที่</td><td class="bg-white p-1"><input type="text" id="w3_endDate" class="cell-input" value="27 มิถุนายน 2569"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">แผนงานถึงปัจจุบัน(%)</td><td class="bg-white p-1"><input type="text" id="w3_plan" class="cell-input font-bold text-rose-600 text-xl" value="7.45"></td></tr>
+            </table>
+          </div>
+          <div class="w-full sm:w-80 flex flex-col justify-between gap-2.5 py-0.5">
+            <a href="weekly/week_log.html?week=3" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              บันทึกสภาพการปฏิบัติงาน
+            </a>
+            <a href="weekly/week_photo.html?week=3" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              ภาพถ่ายสภาพการปฏิบัติงาน
+            </a>
+            <a href="weekly/week_progress.html?week=3" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              ผลการดำเนินงานในสัปดาห์
+            </a>
+            <a href="weekly/week_report.html?week=3" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              รายงานผลการก่อสร้างประจำ
+            </a>
+          </div>
+        </div>
+
+        <!-- สัปดาห์ที่ 4 -->
+        <div class="flex flex-col sm:flex-row gap-4 items-stretch bg-stone-100/90 p-3.5 rounded-2xl border-2 border-stone-300 shadow-sm">
+          <div class="flex-1 bg-gradient-to-br from-[#292524] to-[#1c1917] p-4 rounded-2xl shadow text-white">
+            <div class="text-center font-bold text-xl mb-3 pb-1.5 border-b border-stone-500/40">ข้อมูลรายงาน สัปดาห์ที่ 4 ของเดือน ตามปฏิทิน</div>
+            <table class="sheet-box text-slate-900">
+              <colgroup><col style="width: 42%;"><col style="width: 58%;"></colgroup>
+              <tr><td class="text-white font-bold whitespace-nowrap">ครั้งที่</td><td class="bg-white p-1"><input type="text" id="w4_seq" class="cell-input" value="4"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">สัปดาห์ที่</td><td class="bg-white p-1"><div class="flex items-center gap-1"><input type="text" id="w4_week" class="cell-input" value="4"><span class="text-slate-600 font-bold text-lg">/</span><input type="text" id="w4_year" class="cell-input" value="2569"></div></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">วันที่รายงาน</td><td class="bg-white p-1"><input type="text" id="w4_repDate" class="cell-input font-bold" value="26 พฤษภาคม 2568"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">ตั้งแต่วันที่</td><td class="bg-white p-1"><input type="text" id="w4_startDate" class="cell-input" value="18 พฤษภาคม 2568"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">ถึงวันที่</td><td class="bg-white p-1"><input type="text" id="w4_endDate" class="cell-input" value="24 พฤษภาคม 2568"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">แผนงานถึงปัจจุบัน(%)</td><td class="bg-white p-1"><input type="text" id="w4_plan" class="cell-input font-bold text-rose-600 text-xl" value="7.45"></td></tr>
+            </table>
+          </div>
+          <div class="w-full sm:w-80 flex flex-col justify-between gap-2.5 py-0.5">
+            <a href="weekly/week_log.html?week=4" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-stone-700 to-stone-900 hover:from-stone-600 hover:to-black text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              บันทึกสภาพการปฏิบัติงาน
+            </a>
+            <a href="weekly/week_photo.html?week=4" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-stone-700 to-stone-900 hover:from-stone-600 hover:to-black text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              ภาพถ่ายสภาพการปฏิบัติงาน
+            </a>
+            <a href="weekly/week_progress.html?week=4" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-stone-700 to-stone-900 hover:from-stone-600 hover:to-black text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              ผลการดำเนินงานในสัปดาห์
+            </a>
+            <a href="weekly/week_report.html?week=4" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-stone-700 to-stone-900 hover:from-stone-600 hover:to-black text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              รายงานผลการก่อสร้างประจำ
+            </a>
+          </div>
+        </div>
+
+        <!-- สัปดาห์ที่ 5 -->
+        <div class="flex flex-col sm:flex-row gap-4 items-stretch bg-lime-50/90 p-3.5 rounded-2xl border-2 border-lime-300 shadow-sm">
+          <div class="flex-1 bg-gradient-to-br from-[#4d7c0f] to-[#3f6212] p-4 rounded-2xl shadow text-white">
+            <div class="text-center font-bold text-xl mb-3 pb-1.5 border-b border-lime-300/40">ข้อมูลรายงาน สัปดาห์ที่ 5 ของเดือน ตามปฏิทิน</div>
+            <table class="sheet-box text-slate-900">
+              <colgroup><col style="width: 42%;"><col style="width: 58%;"></colgroup>
+              <tr><td class="text-white font-bold whitespace-nowrap">ครั้งที่</td><td class="bg-white p-1"><input type="text" id="w5_seq" class="cell-input" value="5"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">สัปดาห์ที่</td><td class="bg-white p-1"><div class="flex items-center gap-1"><input type="text" id="w5_week" class="cell-input" value="5"><span class="text-slate-600 font-bold text-lg">/</span><input type="text" id="w5_year" class="cell-input" value="2568"></div></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">วันที่รายงาน</td><td class="bg-white p-1"><input type="text" id="w5_repDate" class="cell-input font-bold" value="4 มิถุนายน 2568"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">ตั้งแต่วันที่</td><td class="bg-white p-1"><input type="text" id="w5_startDate" class="cell-input" value="25 พฤษภาคม 2568"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">ถึงวันที่</td><td class="bg-white p-1"><input type="text" id="w5_endDate" class="cell-input" value="31 พฤษภาคม 2568"></td></tr>
+              <tr><td class="text-white font-bold whitespace-nowrap">แผนงานถึงปัจจุบัน(%)</td><td class="bg-white p-1"><input type="text" id="w5_plan" class="cell-input font-bold text-rose-600 text-xl" value="7.45"></td></tr>
+            </table>
+          </div>
+          <div class="w-full sm:w-80 flex flex-col justify-between gap-2.5 py-0.5">
+            <a href="weekly/week_log.html?week=5" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-lime-600 to-emerald-700 hover:from-lime-500 hover:to-emerald-600 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              บันทึกสภาพการปฏิบัติงาน
+            </a>
+            <a href="weekly/week_photo.html?week=5" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-lime-600 to-emerald-700 hover:from-lime-500 hover:to-emerald-600 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              ภาพถ่ายสภาพการปฏิบัติงาน
+            </a>
+            <a href="weekly/week_progress.html?week=5" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-lime-600 to-emerald-700 hover:from-lime-500 hover:to-emerald-600 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              ผลการดำเนินงานในสัปดาห์
+            </a>
+            <a href="weekly/week_report.html?week=5" class="btn-3d flex-1 rounded-xl bg-gradient-to-r from-lime-600 to-emerald-700 hover:from-lime-500 hover:to-emerald-600 text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              รายงานผลการก่อสร้างประจำ
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- คอลัมน์ขวา: ปุ่มนำทาง ปฏิทินจริง และคำแนะนำ -->
+      <div class="xl:col-span-5 space-y-6">
+        
+        <!-- ปุ่มกลับหน้าหลัก และ กรอกข้อมูลเบื้องต้น -->
+        <div class="grid grid-cols-2 gap-4">
+          <a href="index.html" class="btn-3d flex items-center justify-center gap-3 bg-gradient-to-b from-slate-100 to-slate-300 border border-slate-400 rounded-2xl py-3 px-4 text-slate-800 font-bold text-xl shadow">
+            <img src="https://cdn-icons-png.flaticon.com/512/619/619032.png" alt="Home" class="w-8 h-8 object-contain">
+            <span>กลับหน้าหลัก</span>
+          </a>
+          <a href="Cons_Reference.html" class="btn-3d flex items-center justify-center gap-3 bg-gradient-to-b from-slate-100 to-slate-300 border border-slate-400 rounded-2xl py-3 px-4 text-slate-800 font-bold text-xl shadow">
+            <img src="https://cdn-icons-png.flaticon.com/512/2921/2921226.png" alt="Ref" class="w-8 h-8 object-contain">
+            <span>กรอกข้อมูลเบื้องต้น</span>
+          </a>
+        </div>
+
+        <!-- ปฏิทินจริงแบบอินเทอร์แอกทีฟ -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-300 shadow text-center">
+          <div class="text-base text-slate-600 mb-2.5 font-bold">ปฏิทินตรวจสอบวันเวลาจริง</div>
+          <div class="border-2 border-red-600 rounded-xl overflow-hidden bg-white text-slate-800 shadow-inner">
+            <div class="bg-red-600 text-white font-bold py-2 px-4 flex justify-between items-center text-base">
+              <button onclick="changeMonth(-1)" class="hover:bg-red-700 px-2 py-0.5 rounded text-lg font-extrabold cursor-pointer">&lt;</button>
+              <span id="cal-month-year">มิถุนายน 2569</span>
+              <button onclick="changeMonth(1)" class="hover:bg-red-700 px-2 py-0.5 rounded text-lg font-extrabold cursor-pointer">&gt;</button>
+            </div>
+            <div class="grid grid-cols-7 text-sm font-bold text-slate-600 bg-slate-100 border-b border-slate-200 py-1.5">
+              <span class="text-red-600">อา.</span><span>จ.</span><span>อ.</span><span>พ.</span><span>พฤ.</span><span>ศ.</span><span class="text-blue-600">ส.</span>
+            </div>
+            <div id="cal-days-grid" class="grid grid-cols-7 text-base font-semibold p-2.5 gap-y-1.5 text-center">
+              <!-- วันในปฏิทินแสดงผลอัตโนมัติ -->
+            </div>
+          </div>
+        </div>
+
+        <!-- คำแนะนำการใช้งานและหลักคิด -->
+        <div class="bg-white/95 rounded-2xl p-5 border border-slate-300 shadow text-base leading-relaxed space-y-3 text-slate-800">
+          <h4 class="font-bold text-lg text-slate-900 border-b pb-1.5 flex items-center gap-2">
+            <i data-lucide="info" class="w-5 h-5 text-amber-600"></i> คำแนะนำการใช้งาน
+          </h4>
+          <p>
+            กรอกข้อมูลในช่องสีขาวและปฏิบัติตามคำแนะนำในแต่ละช่องที่แสดงคำแนะนำการใช้งานไว้ ทั้งนี้เพื่อป้องกันการผิดพลาดจากการใช้งาน และเมื่อกรอกข้อมูลแล้วเสร็จของแต่ละสัปดาห์ให้คลิกปุ่มคำสั่งที่อยู่ด้านขวามือของแต่ละสัปดาห์เพื่อดำเนินการในขั้นตอนถัดไป
+          </p>
+          
+          <h5 class="font-bold text-amber-800 pt-1 text-lg border-t border-slate-200">หลักคิดในการจัดทำรายงานรายสัปดาห์</h5>
+          <p>
+            ในการนับวันเริ่มต้นสัปดาห์และสิ้นสุดสัปดาห์ เนื่องจากตามระเบียบพัสดุและหนังสือสั่งการต่างๆ ไม่ได้กำหนดวันเริ่มต้นสัปดาห์การทำงานและวันสิ้นสุดสัปดาห์การทำงานให้นับโดยวิธีการใด จึงเป็นดุลยพินิจของผู้ปฏิบัติงานเป็นผู้กำหนดวันเริ่มต้นและวันสิ้นสุดสัปดาห์
+          </p>
+          <p>
+            สำหรับโปรแกรมนี้เพื่อให้ง่ายต่อการคำนวณ % งาน และการสรุป % งานรายเดือน ผู้จัดทำได้กำหนดให้ใช้วันเริ่มต้นสัปดาห์และสิ้นสุดสัปดาห์ตามปฏิทิน ในการคำนวณ
+          </p>
+          <div class="text-center pt-2 border-t border-slate-200 bg-amber-50/50 p-2.5 rounded-xl">
+            <p class="text-red-600 font-bold text-base">คู่มือ คำแนะนำ คำอธิบายการกรอกข้อมูล อยู่ในสัปดาห์ที่ 1 ของเดือน</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    const STORAGE_KEY_GAS_URL = 'CONSTRUCTION_GAS_URL';
+    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
+    const currentGasUrl = localStorage.getItem(STORAGE_KEY_GAS_URL) || DEFAULT_GAS_URL;
+    const LOCAL_KEY = 'CONSTRUCTION_WEEKLY_REF_DB';
+
+    let today = new Date();
+    let currentMonth = today.getMonth();
+    let currentYear = today.getFullYear();
+
+    const thaiMonths = [
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", 
+      "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", 
+      "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+
+    function renderCalendar(month, year) {
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      const grid = document.getElementById('cal-days-grid');
+      grid.innerHTML = '';
+
+      document.getElementById('cal-month-year').textContent = `${thaiMonths[month]} ${year + 543}`;
+
+      for (let i = 0; i < firstDay; i++) {
+        const span = document.createElement('span');
+        grid.appendChild(span);
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const span = document.createElement('span');
+        span.textContent = d;
+        span.className = "py-1 rounded-lg";
+        
+        if (d === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+          span.className += " bg-red-600 text-white font-bold shadow";
+        } else {
+          span.className += " hover:bg-slate-100";
+        }
+        grid.appendChild(span);
+      }
+    }
+
+    function changeMonth(direction) {
+      currentMonth += direction;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      } else if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      renderCalendar(currentMonth, currentYear);
+    }
+
+    function getBatchData() {
+      const data = { action: 'save_weekly_reference', weeks: [] };
+      for (let i = 1; i <= 5; i++) {
+        data.weeks.push({
+          weekIndex: i,
+          seq: document.getElementById(`w${i}_seq`).value,
+          week: document.getElementById(`w${i}_week`).value,
+          year: document.getElementById(`w${i}_year`).value,
+          repDate: document.getElementById(`w${i}_repDate`).value,
+          startDate: document.getElementById(`w${i}_startDate`).value,
+          endDate: document.getElementById(`w${i}_endDate`).value,
+          plan: document.getElementById(`w${i}_plan`).value
+        });
+      }
+      return data;
+    }
+
+    function populateData(weeks) {
+      if (!weeks || !Array.isArray(weeks)) return;
+      weeks.forEach((w, idx) => {
+        const i = idx + 1;
+        if (document.getElementById(`w${i}_seq`)) document.getElementById(`w${i}_seq`).value = w.seq || i;
+        if (document.getElementById(`w${i}_week`)) document.getElementById(`w${i}_week`).value = w.week || i;
+        if (document.getElementById(`w${i}_year`)) document.getElementById(`w${i}_year`).value = w.year || '2569';
+        if (document.getElementById(`w${i}_repDate`)) document.getElementById(`w${i}_repDate`).value = w.repDate || '';
+        if (document.getElementById(`w${i}_startDate`)) document.getElementById(`w${i}_startDate`).value = w.startDate || '';
+        if (document.getElementById(`w${i}_endDate`)) document.getElementById(`w${i}_endDate`).value = w.endDate || '';
+        if (document.getElementById(`w${i}_plan`)) document.getElementById(`w${i}_plan`).value = w.plan || '';
+      });
+    }
+
+    async function saveWeeklyBatch() {
+      const btn = document.getElementById('btn-save-all');
+      const statusEl = document.getElementById('sync-status');
+      const payload = getBatchData();
+
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(payload.weeks));
+
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> กำลังบันทึก...`;
+      lucide.createIcons();
+
+      try {
+        const res = await fetch(currentGasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+          statusEl.textContent = 'บันทึกสำเร็จ (ซิงค์ชีตแล้ว)';
+          statusEl.className = 'text-base px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold ml-2 shadow-sm';
+          alert('บันทึกข้อมูลตั้งต้นรายสัปดาห์ลง Google Sheets เรียบร้อยแล้วค่ะ');
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (err) {
+        statusEl.textContent = 'บันทึกในเครื่องแล้ว';
+        statusEl.className = 'text-base px-3.5 py-1 rounded-full bg-blue-100 text-blue-800 font-bold ml-2 shadow-sm';
+        alert('บันทึกข้อมูลไว้ในระบบเครื่องเรียบร้อยแล้วค่ะ');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> บันทึกข้อมูลทั้งหมด (Google Sheets)`;
+        lucide.createIcons();
+      }
+    }
+
+    async function loadWeeklyBatch() {
+      const btn = document.getElementById('btn-load-all');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> กำลังโหลด...`;
+      lucide.createIcons();
+
+      try {
+        const res = await fetch(`${currentGasUrl}?action=get_weekly_reference`);
+        const result = await res.json();
+        if (result && result.weeks && result.weeks.length > 0) {
+          populateData(result.weeks);
+          localStorage.setItem(LOCAL_KEY, JSON.stringify(result.weeks));
+          alert('ดึงข้อมูลรายสัปดาห์ล่าสุดจาก Google Sheets เรียบร้อยแล้วค่ะ');
+        } else {
+          throw new Error('ไม่พบข้อมูลในชีต');
+        }
+      } catch (err) {
+        const cached = localStorage.getItem(LOCAL_KEY);
+        if (cached) {
+          populateData(JSON.parse(cached));
+          alert('โหลดข้อมูลล่าสุดที่เก็บไว้ในเครื่องเรียบร้อยแล้วค่ะ');
+        } else {
+          alert('ยังไม่มีข้อมูลที่เคยบันทึกไว้ค่ะ');
+        }
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="refresh-cw" class="w-5 h-5"></i> โหลดข้อมูลล่าสุด`;
+        lucide.createIcons();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const local = localStorage.getItem(LOCAL_KEY);
+      if (local) {
+        populateData(JSON.parse(local));
+      }
+      renderCalendar(currentMonth, currentYear);
+    });
+  </script>
+</body>
+</html>
