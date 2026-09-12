@@ -88,12 +88,12 @@ async function pullDataFromCloud(silent = false) {
 }
 
 /**
- * ส่งข้อมูลขึ้น Cloud (Push)
+ * บันทึกและส่งข้อมูลในเครื่องทั้งหมดขึ้น Cloud (Push)
  */
 async function pushDataToCloud(silent = false) {
   const gasUrl = GAS_SYNC_CONFIG.getGasUrl();
-  const folderId = localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || 'root';
-
+  // เปลี่ยนจาก 'root' เป็น Folder ID ของคุณอรรถวัต
+  const folderId = localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || '11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd';
   const projectDatabase = {};
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
