@@ -620,13 +620,18 @@
       if (basicRaw) {
         try {
           const pData = JSON.parse(basicRaw);
-          imageFolderId = pData.imageFolderId || pData.driveFolderId || "";
-        } catch(e) {}
+          // ดึง ID โฟลเดอร์รูปภาพของโครงการที่เซิร์ฟเวอร์สร้างไว้
+          imageFolderId = pData.imageFolderId || pData.driveFolderId || "11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd";
+        } catch(e) {
+          imageFolderId = "11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd";
+        }
       }
 
       document.getElementById('upload_modal').classList.remove('hidden');
       try {
         const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
+        if (!centralUrl) throw new Error("ไม่พบ URL ของ Google Apps Script");
+
         const payload = {
           action: 'save_week_photos',
           projectID: currentProjectID,
@@ -643,22 +648,25 @@
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
+        
         const resJson = await res.json();
         
         if (resJson.status === 'success' && resJson.photos) {
           resJson.photos.forEach((p, i) => {
             if (photosList[i]) {
               photosList[i].src = p.src;
-              photosList[i].rawSrc = "";
+              photosList[i].rawSrc = ""; // เคลียร์ภาพดิบเพื่อประหยัดพื้นที่
             }
           });
+          
+          localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
+          renderAllPages();
+          alert("อัปโหลดภาพขึ้น Google Drive เข้าสู่โฟลเดอร์ของโครงการเรียบร้อยแล้วค่ะ!");
+        } else {
+          throw new Error(resJson.message || "เซิร์ฟเวอร์ไม่ตอบกลับสถานะสำเร็จ");
         }
-        
-        localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
-        renderAllPages();
-        alert("อัปโหลดภาพขึ้น Google Drive เข้าสู่โฟลเดอร์ของโครงการเรียบร้อยแล้วค่ะ");
       } catch (e) {
-        alert("บันทึกรูปภาพลงในเครื่องเรียบร้อยแล้วค่ะ");
+        alert(`ไม่สามารถอัปโหลดรูปขึ้น Google Drive ได้\nสาเหตุ: ${e.message}`);
       } finally {
         document.getElementById('upload_modal').classList.add('hidden');
       }
