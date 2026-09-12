@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายงานความคืบหน้างานก่อสร้างประจำเดือน</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../assets/gas-sync.js"></script>
+  <style>
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
+    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
+    @page { size: A4 portrait; margin: 0; }
+    body { font-family: 'THSarabunPSK', sans-serif; background-color: #94a3b8; margin: 0; padding: 0; font-size: 15pt; line-height: 1.18; }
+    
+    .sheet-doc {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 12mm 15mm 10mm 22mm;
+      margin: 15px auto;
+      background: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      box-sizing: border-box;
+      color: #000;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .sheet-doc p, .sheet-doc span, .sheet-doc div, .sheet-doc td, .sheet-doc th { font-size: 15pt; line-height: 1.18; }
+    .doc-title { font-size: 26pt !important; font-weight: bold; }
+    .garuda-img { width: 1.5cm; height: auto; position: absolute; left: 0; top: 0; }
+    .indent-word { text-indent: 1.8cm !important; }
+    .indent-tab { padding-left: 1.8cm !important; }
+    .dotted-line { border-bottom: 1px dotted #000; }
+    .editable-input { background: transparent; border: none; outline: none; font-family: inherit; font-size: inherit; }
+    .editable-input:focus { background-color: #fef08a; }
+
+    .pen-dotted-lines {
+      width: 100%;
+      height: 1.25em;
+      border-bottom: 1px dotted #000;
+      margin-bottom: 4px;
+    }
+    .opinion-box {
+      margin-bottom: 28px;
+    }
+
+    .other-textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-size: inherit;
+      resize: none;
+      line-height: 1.25;
+      background-image: linear-gradient(to bottom, transparent 92%, #000 92%);
+      background-size: 100% 1.25em;
+    }
+    .other-textarea:focus { background-color: #fef08a; }
+
+    .custom-chk {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 1.1rem;
+      height: 1.1rem;
+      min-width: 1.1rem;
+      min-height: 1.1rem;
+      border: 1.5px solid #000 !important;
+      border-radius: 0.15rem;
+      background-color: #fff !important;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      position: relative;
+      cursor: pointer;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .custom-chk:checked::after {
+      content: '✔';
+      font-size: 11.5pt;
+      color: #000 !important;
+      font-weight: 900;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -54%);
+      line-height: 1;
+    }
+
+    @media print {
+      body { background: white !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .no-print { display: none !important; }
+      .sheet-doc { box-shadow: none !important; margin: 0 auto !important; width: 210mm !important; height: 297mm !important; padding: 12mm 15mm 10mm 22mm !important; page-break-after: always; }
+      .sheet-doc:last-child { page-break-after: auto; }
+      .editable-input, .other-textarea { background: transparent !important; }
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-4 min-h-screen flex justify-center">
+
+  <div class="max-w-[2000px] w-full grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+    
+    <!-- ฝั่งเอกสาร -->
+    <div class="xl:col-span-8 flex flex-col items-center w-full gap-6" id="pages_container"></div>
+
+    <!-- แผงควบคุมด้านข้าง (ปรับกรอบให้กะทัดรัดขึ้น แต่คงขนาดตัวหนังสือไว้) -->
+    <div class="xl:col-span-4 space-y-3 no-print sticky top-4">
+      
+      <!-- การตั้งค่าวันที่รายงาน -->
+      <div class="bg-white p-4 rounded-2xl shadow border-2 border-slate-300 space-y-2">
+        <h4 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+          <i data-lucide="calendar" class="w-5 h-5 text-blue-600"></i> วันที่ในบันทึกข้อความ
+        </h4>
+        <div class="flex items-center gap-2">
+          <input type="text" id="input_report_date_custom" class="w-full text-base p-2 border-2 rounded-xl bg-white font-bold text-slate-800" placeholder="เช่น ๑ กรกฎาคม ๒๕๖๙">
+          <input type="date" class="cursor-pointer text-slate-600 text-sm p-2 outline-none bg-slate-100 rounded-xl border-2 border-slate-300" title="เลือกจากปฏิทิน" onchange="onDatePicked(this)">
+        </div>
+      </div>
+
+      <!-- จัดการผู้ลงนาม -->
+      <div class="bg-white p-4 rounded-2xl shadow border-2 border-slate-300 space-y-3">
+        <h3 class="font-bold text-slate-800 text-xl border-b pb-2 flex items-center gap-2">
+          <i data-lucide="users" class="w-6 h-6 text-blue-600"></i> จัดการผู้ลงนามเพิ่มเติม
+        </h3>
+        <p class="text-sm text-slate-700 font-semibold">เพิ่มหรือแก้ไขตำแหน่งผู้ลงนามในหน้าที่ 2</p>
+        
+        <div id="signer_controls_list" class="space-y-2.5 max-h-72 overflow-y-auto pr-1"></div>
+
+        <button onclick="addSignerRow()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 px-4 rounded-xl text-base flex items-center justify-center gap-2 shadow cursor-pointer border-2 border-slate-300">
+          <i data-lucide="plus" class="w-5 h-5"></i> เพิ่มผู้ลงนาม
+        </button>
+
+        <div class="pt-3 border-t space-y-2">
+          <button onclick="loadMonthlyProgressData(true)" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow text-base flex items-center justify-center gap-2 cursor-pointer">
+            <i data-lucide="refresh-cw" class="w-5 h-5"></i> ซิงค์ข้อมูลล่าสุด
+          </button>
+          <button onclick="saveRecord()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg shadow text-base flex items-center justify-center gap-2 cursor-pointer">
+            <i data-lucide="save" class="w-5 h-5"></i> บันทึกข้อมูลรายงาน
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3">
+        <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3 px-5 font-bold text-xl shadow-lg flex items-center justify-center gap-3 cursor-pointer">
+          <i data-lucide="printer" class="w-6 h-6"></i> พิมพ์บันทึกข้อความ (A4)
+        </button>
+        <a href="../Monthly_Reference.html" class="bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl py-3 px-5 font-bold text-lg text-center shadow-lg flex items-center justify-center gap-3">
+          <i data-lucide="arrow-left" class="w-6 h-6"></i> กลับเมนูรายงานประจำเดือน
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+    const STORAGE_KEY_REPORT = 'MONTHLY_PROGRESS_REPORT_DB';
+
+    let globalProjectData = {};
+    let globalMonthlyData = {};
+    let globalCalculated = {};
+
+    let extraSigners = [
+      { name: "พ.จ.ท.บุญเกื้อ เจริญสุข", pos: "ปลัดองค์การบริหารส่วนตำบลโพนงาม" },
+      { name: "นายสกล มหาชัย", pos: "นายกองค์การบริหารส่วนตำบลโพนงาม" }
+    ];
+
+    function toThaiNumber(numStr) {
+      if (numStr === null || numStr === undefined) return '';
+      const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+      return numStr.toString().replace(/[0-9]/g, (w) => thaiNums[w]);
+    }
+
+    function thaiToArabic(str) {
+      if (!str) return '';
+      const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+      return str.toString().replace(/[๐-๙]/g, match => thaiNums.indexOf(match));
+    }
+
+    function thaiDateText(dateStr) {
+      if (!dateStr) return '';
+      const thaiMonths = {
+        "January": "มกราคม", "February": "กุมภาพันธ์", "March": "มีนาคม", "April": "เมษายน",
+        "May": "พฤษภาคม", "June": "มิถุนายน", "July": "กรกฎาคม", "August": "สิงหาคม",
+        "September": "กันยายน", "October": "ตุลาคม", "November": "พฤศจิกายน", "December": "ธันวาคม",
+        "มกราคม": "มกราคม", "กุมภาพันธ์": "กุมภาพันธ์", "มีนาคม": "มีนาคม", "เมษายน": "เมษายน",
+        "พฤษภาคม": "พฤษภาคม", "มิถุนายน": "มิถุนายน", "กรกฎาคม": "กรกฎาคม", "สิงหาคม": "สิงหาคม",
+        "กันยายน": "กันยายน", "ตุลาคม": "ตุลาคม", "พฤศจิกายน": "พฤศจิกายน", "ธันวาคม": "ธันวาคม"
+      };
+      let cleanStr = dateStr.toString().trim();
+      for (const [enM, thM] of Object.entries(thaiMonths)) {
+        if (cleanStr.toLowerCase().includes(enM.toLowerCase())) {
+          cleanStr = cleanStr.replace(new RegExp(enM, 'gi'), thM);
+        }
+      }
+      return toThaiNumber(cleanStr);
+    }
+
+    function formatThaiCurrency(amountStr) {
+      if (!amountStr || amountStr === '-') return '-';
+      const clean = amountStr.toString().replace(/,/g, '').replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s));
+      const num = parseFloat(clean);
+      if (isNaN(num)) return toThaiNumber(amountStr);
+      const parts = num.toFixed(2).split('.');
+      const integerPart = parseInt(parts[0]).toLocaleString('en-US');
+      return toThaiNumber(`${integerPart}.${parts[1]}`);
+    }
+
+    function parseThaiDateStr(str) {
+      if(!str) return null;
+      let arabicStr = thaiToArabic(str);
+      const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+      const parts = arabicStr.trim().split(/\s+/);
+      if (parts.length >= 3) {
+        const d = parseInt(parts[0]);
+        const m = thaiMonths.indexOf(parts[1]);
+        const y = parseInt(parts[2]) - 543;
+        if(!isNaN(d) && m !== -1 && !isNaN(y)) return new Date(y, m, d);
+      }
+      return null;
+    }
+
+    function onDatePicked(picker) {
+      const val = picker.value; // YYYY-MM-DD
+      if (!val) return;
+      const parts = val.split('-');
+      const year = parseInt(parts[0]) + 543;
+      const monthNames = [
+        "", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", 
+        "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", 
+        "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+      ];
+      const month = monthNames[parseInt(parts[1])];
+      const day = parseInt(parts[2]);
+
+      const formatted = toThaiNumber(`${day} ${month} ${year}`);
+      document.getElementById('input_report_date_custom').value = formatted;
+      renderPages();
+    }
+
+    function loadMonthlyProgressData(isManual = false) {
+      let targetWeek = 5;
+      const monthlyRaw = localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+      if (monthlyRaw) {
+        try {
+          globalMonthlyData = JSON.parse(monthlyRaw);
+          if (globalMonthlyData.planWeek) {
+            targetWeek = parseInt(globalMonthlyData.planWeek) || 5;
+          }
+        } catch(e){}
+      }
+
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          globalProjectData = JSON.parse(basicRaw);
+        } catch(e) {}
+      }
+
+      let totalDaysNum = globalProjectData && globalProjectData.durationDays ? parseInt(globalProjectData.durationDays) : 140;
+      if (globalProjectData && globalProjectData.totalExtendedDays && parseInt(globalProjectData.totalExtendedDays) > 0) {
+        totalDaysNum = parseInt(globalProjectData.totalExtendedDays);
+      }
+
+      let passedDays = targetWeek * 7;
+      if (globalProjectData && globalProjectData.startDate && globalMonthlyData && globalMonthlyData.reportDate) {
+        const sDate = new Date(globalProjectData.startDate);
+        const eDate = parseThaiDateStr(globalMonthlyData.reportDate);
+        if (sDate && !isNaN(sDate.getTime()) && eDate && !isNaN(eDate.getTime())) {
+          const diffTime = eDate.getTime() - sDate.getTime();
+          passedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        }
+      }
+      if (passedDays > totalDaysNum) passedDays = totalDaysNum;
+      if (passedDays < 0) passedDays = 0;
+
+      const remainDays = Math.max(0, totalDaysNum - passedDays);
+      const remainPercent = totalDaysNum > 0 ? (remainDays / totalDaysNum) * 100 : 0;
+
+      let planProg = parseFloat(globalMonthlyData.planPercent) || 0;
+      if (planProg === 0) {
+        const weeklyRefRaw = localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+        if (weeklyRefRaw) {
+          try {
+            const weeksArray = JSON.parse(weeklyRefRaw);
+            const targetWeekObj = weeksArray.find(w => parseInt(w.weekIndex) === targetWeek);
+            if (targetWeekObj && targetWeekObj.plan) {
+              planProg = parseFloat(targetWeekObj.plan) || 0;
+            }
+          } catch(e){}
+        }
+      }
+      if (planProg === 0 && totalDaysNum > 0) {
+        planProg = Math.min(100, (passedDays / totalDaysNum) * 100);
+      }
+
+      let actualProg = parseFloat(globalMonthlyData.actualPercent) || 0;
+      if (actualProg === 0) {
+        const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
+        if (progressRaw) {
+          try {
+            const progData = JSON.parse(progressRaw);
+            actualProg = parseFloat(progData.totalWeightPercent) || 0;
+          } catch(e){}
+        }
+      }
+
+      const diffProg = actualProg - planProg;
+
+      globalCalculated = {
+        totalDays: totalDaysNum,
+        passedDays: passedDays,
+        remainDays: remainDays,
+        remainPercent: remainPercent,
+        planProg: planProg,
+        actualProg: actualProg,
+        diffProg: diffProg
+      };
+
+      const saved = localStorage.getItem(STORAGE_KEY_REPORT);
+      if (saved) {
+        try {
+          const s = JSON.parse(saved);
+          if (s.extraSigners) extraSigners = s.extraSigners;
+          if (s.reportDateCustom) {
+            document.getElementById('input_report_date_custom').value = s.reportDateCustom;
+          } else if (globalMonthlyData.reportDate) {
+            document.getElementById('input_report_date_custom').value = thaiDateText(globalMonthlyData.reportDate);
+          }
+        } catch(e){}
+      } else if (globalMonthlyData.reportDate) {
+        document.getElementById('input_report_date_custom').value = thaiDateText(globalMonthlyData.reportDate);
+      } else {
+        document.getElementById('input_report_date_custom').value = "๑ กรกฎาคม ๒๕๖๙";
+      }
+
+      renderPages();
+      renderSignerControls();
+
+      if (isManual) {
+        alert("ซิงค์ข้อมูลความคืบหน้าประจำเดือนเรียบร้อยแล้วค่ะ!");
+      }
+    }
+
+    function renderSignerControls() {
+      const container = document.getElementById('signer_controls_list');
+      if (!container) return;
+      container.innerHTML = '';
+      
+      extraSigners.forEach((sig, idx) => {
+        container.innerHTML += `
+          <div class="flex items-center gap-2.5 bg-slate-100 p-3 rounded-2xl border-2 border-slate-300 shadow-sm">
+            <div class="flex-1 space-y-2">
+              <input type="text" class="w-full text-base p-2 border-2 rounded-xl bg-white font-bold text-slate-800" placeholder="ชื่อ-นามสกุล" value="${sig.name}" oninput="extraSigners[${idx}].name = this.value">
+              <input type="text" class="w-full text-sm p-2 border-2 rounded-xl bg-white font-medium text-slate-700" placeholder="ตำแหน่ง" value="${sig.pos}" oninput="extraSigners[${idx}].pos = this.value">
+            </div>
+            <button onclick="removeSignerRow(${idx})" class="text-rose-600 hover:text-rose-800 p-2.5 bg-rose-100 rounded-xl hover:bg-rose-200 transition cursor-pointer"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+          </div>
+        `;
+      });
+      lucide.createIcons();
+    }
+
+    function addSignerRow() {
+      extraSigners.push({ name: "", pos: "รองปลัดองค์การบริหารส่วนตำบล" });
+      renderSignerControls();
+      renderPages();
+    }
+
+    function removeSignerRow(idx) {
+      extraSigners.splice(idx, 1);
+      renderSignerControls();
+      renderPages();
+    }
+
+    function renderPages() {
+      const container = document.getElementById('pages_container');
+      container.innerHTML = '';
+
+      const pData = globalProjectData;
+      const mData = globalMonthlyData;
+      const calc = globalCalculated;
+
+      const org = pData.organizationName || 'องค์การบริหารส่วนตำบลโพนงาม';
+      const customDateInput = document.getElementById('input_report_date_custom');
+      const reportDateText = customDateInput ? customDateInput.value : thaiDateText(mData.reportDate || '๑ กรกฎาคม ๒๕๖๙');
+
+      let savedState = {};
+      const saved = localStorage.getItem(STORAGE_KEY_REPORT);
+      if (saved) {
+        try { savedState = JSON.parse(saved); } catch(e){}
+      }
+
+      const isOpt1 = savedState.chk_opt_1 !== undefined ? savedState.chk_opt_1 : (calc.diffProg < 0);
+      const isSub1 = savedState.chk_sub_1 !== undefined ? savedState.chk_sub_1 : (calc.diffProg < -10);
+      const isSub2 = savedState.chk_sub_2 !== undefined ? savedState.chk_sub_2 : false;
+      const isOpt2 = savedState.chk_opt_2 !== undefined ? savedState.chk_opt_2 : false;
+      const isOpt3 = savedState.chk_opt_3 !== undefined ? savedState.chk_opt_3 : false;
+      const isOpt4 = savedState.chk_opt_4 !== undefined ? savedState.chk_opt_4 : false;
+      const isOpt5 = savedState.chk_opt_5 !== undefined ? savedState.chk_opt_5 : (calc.diffProg >= 0);
+
+      const isAct1 = savedState.chk_action_1 !== undefined ? savedState.chk_action_1 : (calc.diffProg < 0);
+      const isAct2 = savedState.chk_action_2 !== undefined ? savedState.chk_action_2 : false;
+      const isAct3 = savedState.chk_action_3 !== undefined ? savedState.chk_action_3 : (calc.diffProg >= 0);
+      const isAct4 = savedState.chk_action_4 !== undefined ? savedState.chk_action_4 : false;
+
+      const defaultComms = [
+        "นางสาวถนอมนวล วะทวีก้านตรงฯ",
+        "จ่าเอกธีรพงษ์ ดรชานนท์",
+        "นางสาวปนัดดา ภูอาษา",
+        "นายวีระศักดิ์ ทับวิชร",
+        "นายอรรถวัต อดทน"
+      ];
+      const comms = pData.committees && pData.committees.length > 0 ? pData.committees : defaultComms;
+      
+      let presidentHtml = '';
+      let membersHtml = '';
+      
+      comms.forEach((name, idx) => {
+        if (!name) return;
+        if (idx === 0) {
+          presidentHtml = `
+            <div class="mb-4 text-left">
+              <p class="font-normal mb-2">ความเห็นประธานกรรมการตรวจรับพัสดุ</p>
+              <div class="opinion-box">
+                <div class="pen-dotted-lines"></div>
+                <div class="pen-dotted-lines"></div>
+              </div>
+              <div class="text-center">
+                <p>(ลงชื่อ)............................................................................ ประธานกรรมการฯ</p>
+                <p class="font-medium mt-1">(${name})</p>
+              </div>
+            </div>`;
+        } else {
+          membersHtml += `
+            <div class="flex flex-col items-center mb-4">
+              <div class="inline-block text-center">
+                <p>(ลงชื่อ).................................................... กรรมการฯ</p>
+                <p class="font-medium mt-1">(${name})</p>
+              </div>
+            </div>`;
+        }
+      });
+
+      const inspectors = pData.inspectors || [{ name: "นายพัทธิยะ วงษาซ้าย", pos: "ผู้ควบคุมงาน" }];
+      let inspHTML = "";
+      inspectors.forEach(insp => {
+        if (insp.name) {
+          inspHTML += `<div class="space-y-1 text-center min-w-[200px]"><p>(ลงชื่อ)........................................................... ${insp.pos || 'ผู้ควบคุมงาน'}</p><p class="font-medium mt-1">(${insp.name})</p></div>`;
+        }
+      });
+
+      let extraHtml = '';
+      extraSigners.forEach(sig => {
+        if (sig.name) {
+          const isMayor = sig.pos.includes('นายก');
+          const titleText = isMayor ? `ความเห็น/คำสั่ง${sig.pos}` : `ความเห็น${sig.pos}`;
+          
+          extraHtml += `
+            <div class="mt-4 text-left">
+              <p class="font-normal mb-2">${titleText}</p>
+              <div class="opinion-box">
+                <div class="pen-dotted-lines"></div>
+                <div class="pen-dotted-lines"></div>
+              </div>
+              <div class="text-center mt-3">
+                <p>(ลงชื่อ)........................................................................................</p>
+                <p class="font-medium mt-1">(${sig.name})</p>
+                <p class="text-xs text-slate-600">${sig.pos}</p>
+              </div>
+            </div>`;
+        }
+      });
+
+      // --- หน้าที่ 1 (A4) ---
+      const page1Html = `
+        <div class="sheet-doc">
+          <div>
+            <div class="relative text-center mb-1">
+              <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img" onerror="this.style.display='none'">
+              <h2 class="doc-title pt-1">บันทึกข้อความ</h2>
+            </div>
+
+            <div class="space-y-1 text-base">
+              <div class="flex flex-wrap items-baseline">
+                <span class="font-bold w-24">ส่วนราชการ</span>
+                <span class="flex-1">กองช่าง ${org}</span>
+              </div>
+              <div class="flex justify-between items-baseline">
+                <div class="flex items-baseline flex-1">
+                  <span class="font-bold w-12">ที่</span>
+                  <span class="flex-1"><input type="text" id="in_doc_no" class="editable-input font-normal w-48" value="${savedState.docNo || '-'}"></span>
+                </div>
+                <div class="flex-1 text-left">
+                  <span class="font-bold mr-2">วันที่</span>
+                  <span id="lbl_report_date">${reportDateText}</span>
+                </div>
+              </div>
+              <div class="flex items-baseline justify-between pb-1 dotted-line">
+                <div class="flex items-baseline flex-1">
+                  <span class="font-bold w-12">เรื่อง</span>
+                  <span>รายงานความคืบหน้างานก่อสร้าง</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-2 text-base">
+              <p><span class="font-bold">เรียน</span> นายก${org} ผ่านประธานกรรมการตรวจรับพัสดุ</p>
+            </div>
+
+            <div class="mt-2 leading-relaxed text-justify space-y-2">
+              <p class="indent-word">
+                ตามคำสั่ง${org} ที่ ${toThaiNumber(pData.orderNo || '-')} ลงวันที่ ${thaiDateText(pData.orderDate || '-')} 
+                แต่งตั้งข้าพเจ้าเป็นผู้ควบคุมงาน และ ตามสัญญาจ้างเลขที่ ${toThaiNumber(pData.contractNo || '-')} ลงวันที่ ${thaiDateText(pData.contractDate || '-')} 
+                ว่าจ้าง ${toThaiNumber(pData.contractorName || '-')} 
+                ทำงาน ${toThaiNumber(pData.projectName || 'โครงการก่อสร้าง')} 
+                กำหนดเริ่มสัญญาวันที่ ${thaiDateText(pData.startDateTh || pData.startDate || '-')} สัญญาสิ้นสุดวันที่ ${thaiDateText(pData.endDateTh || pData.endDate || '-')} 
+                ระยะเวลาก่อสร้างรวม ${toThaiNumber(calc.totalDays)} วัน จำนวนเงินตามสัญญา ${formatThaiCurrency(pData.budgetAmount || '0.00')} บาท 
+                กำหนดอัตราค่าปรับวันละ ${formatThaiCurrency(pData.finePerDay || '0.00')} บาท ${pData.extendContractDate ? `และได้รับการอนุมัติขยายสัญญาถึงวันที่ ${thaiDateText(pData.extendContractDate)}` : ''}นั้น
+              </p>
+              
+              <p class="indent-word">
+                ปัจจุบัน งานก่อสร้างระยะเวลาได้ผ่านมาแล้ว <span class="font-bold">${toThaiNumber(calc.passedDays)}</span> วัน 
+                คงเหลือระยะเวลา <span class="font-bold">${toThaiNumber(calc.remainDays)}</span> วัน คิดเป็น <span class="font-bold">${toThaiNumber(calc.remainPercent.toFixed(2))}</span> % 
+                ผลการปฏิบัติงานตามแผนงาน <span class="font-bold">${toThaiNumber(calc.planProg.toFixed(2))}</span> % 
+                ผลการปฏิบัติงานของผู้รับจ้างถึงปัจจุบัน <span class="font-bold">${toThaiNumber(calc.actualProg.toFixed(2))}</span> % 
+                ${calc.diffProg < 0 ? 'ล่าช้ากว่าแผนงาน' : 'เร็วกว่าแผนงาน'}คิดเป็น <span class="font-bold">${toThaiNumber(Math.abs(calc.diffProg).toFixed(2))}</span> % 
+                เมื่อพิจารณาแล้วเห็นว่า
+              </p>
+            </div>
+
+            <div class="mt-2 space-y-1.5 indent-tab">
+              <div class="flex items-start gap-2">
+                <input type="checkbox" id="chk_opt_1" class="custom-chk mt-0.5" ${isOpt1 ? 'checked' : ''}>
+                <div class="flex-1">
+                  <span>ผู้รับจ้างปฏิบัติงานล่าช้า คือ</span>
+                  <div class="pl-6 space-y-1 mt-1">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" id="chk_sub_1" class="custom-chk" ${isSub1 ? 'checked' : ''}>
+                      <span>ผลการปฏิบัติงานล่าช้ากว่าแผนงานเกิน ๑๐ %</span>
+                    </label>
+                    <label class="flex items-start gap-2 cursor-pointer">
+                      <input type="checkbox" id="chk_sub_2" class="custom-chk mt-0.5" ${isSub2 ? 'checked' : ''}>
+                      <span>ผู้รับจ้างไม่เข้าทำงานในพื้นที่ก่อสร้างติดต่อกันเป็นระยะเวลาเกิน ๑๕ วัน ขึ้นไป โดยไม่แจ้งเหตุผลความจำเป็นให้ทราบ เว้นแต่สัญญาจะกำหนดไว้เป็นอย่างอื่น</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="chk_opt_2" class="custom-chk" ${isOpt2 ? 'checked' : ''}>
+                <span>ใกล้สิ้นสุดกำหนดเวลาในสัญญาแล้ว งานอาจไม่แล้วเสร็จตามกำหนด</span>
+              </label>
+
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="chk_opt_3" class="custom-chk" ${isOpt3 ? 'checked' : ''}>
+                <span>สิ้นสุดกำหนดเวลาในสัญญาแล้ว งานยังไม่แล้วเสร็จ</span>
+              </label>
+
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="chk_opt_4" class="custom-chk" ${isOpt4 ? 'checked' : ''}>
+                <span>ผลงานที่แล้วเสร็จยังไม่ดีขึ้น</span>
+              </label>
+
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="chk_opt_5" class="custom-chk" ${isOpt5 ? 'checked' : ''}>
+                <span>การปฏิบัติงานเป็นไปตามแผนงานที่กำหนด และมีความก้าวหน้าอย่างต่อเนื่อง</span>
+              </label>
+            </div>
+
+            <div class="mt-2 indent-tab space-y-2">
+              <div class="font-bold">เห็นควร</div>
+              <div class="pl-6 space-y-1.5">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" id="chk_action_1" class="custom-chk" ${isAct1 ? 'checked' : ''}>
+                  <span>มีหนังสือเร่งรัดผู้รับจ้าง</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" id="chk_action_2" class="custom-chk" ${isAct2 ? 'checked' : ''}>
+                  <span>มีหนังสือแจ้งสงวนสิทธิการปรับให้ผู้รับจ้างทราบ</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" id="chk_action_3" class="custom-chk" ${isAct3 ? 'checked' : ''}>
+                  <span>ควบคุมงานให้เป็นไปตามรูปแบบรายการต่อไป</span>
+                </label>
+                <div>
+                  <label class="flex items-center gap-2 cursor-pointer mb-1">
+                    <input type="checkbox" id="chk_action_4" class="custom-chk" ${isAct4 ? 'checked' : ''}>
+                    <span>อื่นๆ (ระบุ)</span>
+                  </label>
+                  <div class="pl-6 pt-1">
+                    <textarea id="txt_other_opinion" class="other-textarea" rows="3" placeholder="พิมพ์ความคิดเห็นอื่นๆ...">${savedState.otherOpinion || ''}</textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="indent-word mt-2">จึงเรียนมาเพื่อโปรดทราบและพิจารณาสั่งการ</p>
+          </div>
+
+          <!-- ลงนามหน้า 1 (ผู้ควบคุมงาน) -->
+          <div>
+            <div class="mt-3 flex justify-end pr-8">
+              ${inspHTML}
+            </div>
+          </div>
+        </div>
+      `;
+
+      // --- หน้าที่ 2 (A4) ---
+      const page2Html = `
+        <div class="sheet-doc">
+          <div>
+            <div class="text-center text-xs text-slate-600 font-normal pb-1">
+              - ๒ -
+            </div>
+
+            <div class="pt-1">
+              <p class="font-normal mb-1">- ทราบ</p>
+              ${presidentHtml}
+              <div class="grid grid-cols-2 gap-y-4 gap-x-6 text-center text-base mt-1">
+                ${membersHtml}
+              </div>
+            </div>
+
+            ${extraHtml}
+          </div>
+
+          <div class="text-center text-xs text-slate-400 pb-1">
+            - แผ่นที่ 2 / 2 -
+          </div>
+        </div>
+      `;
+
+      container.innerHTML = page1Html + page2Html;
+      lucide.createIcons();
+    }
+
+    function saveRecord() {
+      const docNoInput = document.getElementById('in_doc_no');
+      const otherTxt = document.getElementById('txt_other_opinion');
+      const customDateInput = document.getElementById('input_report_date_custom');
+      
+      const data = {
+        docNo: docNoInput ? docNoInput.value : '-',
+        reportDateCustom: customDateInput ? customDateInput.value : '',
+        chk_opt_1: document.getElementById('chk_opt_1')?.checked,
+        chk_sub_1: document.getElementById('chk_sub_1')?.checked,
+        chk_sub_2: document.getElementById('chk_sub_2')?.checked,
+        chk_opt_2: document.getElementById('chk_opt_2')?.checked,
+        chk_opt_3: document.getElementById('chk_opt_3')?.checked,
+        chk_opt_4: document.getElementById('chk_opt_4')?.checked,
+        chk_opt_5: document.getElementById('chk_opt_5')?.checked,
+        chk_action_1: document.getElementById('chk_action_1')?.checked,
+        chk_action_2: document.getElementById('chk_action_2')?.checked,
+        chk_action_3: document.getElementById('chk_action_3')?.checked,
+        chk_action_4: document.getElementById('chk_action_4')?.checked,
+        otherOpinion: otherTxt ? otherTxt.value : '',
+        extraSigners: extraSigners,
+        updatedAt: new Date().toLocaleString('th-TH')
+      };
+      localStorage.setItem(STORAGE_KEY_REPORT, JSON.stringify(data));
+      alert("บันทึกข้อมูลรายงานความคืบหน้าประจำเดือนเรียบร้อยแล้วค่ะ");
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem(STORAGE_KEY_REPORT);
+      if (saved) {
+        try {
+          const s = JSON.parse(saved);
+          if (s.extraSigners) extraSigners = s.extraSigners;
+          if (s.reportDateCustom) {
+            document.getElementById('input_report_date_custom').value = s.reportDateCustom;
+          }
+        } catch(e){}
+      }
+      loadMonthlyProgressData(false);
+    });
+  </script>
+</body>
+</html>

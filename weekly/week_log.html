@@ -114,6 +114,35 @@
       background-color: #fef08a;
     }
 
+    .custom-chk {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 1.15rem;
+      height: 1.15rem;
+      border: 1.5px solid #000 !important;
+      border-radius: 0.2rem;
+      background-color: #fff !important;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      position: relative;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .custom-chk:checked::after {
+      content: '✔';
+      font-size: 12.5pt;
+      color: #000 !important;
+      font-weight: 900;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -54%);
+      line-height: 1;
+    }
+
     .btn-3d {
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.6);
       transition: all 0.15s ease-in-out;
@@ -127,6 +156,8 @@
       body {
         background: white !important;
         padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       .no-print {
         display: none !important;
@@ -143,6 +174,13 @@
       .auto-expand-area {
         overflow: visible !important;
         height: auto !important;
+      }
+      .custom-chk {
+        border: 1.5px solid #000 !important;
+        background-color: #fff !important;
+      }
+      .custom-chk:checked::after {
+        color: #000 !important;
       }
     }
   </style>
@@ -177,7 +215,7 @@
     </div>
 
     <!-- 1. ตารางบันทึกการปฏิบัติงานประจำวัน 7 วัน -->
-    <table class="table-job mb-2">
+    <table class="table-job mb-3">
       <thead>
         <tr>
           <th style="width: 24%;">วัน เดือน ปี</th>
@@ -191,8 +229,7 @@
     </table>
 
     <!-- 2. บัญชีแสดงจำนวนแรงงาน -->
-    <div class="mb-2">
-      <div class="text-[11pt] font-bold text-slate-800 mb-0.5" id="lbl-org-labor">องค์การบริหารส่วนตำบลโพนงาม</div>
+    <div class="mb-3">
       <table class="table-job text-center">
         <thead>
           <tr>
@@ -212,7 +249,7 @@
         </thead>
         <tbody>
           <tr>
-            <td class="text-left pl-2 font-medium">หัวหน้าคนงาน/ช่าง</td>
+            <td class="text-left pl-2">หัวหน้าคนงาน/ช่าง</td>
             <td><input type="text" id="lead_0" class="cell-input-num labor-lead" oninput="calcLaborSum(0)"></td>
             <td><input type="text" id="lead_1" class="cell-input-num labor-lead" oninput="calcLaborSum(1)"></td>
             <td><input type="text" id="lead_2" class="cell-input-num labor-lead" oninput="calcLaborSum(2)"></td>
@@ -223,7 +260,7 @@
             <td><input type="text" id="lead_note" class="cell-input-text text-center text-xs"></td>
           </tr>
           <tr>
-            <td class="text-left pl-2 font-medium">คนงาน</td>
+            <td class="text-left pl-2">คนงาน</td>
             <td><input type="text" id="worker_0" class="cell-input-num labor-worker" oninput="calcLaborSum(0)"></td>
             <td><input type="text" id="worker_1" class="cell-input-num labor-worker" oninput="calcLaborSum(1)"></td>
             <td><input type="text" id="worker_2" class="cell-input-num labor-worker" oninput="calcLaborSum(2)"></td>
@@ -249,8 +286,7 @@
     </div>
 
     <!-- 3. ตารางสภาพอากาศ -->
-    <div class="mb-2">
-      <div class="text-[11pt] font-bold text-slate-800 mb-0.5" id="lbl-org-weather">องค์การบริหารส่วนตำบลโพนงาม</div>
+    <div class="mb-3">
       <table class="table-job text-center">
         <thead>
           <tr>
@@ -271,66 +307,66 @@
         <tbody>
           <!-- สภาพท้องฟ้า -->
           <tr>
-            <td rowspan="2" class="w-20 font-bold bg-slate-50 text-center">สภาพท้องฟ้า</td>
-            <td class="text-left pl-2 font-medium">แจ่มใส</td>
-            <td><input type="checkbox" id="chk_clear_0" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 0)"></td>
-            <td><input type="checkbox" id="chk_clear_1" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 1)"></td>
-            <td><input type="checkbox" id="chk_clear_2" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 2)"></td>
-            <td><input type="checkbox" id="chk_clear_3" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 3)"></td>
-            <td><input type="checkbox" id="chk_clear_4" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 4)"></td>
-            <td><input type="checkbox" id="chk_clear_5" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 5)"></td>
-            <td><input type="checkbox" id="chk_clear_6" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('clear', 6)"></td>
+            <td rowspan="2" class="w-20 bg-slate-50 text-center">สภาพท้องฟ้า</td>
+            <td class="text-left pl-2">แจ่มใส</td>
+            <td><input type="checkbox" id="chk_clear_0" class="custom-chk" onchange="handleSkyCheck('clear', 0)"></td>
+            <td><input type="checkbox" id="chk_clear_1" class="custom-chk" onchange="handleSkyCheck('clear', 1)"></td>
+            <td><input type="checkbox" id="chk_clear_2" class="custom-chk" onchange="handleSkyCheck('clear', 2)"></td>
+            <td><input type="checkbox" id="chk_clear_3" class="custom-chk" onchange="handleSkyCheck('clear', 3)"></td>
+            <td><input type="checkbox" id="chk_clear_4" class="custom-chk" onchange="handleSkyCheck('clear', 4)"></td>
+            <td><input type="checkbox" id="chk_clear_5" class="custom-chk" onchange="handleSkyCheck('clear', 5)"></td>
+            <td><input type="checkbox" id="chk_clear_6" class="custom-chk" onchange="handleSkyCheck('clear', 6)"></td>
             <td><input type="text" id="sky_note_1" class="cell-input-text text-center text-xs"></td>
           </tr>
           <tr>
-            <td class="text-left pl-2 font-medium">มีเมฆมาก</td>
-            <td><input type="checkbox" id="chk_cloudy_0" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 0)"></td>
-            <td><input type="checkbox" id="chk_cloudy_1" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 1)"></td>
-            <td><input type="checkbox" id="chk_cloudy_2" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 2)"></td>
-            <td><input type="checkbox" id="chk_cloudy_3" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 3)"></td>
-            <td><input type="checkbox" id="chk_cloudy_4" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 4)"></td>
-            <td><input type="checkbox" id="chk_cloudy_5" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 5)"></td>
-            <td><input type="checkbox" id="chk_cloudy_6" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleSkyCheck('cloudy', 6)"></td>
+            <td class="text-left pl-2">มีเมฆมาก</td>
+            <td><input type="checkbox" id="chk_cloudy_0" class="custom-chk" onchange="handleSkyCheck('cloudy', 0)"></td>
+            <td><input type="checkbox" id="chk_cloudy_1" class="custom-chk" onchange="handleSkyCheck('cloudy', 1)"></td>
+            <td><input type="checkbox" id="chk_cloudy_2" class="custom-chk" onchange="handleSkyCheck('cloudy', 2)"></td>
+            <td><input type="checkbox" id="chk_cloudy_3" class="custom-chk" onchange="handleSkyCheck('cloudy', 3)"></td>
+            <td><input type="checkbox" id="chk_cloudy_4" class="custom-chk" onchange="handleSkyCheck('cloudy', 4)"></td>
+            <td><input type="checkbox" id="chk_cloudy_5" class="custom-chk" onchange="handleSkyCheck('cloudy', 5)"></td>
+            <td><input type="checkbox" id="chk_cloudy_6" class="custom-chk" onchange="handleSkyCheck('cloudy', 6)"></td>
             <td><input type="text" id="sky_note_2" class="cell-input-text text-center text-xs"></td>
           </tr>
 
           <!-- สภาพฝนตก -->
           <tr>
-            <td rowspan="3" class="w-20 font-bold bg-slate-50 text-center">ฝนตก</td>
+            <td rowspan="3" class="w-20 bg-slate-50 text-center">ฝนตก</td>
             <td class="text-left pl-2 text-[12pt]">เล็กน้อย</td>
-            <td><input type="checkbox" id="chk_light_0" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 0)"></td>
-            <td><input type="checkbox" id="chk_light_1" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 1)"></td>
-            <td><input type="checkbox" id="chk_light_2" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 2)"></td>
-            <td><input type="checkbox" id="chk_light_3" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 3)"></td>
-            <td><input type="checkbox" id="chk_light_4" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 4)"></td>
-            <td><input type="checkbox" id="chk_light_5" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 5)"></td>
-            <td><input type="checkbox" id="chk_light_6" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('light', 6)"></td>
+            <td><input type="checkbox" id="chk_light_0" class="custom-chk" onchange="handleRainCheck('light', 0)"></td>
+            <td><input type="checkbox" id="chk_light_1" class="custom-chk" onchange="handleRainCheck('light', 1)"></td>
+            <td><input type="checkbox" id="chk_light_2" class="custom-chk" onchange="handleRainCheck('light', 2)"></td>
+            <td><input type="checkbox" id="chk_light_3" class="custom-chk" onchange="handleRainCheck('light', 3)"></td>
+            <td><input type="checkbox" id="chk_light_4" class="custom-chk" onchange="handleRainCheck('light', 4)"></td>
+            <td><input type="checkbox" id="chk_light_5" class="custom-chk" onchange="handleRainCheck('light', 5)"></td>
+            <td><input type="checkbox" id="chk_light_6" class="custom-chk" onchange="handleRainCheck('light', 6)"></td>
             <td><input type="text" id="rain_note_1" class="cell-input-text text-center text-xs"></td>
           </tr>
           <tr>
             <td class="text-left pl-2 text-[12pt]">ปานกลาง</td>
-            <td><input type="checkbox" id="chk_med_0" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 0)"></td>
-            <td><input type="checkbox" id="chk_med_1" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 1)"></td>
-            <td><input type="checkbox" id="chk_med_2" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 2)"></td>
-            <td><input type="checkbox" id="chk_med_3" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 3)"></td>
-            <td><input type="checkbox" id="chk_med_4" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 4)"></td>
-            <td><input type="checkbox" id="chk_med_5" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 5)"></td>
-            <td><input type="checkbox" id="chk_med_6" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('med', 6)"></td>
+            <td><input type="checkbox" id="chk_med_0" class="custom-chk" onchange="handleRainCheck('med', 0)"></td>
+            <td><input type="checkbox" id="chk_med_1" class="custom-chk" onchange="handleRainCheck('med', 1)"></td>
+            <td><input type="checkbox" id="chk_med_2" class="custom-chk" onchange="handleRainCheck('med', 2)"></td>
+            <td><input type="checkbox" id="chk_med_3" class="custom-chk" onchange="handleRainCheck('med', 3)"></td>
+            <td><input type="checkbox" id="chk_med_4" class="custom-chk" onchange="handleRainCheck('med', 4)"></td>
+            <td><input type="checkbox" id="chk_med_5" class="custom-chk" onchange="handleRainCheck('med', 5)"></td>
+            <td><input type="checkbox" id="chk_med_6" class="custom-chk" onchange="handleRainCheck('med', 6)"></td>
             <td><input type="text" id="rain_note_2" class="cell-input-text text-center text-xs"></td>
           </tr>
           <tr>
             <td class="text-left pl-2 text-[12pt]">หนัก</td>
-            <td><input type="checkbox" id="chk_heavy_0" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 0)"></td>
-            <td><input type="checkbox" id="chk_heavy_1" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 1)"></td>
-            <td><input type="checkbox" id="chk_heavy_2" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 2)"></td>
-            <td><input type="checkbox" id="chk_heavy_3" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 3)"></td>
-            <td><input type="checkbox" id="chk_heavy_4" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 4)"></td>
-            <td><input type="checkbox" id="chk_heavy_5" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 5)"></td>
-            <td><input type="checkbox" id="chk_heavy_6" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleRainCheck('heavy', 6)"></td>
+            <td><input type="checkbox" id="chk_heavy_0" class="custom-chk" onchange="handleRainCheck('heavy', 0)"></td>
+            <td><input type="checkbox" id="chk_heavy_1" class="custom-chk" onchange="handleRainCheck('heavy', 1)"></td>
+            <td><input type="checkbox" id="chk_heavy_2" class="custom-chk" onchange="handleRainCheck('heavy', 2)"></td>
+            <td><input type="checkbox" id="chk_heavy_3" class="custom-chk" onchange="handleRainCheck('heavy', 3)"></td>
+            <td><input type="checkbox" id="chk_heavy_4" class="custom-chk" onchange="handleRainCheck('heavy', 4)"></td>
+            <td><input type="checkbox" id="chk_heavy_5" class="custom-chk" onchange="handleRainCheck('heavy', 5)"></td>
+            <td><input type="checkbox" id="chk_heavy_6" class="custom-chk" onchange="handleRainCheck('heavy', 6)"></td>
             <td><input type="text" id="rain_note_3" class="cell-input-text text-center text-xs"></td>
           </tr>
           <tr>
-            <td colspan="2" class="text-left pl-2 font-semibold text-[11pt]">ฝนตกเวลา (เช่น เช้า/บ่าย หรือ ตลอดวัน)</td>
+            <td colspan="2" class="text-left pl-2 text-[12pt]">ฝนตกเวลา (เช่น เช้า/บ่าย หรือ ตลอดวัน)</td>
             <td><input type="text" id="w_time_0" class="cell-input-text" placeholder="ระบุ..."></td>
             <td><input type="text" id="w_time_1" class="cell-input-text" placeholder="ระบุ..."></td>
             <td><input type="text" id="w_time_2" class="cell-input-text" placeholder="ระบุ..."></td>
@@ -346,9 +382,8 @@
 
     <!-- 4. ตารางบัญชีแสดงจำนวนเครื่องจักร -->
     <div class="mb-2">
-      <div class="flex items-center justify-between mb-0.5">
-        <span class="text-[11pt] font-bold text-slate-800">บัญชีแสดงจำนวนเครื่องจักร เครื่องมือ วัสดุและอุปกรณ์</span>
-        <div class="flex items-center gap-1.5 no-print">
+      <div class="flex items-center justify-end mb-1 no-print">
+        <div class="flex items-center gap-1.5">
           <select id="sel_standard_mach" class="text-xs p-1 border rounded bg-white text-slate-800">
             <option value="รถเกรดเดอร์">รถเกรดเดอร์</option>
             <option value="รถขุดดิน-ตักดิน">รถขุดดิน-ตักดิน</option>
@@ -431,7 +466,6 @@
 
     document.getElementById('badge-week').textContent = `สัปดาห์ที่ ${currentWeekIndex}`;
 
-    // 1. สร้าง 7 วันแบบไดนามิก
     function buildDynamicDays() {
       let startDateStr = "";
       const refDataRaw = localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
@@ -442,6 +476,9 @@
         if (wItem && wItem.startDate) {
           startDateStr = wItem.startDate;
           document.getElementById('txt-date-range').textContent = `ช่วงวันที่: ${wItem.startDate} ถึง ${wItem.endDate}`;
+          if (wItem.week) {
+            document.getElementById('badge-week').textContent = `สัปดาห์ที่ ${wItem.week}${wItem.seq ? ' (ครั้งที่ ' + wItem.seq + ')' : ''}`;
+          }
         }
       }
 
@@ -476,15 +513,15 @@
 
         dailyRowsTbody.innerHTML += `
           <tr>
-            <td class="font-bold text-center bg-slate-50/60 align-top pt-2">${fullDateTh}</td>
+            <td class="text-center bg-slate-50/60 align-top pt-2">${fullDateTh}</td>
             <td class="p-1 align-top">
               <div class="flex items-center gap-6 text-[12.5pt] mb-1">
-                <label class="flex items-center gap-1.5 cursor-pointer font-medium select-none">
-                  <input type="checkbox" id="chk_no_work_${i}" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleWorkCheck('no', ${i})">
+                <label class="flex items-center gap-1.5 cursor-pointer select-none">
+                  <input type="checkbox" id="chk_no_work_${i}" class="custom-chk" onchange="handleWorkCheck('no', ${i})">
                   <span>ไม่มีการทำงานของผู้รับจ้าง</span>
                 </label>
-                <label class="flex items-center gap-1.5 cursor-pointer font-medium select-none">
-                  <input type="checkbox" id="chk_has_work_${i}" class="w-4 h-4 accent-slate-800 rounded cursor-pointer" onchange="handleWorkCheck('yes', ${i})">
+                <label class="flex items-center gap-1.5 cursor-pointer select-none">
+                  <input type="checkbox" id="chk_has_work_${i}" class="custom-chk" onchange="handleWorkCheck('yes', ${i})">
                   <span>ผู้รับจ้างทำงานโดยมีรายละเอียด ดังนี้</span>
                 </label>
               </div>
@@ -568,9 +605,9 @@
 
       let titleHTML = '';
       if (isEditable || name === "") {
-        titleHTML = `<input type="text" class="cell-input-text font-medium text-slate-800 mach-name-input" placeholder="พิมพ์ชื่อเครื่องจักร..." value="${name}">`;
+        titleHTML = `<input type="text" class="cell-input-text text-slate-800 mach-name-input" placeholder="พิมพ์ชื่อเครื่องจักร..." value="${name}">`;
       } else {
-        titleHTML = `<span class="font-medium text-slate-800 mach-name-label">${name}</span>`;
+        titleHTML = `<span class="text-slate-800 mach-name-label">${name}</span>`;
       }
 
       let dayInputsHTML = '';

@@ -58,6 +58,7 @@
     .table-progress th {
       text-align: center;
       font-weight: bold;
+      background-color: #f8fafc;
     }
 
     @media print {
@@ -72,16 +73,16 @@
   <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
   <div class="max-w-[210mm] w-full mb-4 bg-white p-5 rounded-2xl shadow-lg border border-slate-300 flex flex-wrap items-center justify-between gap-4 no-print">
     <div class="flex items-center gap-3">
-      <a href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-2xl font-bold border border-slate-300 shadow-sm">
+      <a href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-xl font-bold border border-slate-300 shadow-sm">
         <i data-lucide="arrow-left" class="w-6 h-6"></i> กลับเมนู
       </a>
       <span class="font-bold text-slate-800 text-2xl">ผลงานการดำเนินงานประจำเดือน</span>
     </div>
     <div class="flex items-center gap-3 flex-wrap">
-      <button onclick="loadProgressData()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-2xl font-bold flex items-center gap-2 shadow">
+      <button onclick="loadProgressData()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow">
         <i data-lucide="refresh-cw" class="w-6 h-6"></i> ปรับปรุงข้อมูล
       </button>
-      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-2xl font-bold flex items-center gap-2 shadow">
+      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow">
         <i data-lucide="printer" class="w-6 h-6"></i> พิมพ์ / PDF
       </button>
     </div>
@@ -116,12 +117,12 @@
         </tbody>
         <tfoot>
           <tr>
-            <td colspan="2" class="text-center font-bold">รวม</td>
-            <td class="text-center font-bold" id="total_weight_sum">๑๐๐.๐๐</td>
-            <td class="text-center" id="total_prev_sum">-</td>
-            <td class="text-center" id="total_month_sum">-</td>
-            <td class="text-center font-bold" id="total_accumulated_sum">-</td>
-            <td class="text-center font-bold" id="total_result_sum">-</td>
+            <td colspan="2" class="text-center font-bold bg-slate-50">รวม</td>
+            <td class="text-center font-bold bg-slate-50" id="total_weight_sum">๑๐๐.๐๐</td>
+            <td class="text-center font-bold bg-slate-50" id="total_prev_sum">-</td>
+            <td class="text-center font-bold bg-slate-50" id="total_month_sum">-</td>
+            <td class="text-center font-bold bg-slate-50" id="total_accumulated_sum">-</td>
+            <td class="text-center font-bold bg-slate-50" id="total_result_sum">-</td>
           </tr>
         </tfoot>
       </table>
@@ -134,26 +135,43 @@
   <script>
     lucide.createIcons();
 
+    let currentProjectID = 'DEFAULT_PROJ';
+
+    function initProjectContext() {
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          const projectData = JSON.parse(basicRaw);
+          const cNo = projectData.contractNo || 'NO_CONTRACT';
+          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        } catch(e) {}
+      }
+    }
+
     function toThaiNumber(numStr) {
-      if (numStr === null || numStr === undefined) return '';
+      if (numStr === null || numStr === undefined || isNaN(numStr)) return '-';
+      const num = parseFloat(numStr);
+      if (num === 0) return '-';
+      const formatted = num.toFixed(2);
       const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
-      return numStr.toString().replace(/[0-9]/g, (w) => thaiNums[w]);
+      return formatted.replace(/[0-9]/g, (w) => thaiNums[w]);
     }
 
     function loadProgressData() {
+      initProjectContext();
       try {
         // 1. โหลดชื่อหน่วยงาน
-        const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+        let orgName = "องค์การบริหารส่วนตำบลโพนงาม";
+        const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
         if (basicRaw) {
           const data = JSON.parse(basicRaw);
-          if (data.organizationName) {
-            document.getElementById('lbl_org_name').textContent = data.organizationName;
-          }
+          if (data.organizationName) orgName = data.organizationName;
         }
+        document.getElementById('lbl_org_name').textContent = orgName;
 
-        // 2. ตรวจสอบสัปดาห์ที่เลือกจากหน้า Monthly_Reference (MONTHLY_REPORT_INFO_DATA)
-        let targetWeek = 5; // ค่าเริ่มต้นสัปดาห์ที่ 5
-        const monthlyRaw = localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+        // 2. ตรวจสอบสัปดาห์ที่ถูกเลือกล่าสุดของโครงการนี้ จากหน้ารายงานประจำเดือน
+        let targetWeek = 5; 
+        const monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
         if (monthlyRaw) {
           const mData = JSON.parse(monthlyRaw);
           if (mData.planWeek !== undefined && mData.planWeek !== '') {
@@ -161,65 +179,83 @@
           }
         }
 
-        // 3. ดึงข้อมูลผลงานจริงจากสัปดาห์ที่ถูกเลือก
-        let currentMonthProgress = 0;
-        const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
+        // 3. โหลดข้อมูลผลงานรายสัปดาห์ ตาม targetWeek
+        let weekDataObj = null;
+        const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
         if (progressRaw) {
-          const progData = JSON.parse(progressRaw);
-          currentMonthProgress = parseFloat(progData.totalWeightPercent) || 0;
+          weekDataObj = JSON.parse(progressRaw);
         } else {
-          // ถ้าสัปดาห์ที่เลือกไม่มีข้อมูล ให้ดึงจากสัปดาห์ล่าสุดที่มีในระบบแทน
-          for (let w = 5; w >= 1; w--) {
-            const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+          // หากไม่มี ลองถอยหาสัปดาห์ก่อนหน้าที่มีการบันทึก
+          for (let w = targetWeek; w >= 1; w--) {
+            const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
             if (wRaw) {
-              const wData = JSON.parse(wRaw);
-              currentMonthProgress = parseFloat(wData.totalWeightPercent) || 0;
+              weekDataObj = JSON.parse(wRaw);
               break;
             }
           }
         }
 
-        // 4. รายการหมวดงานมาตรฐานตามแบบ
-        const defaultItems = [
-          { name: "งานถางป่าและขุดตอ ขนาดเบา", weight: 0.35 },
-          { name: "งานทรายรองใต้ผิวคอนกรีต", weight: 7.10 },
-          { name: "expansion joint", weight: 0.87 },
-          { name: "contraction joint", weight: 5.24 },
-          { name: "งานผิวทางพอร์ตแลนด์คอนกรีตเสริมเหล็ก", weight: 83.97 },
-          { name: "งานไหล่ทางวัสดุมวลรวม", weight: 2.47 }
-        ];
-
+        // 4. โหลดผลงานสะสมของเดือนก่อนหน้า (เพื่อเอามาใส่ช่อง "ถึงเดือนก่อน")
+        // *สมมติฐาน: ในการทำงานจริงจะต้องมีกลไกบันทึกว่าเดือนก่อนได้เท่าไหร่ 
+        // เบื้องต้นในระบบนี้จะใช้ค่า prev จาก tasks ของสัปดาห์ที่ 1 หรือถ้าให้ง่ายสุด ตอนนี้แสดงผลเฉพาะในเดือนและสะสมให้ตรงกับสัปดาห์ล่าสุด
+        
         const tbody = document.getElementById('progress_table_body');
         if (!tbody) return;
         tbody.innerHTML = '';
 
+        if (!weekDataObj || !weekDataObj.tasks || weekDataObj.tasks.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center text-rose-500 py-4">ไม่พบข้อมูลการบันทึกผลงานในสัปดาห์ที่ ${targetWeek} ของโครงการนี้ กรุณาบันทึกข้อมูลในหน้ารายสัปดาห์ก่อนค่ะ</td></tr>`;
+          return;
+        }
+
+        let sumProportion = 0;
+        let sumPrev = 0;
         let sumMonth = 0;
+        let sumAccum = 0;
+        let sumTotalResult = 0;
 
-        defaultItems.forEach((item, idx) => {
-          const mVal = (currentMonthProgress * item.weight) / 100;
-          sumMonth += mVal;
+        weekDataObj.tasks.forEach((task, idx) => {
+          const prop = parseFloat(task.proportion) || 0;
+          const prev = parseFloat(task.prev) || 0;
+          const curr = parseFloat(task.curr) || 0;
+          const accum = prev + curr;
 
-          const mStr = currentMonthProgress > 0 ? toThaiNumber(mVal.toFixed(2)) : '-';
-          const weightTh = toThaiNumber(item.weight.toFixed(2));
-          const idxTh = toThaiNumber(idx + 1);
+          // คำนวณผลงานรวม
+          const resultPrev = prop * (prev / 100);
+          const resultCurr = prop * (curr / 100);
+          const resultAccum = prop * (accum / 100);
+
+          sumProportion += prop;
+          sumPrev += resultPrev;
+          sumMonth += resultCurr;
+          sumAccum += resultAccum;
+          sumTotalResult += resultAccum;
+
+          const idxTh = toThaiNumber(idx + 1).replace('.๐๐', '');
+          const propTh = prop > 0 ? toThaiNumber(prop) : '-';
+          const prevTh = prev > 0 ? toThaiNumber(prev) : '-';
+          const currTh = curr > 0 ? toThaiNumber(curr) : '-';
+          const accumTh = accum > 0 ? toThaiNumber(accum) : '-';
+          const resAccumTh = resultAccum > 0 ? toThaiNumber(resultAccum) : '-';
 
           tbody.innerHTML += `
             <tr>
               <td class="text-center">${idxTh}</td>
-              <td>${item.name}</td>
-              <td class="text-center">${weightTh}</td>
-              <td class="text-center">-</td>
-              <td class="text-center">${mStr}</td>
-              <td class="text-center">${mStr}</td>
-              <td class="text-center">${mStr}</td>
+              <td class="pl-2">${task.name || 'ไม่มีชื่อรายการ'}</td>
+              <td class="text-center">${propTh}</td>
+              <td class="text-center">${prevTh}</td>
+              <td class="text-center">${currTh}</td>
+              <td class="text-center font-bold">${accumTh}</td>
+              <td class="text-center font-bold text-emerald-800">${resAccumTh}</td>
             </tr>
           `;
         });
 
-        const totalStr = currentMonthProgress > 0 ? toThaiNumber(sumMonth.toFixed(2)) : '-';
-        document.getElementById('total_month_sum').textContent = totalStr;
-        document.getElementById('total_accumulated_sum').textContent = totalStr;
-        document.getElementById('total_result_sum').textContent = totalStr;
+        document.getElementById('total_weight_sum').textContent = sumProportion > 0 ? toThaiNumber(sumProportion) : '๑๐๐.๐๐';
+        document.getElementById('total_prev_sum').textContent = sumPrev > 0 ? toThaiNumber(sumPrev) : '-';
+        document.getElementById('total_month_sum').textContent = sumMonth > 0 ? toThaiNumber(sumMonth) : '-';
+        document.getElementById('total_accumulated_sum').textContent = sumAccum > 0 ? toThaiNumber(sumAccum) : '-'; // ปกติผลรวมของเปอร์เซ็นต์รวมจะไม่ถูกรวมแบบตรงๆ แต่จะใช้ totalResult แทน
+        document.getElementById('total_result_sum').textContent = sumTotalResult > 0 ? toThaiNumber(sumTotalResult) : '-';
 
       } catch (err) {
         console.error("Error loading progress data:", err);

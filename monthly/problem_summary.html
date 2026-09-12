@@ -126,41 +126,49 @@
     .custom-checkbox {
       appearance: none;
       -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
-      border: 1.5px solid #000;
-      border-radius: 3px;
-      background-color: #fff;
+      width: 1.15rem;
+      height: 1.15rem;
+      border: 1.5px solid #000 !important;
+      border-radius: 0.2rem;
+      background-color: #fff !important;
+      cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
       vertical-align: middle;
-    }
-    .custom-checkbox:checked {
-      background-color: #2563eb;
-      border-color: #2563eb;
+      position: relative;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     .custom-checkbox:checked::after {
       content: '✔';
-      color: white;
-      font-size: 12px;
-      font-weight: bold;
+      font-size: 12.5pt;
+      color: #000 !important;
+      font-weight: 900;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -54%);
+      line-height: 1;
     }
 
     @media print {
-      body { background: white !important; padding: 0 !important; }
+      body { background: white !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       .no-print { display: none !important; }
       .sheet-workspace { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 15mm 15mm 15mm 20mm !important; }
       .editable-input { background: transparent !important; }
-      .custom-checkbox { border-color: #000 !important; }
-      .custom-checkbox:checked { background-color: #000 !important; border-color: #000 !important; }
+      .custom-checkbox { 
+        border: 1.5px solid #000 !important; 
+        background-color: #fff !important; 
+      }
+      .custom-checkbox:checked::after {
+        color: #000 !important;
+      }
     }
   </style>
 </head>
 <body class="p-2 sm:p-4 min-h-screen flex flex-col items-center">
 
-  <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
   <div class="max-w-[210mm] w-full mb-3 flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl shadow border border-slate-300 no-print">
     <div class="flex items-center gap-2">
       <a href="../Monthly_Reference.html" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1 text-base font-bold">
@@ -169,20 +177,21 @@
       <span class="font-bold text-slate-800 text-xl">ปัญหา/อุปสรรคและสรุปผลการดำเนินงาน</span>
     </div>
     <div class="flex items-center gap-2">
-      <button onclick="loadProblemData(true)" class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-base font-bold shadow cursor-pointer">
-        <i data-lucide="refresh-cw" class="w-5 h-5"></i> ปรับปรุงข้อมูล
+      <button onclick="pullWeeklyProblems()" class="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-sm font-bold shadow cursor-pointer">
+        <i data-lucide="sparkles" class="w-4 h-4"></i> ดึงปัญหาจากรายสัปดาห์
       </button>
-      <button onclick="window.print()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-base font-bold shadow cursor-pointer">
-        <i data-lucide="printer" class="w-5 h-5"></i> พิมพ์ / PDF
+      <button onclick="loadProblemData(true)" class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg text-sm font-bold shadow cursor-pointer">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i> ปรับปรุงข้อมูล
+      </button>
+      <button onclick="window.print()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg text-sm font-bold shadow cursor-pointer">
+        <i data-lucide="printer" class="w-4 h-4"></i> พิมพ์ / PDF
       </button>
     </div>
   </div>
 
-  <!-- แผ่นกระดาษ A4 Workspace -->
   <div class="sheet-workspace" id="doc-print">
     <div class="sheet-top-content">
       
-      <!-- หัวข้อที่ 5 ปัญหา/อุปสรรคในการก่อสร้าง -->
       <div class="header-row">
         <span>๕ ปัญหา/อุปสรรคในการก่อสร้าง</span>
         <span id="lbl_org_name" class="font-normal">องค์การบริหารส่วนตำบลโพนงาม</span>
@@ -194,7 +203,6 @@
         <input type="checkbox" id="chk_yes" class="custom-checkbox" onclick="event.stopPropagation(); toggleHasProblem(true);"> มี รายละเอียดดังนี้
       </div>
 
-      <!-- ตารางปัญหา อุปสรรค -->
       <table class="table-problem" id="problem_table_container">
         <thead>
           <tr>
@@ -203,12 +211,9 @@
             <th class="w-56">หมายเหตุ</th>
           </tr>
         </thead>
-        <tbody id="problem_table_tbody">
-          <!-- เติมแถวผ่าน Script -->
-        </tbody>
+        <tbody id="problem_table_tbody"></tbody>
       </table>
 
-      <!-- หัวข้อที่ 6 สรุปผลการดำเนินงานถึงปัจจุบัน -->
       <div class="header-row mb-2">
         <span>๖ สรุปผลการดำเนินงานถึงปัจจุบัน</span>
       </div>
@@ -247,7 +252,7 @@
         </div>
         <div class="summary-row mt-2">
           <div class="summary-label">๖.๕ ระยะเวลาก่อสร้างคงเหลือ</div>
-          <div class="summary-value" id="val_remaining_days">๑๑๕</div>
+          <div class="summary-value" id="val_remaining_days">๐</div>
           <div class="summary-unit">วัน</div>
         </div>
         <div class="summary-row">
@@ -262,7 +267,6 @@
 
     </div>
 
-    <!-- ส่วนลงนามผู้ควบคุมงาน -->
     <div class="signature-box">
       <div class="text-center">
         <p>(ลงชื่อ)..................................................................... ผู้ควบคุมงาน</p>
@@ -273,10 +277,10 @@
 
   <script>
     lucide.createIcons();
-    const STORAGE_KEY_PROBLEM = 'MONTHLY_PROBLEM_SUMMARY_DB';
+    let currentProjectID = 'DEFAULT_PROJ';
 
     let problemData = {
-      hasProblem: true,
+      hasProblem: false,
       problems: [
         { desc: "", notifyContractor: false, reportPresident: false },
         { desc: "", notifyContractor: false, reportPresident: false },
@@ -284,10 +288,45 @@
       ]
     };
 
+    function getStorageKeyProblem() {
+      return `MONTHLY_PROBLEM_SUMMARY_DB_${currentProjectID}`;
+    }
+
+    function initProjectContext() {
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          const projectData = JSON.parse(basicRaw);
+          const cNo = projectData.contractNo || 'NO_CONTRACT';
+          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        } catch(e) {}
+      }
+    }
+
     function toThaiNumber(numStr) {
       if (numStr === null || numStr === undefined) return '';
       const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
       return numStr.toString().replace(/[0-9]/g, (w) => thaiNums[w]);
+    }
+
+    function thaiToArabic(str) {
+      if (!str) return '';
+      const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+      return str.toString().replace(/[๐-๙]/g, match => thaiNums.indexOf(match));
+    }
+
+    function parseThaiDateStr(str) {
+      if(!str) return null;
+      let arabicStr = thaiToArabic(str);
+      const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+      const parts = arabicStr.trim().split(/\s+/);
+      if (parts.length >= 3) {
+        const d = parseInt(parts[0]);
+        const m = thaiMonths.indexOf(parts[1]);
+        const y = parseInt(parts[2]) - 543;
+        if(!isNaN(d) && m !== -1 && !isNaN(y)) return new Date(y, m, d);
+      }
+      return null;
     }
 
     function toggleHasProblem(status) {
@@ -295,12 +334,47 @@
       saveAndRender();
     }
 
+    // ฟังก์ชันดึงปัญหา-อุปสรรคจากหน้ารายงานประจำสัปดาห์ (1-5) อัตโนมัติ
+    function pullWeeklyProblems() {
+      const pulledList = [];
+      for (let w = 1; w <= 5; w++) {
+        const key = `WEEK_PROGRESS_DATA_${currentProjectID}_${w}`;
+        const raw = localStorage.getItem(key) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+        if (raw) {
+          try {
+            const data = JSON.parse(raw);
+            if (data.hasProblem && Array.isArray(data.problems)) {
+              data.problems.forEach(p => {
+                if (p && p.trim() !== "" && !pulledList.includes(p.trim())) {
+                  pulledList.push(p.trim());
+                }
+              });
+            }
+          } catch(e) {}
+        }
+      }
+
+      if (pulledList.length > 0) {
+        problemData.hasProblem = true;
+        problemData.problems = [
+          { desc: pulledList[0] || "", notifyContractor: true, reportPresident: true },
+          { desc: pulledList[1] || "", notifyContractor: false, reportPresident: false },
+          { desc: pulledList[2] || "", notifyContractor: false, reportPresident: false }
+        ];
+        saveAndRender();
+        alert(`ดึงปัญหา-อุปสรรคจากรายงานประจำสัปดาห์มาใส่ในแบบสรุปเรียบร้อยแล้วค่ะ! (พบ ${pulledList.length} รายการ)`);
+      } else {
+        alert("ไม่พบข้อมูลปัญหา-อุปสรรคในรายงานประจำสัปดาห์ของโครงการนี้ค่ะ");
+      }
+    }
+
     function loadProblemData(isManualAlert = false) {
+      initProjectContext();
       try {
         let orgName = "องค์การบริหารส่วนตำบลโพนงาม";
         let targetWeek = 5;
 
-        const monthlyRaw = localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+        const monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
         let monthlyData = {};
         if (monthlyRaw) {
           try {
@@ -313,7 +387,10 @@
 
         let installments = [];
         let totalBudget = 0;
-        const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+        let totalDaysNum = 140;
+        let startDateStr = "";
+
+        const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
         if (basicRaw) {
           const data = JSON.parse(basicRaw);
           if (data.organizationName) orgName = data.organizationName;
@@ -323,19 +400,36 @@
           if (data.budgetAmount) {
             totalBudget = parseFloat(data.budgetAmount.toString().replace(/,/g, '').replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
           }
+          if (data.durationDays || data.manualDays) {
+            totalDaysNum = parseInt(data.durationDays || data.manualDays) || 140;
+          }
+          if (data.totalExtendedDays && parseInt(data.totalExtendedDays) > 0) {
+            totalDaysNum = parseInt(data.totalExtendedDays);
+          }
+          if (data.startDate) startDateStr = data.startDate;
           if (data.installments && Array.isArray(data.installments)) {
             installments = data.installments;
           }
         }
         document.getElementById('lbl_org_name').textContent = orgName;
 
-        // ดึงข้อมืองวดงานจาก WEEK_REPORT_INSTALLMENTS ถ้ามี
+        let remainDays = totalDaysNum;
+        if (startDateStr && monthlyData.reportDate) {
+          const sDate = new Date(startDateStr);
+          const eDate = parseThaiDateStr(monthlyData.reportDate);
+          if (sDate && !isNaN(sDate.getTime()) && eDate && !isNaN(eDate.getTime())) {
+            const diffTime = eDate.getTime() - sDate.getTime();
+            const passedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            remainDays = Math.max(0, totalDaysNum - passedDays);
+          }
+        }
+        document.getElementById('val_remaining_days').textContent = toThaiNumber(remainDays);
+
         const savedWeekInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${targetWeek}`);
         if (savedWeekInst) {
           try { installments = JSON.parse(savedWeekInst); } catch(e){}
         }
 
-        // ตรวจสอบงวดงานที่แล้วเสร็จจาก WEEK_REPORT_ACCEPTED หรือ MONTHLY_INSPECTION_DATES_DB
         let completedCount = 0;
         let completedAmountSum = 0;
 
@@ -345,7 +439,7 @@
         }
 
         let savedDates = {};
-        const savedDatesRaw = localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
+        const savedDatesRaw = localStorage.getItem(`MONTHLY_INSPECTION_DATES_DB_${currentProjectID}`) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
         if (savedDatesRaw) {
           try { savedDates = JSON.parse(savedDatesRaw); } catch(e){}
         }
@@ -360,8 +454,8 @@
           }
         });
 
-        if (completedCount > 0) {
-          document.getElementById('val_total_periods').textContent = toThaiNumber(completedCount);
+        if (completedCount > 0 || completedAmountSum > 0) {
+          document.getElementById('val_total_periods').textContent = toThaiNumber(completedCount > 0 ? completedCount : 1);
           let paidPercent = totalBudget > 0 ? (completedAmountSum / totalBudget) * 100 : 0;
           document.getElementById('val_paid_percent').textContent = toThaiNumber(paidPercent.toFixed(2));
         } else {
@@ -369,14 +463,14 @@
           document.getElementById('val_paid_percent').textContent = '-';
         }
 
-        const saved = localStorage.getItem(STORAGE_KEY_PROBLEM);
+        const saved = localStorage.getItem(getStorageKeyProblem()) || localStorage.getItem('MONTHLY_PROBLEM_SUMMARY_DB');
         if (saved) {
           problemData = JSON.parse(saved);
         }
 
         let planProg = parseFloat(monthlyData.planPercent) || 0;
         if (planProg === 0) {
-          const weeklyRefRaw = localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+          const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
           if (weeklyRefRaw) {
             try {
               const weeksArray = JSON.parse(weeklyRefRaw);
@@ -390,7 +484,7 @@
 
         let actualProg = parseFloat(monthlyData.actualPercent) || 0;
         if (actualProg === 0) {
-          const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
+          const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
           if (progressRaw) {
             try {
               const progData = JSON.parse(progressRaw);
@@ -401,7 +495,7 @@
 
         if (actualProg === 0) {
           for (let w = 5; w >= 1; w--) {
-            const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+            const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
             if (wRaw) {
               const wData = JSON.parse(wRaw);
               actualProg = parseFloat(wData.totalWeightPercent) || 0;
@@ -482,16 +576,19 @@
 
     function updateProblemDesc(idx, val) {
       problemData.problems[idx].desc = val;
-      localStorage.setItem(STORAGE_KEY_PROBLEM, JSON.stringify(problemData));
+      localStorage.setItem(getStorageKeyProblem(), JSON.stringify(problemData));
+      localStorage.setItem('MONTHLY_PROBLEM_SUMMARY_DB', JSON.stringify(problemData));
     }
 
     function toggleCheck(idx, field, val) {
       problemData.problems[idx][field] = val;
-      localStorage.setItem(STORAGE_KEY_PROBLEM, JSON.stringify(problemData));
+      localStorage.setItem(getStorageKeyProblem(), JSON.stringify(problemData));
+      localStorage.setItem('MONTHLY_PROBLEM_SUMMARY_DB', JSON.stringify(problemData));
     }
 
     function saveAndRender() {
-      localStorage.setItem(STORAGE_KEY_PROBLEM, JSON.stringify(problemData));
+      localStorage.setItem(getStorageKeyProblem(), JSON.stringify(problemData));
+      localStorage.setItem('MONTHLY_PROBLEM_SUMMARY_DB', JSON.stringify(problemData));
       renderUI();
     }
 

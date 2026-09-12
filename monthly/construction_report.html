@@ -19,7 +19,14 @@
     .indent-word { text-indent: 1.8cm !important; }
     .dotted-line { border-bottom: 1px dotted #000; }
     .table-custom { width: 100%; border-collapse: collapse; border: 1.5px solid #000; }
-    .table-custom th, .table-custom td { border: 1px solid #000; padding: 3px 4px; font-size: 14pt !important; text-align: center; vertical-align: middle; }
+    .table-custom th, .table-custom td {
+      border: 1px solid #000;
+      padding: 3px 4px;
+      font-size: 14pt !important;
+      font-weight: normal !important;
+      text-align: center;
+      vertical-align: middle;
+    }
     .editable-input { background: transparent; border: none; outline: none; width: 100%; text-align: left; font-family: inherit; font-size: inherit; }
     .editable-input:focus { background-color: #fef08a; }
     @media print {
@@ -34,11 +41,14 @@
   <div class="max-w-7xl w-full grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
     <div class="xl:col-span-8 flex justify-center overflow-x-auto w-full">
       <div class="sheet-doc relative" id="doc-print">
-        <div class="relative text-center mb-4">
+        
+        <!-- ส่วนหัวตามที่คุณอรรถวัตต้องการ (mb-1) -->
+        <div class="relative text-center mb-1">
           <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img">
           <h2 class="doc-title pt-1">บันทึกข้อความ</h2>
         </div>
-        <div class="space-y-1.5 text-base">
+
+        <div class="space-y-1 text-base">
           <div class="flex flex-wrap items-baseline"><span class="font-bold w-24">ส่วนราชการ</span><span class="flex-1" id="lbl_org">คณะกรรมการตรวจรับพัสดุ องค์การบริหารส่วนตำบลโพนงาม</span></div>
           <div class="flex justify-between items-baseline">
             <div class="flex items-baseline flex-1">
@@ -51,26 +61,27 @@
             <div class="flex items-baseline flex-1"><span class="font-bold w-12">เรื่อง</span><span>รายงานผลการก่อสร้าง</span></div>
           </div>
         </div>
-        <div class="mt-3 text-base"><p><span class="font-bold">เรียน</span> นายกองค์การบริหารส่วนตำบลโพนงาม</p></div>
-        <div class="mt-2 text-base leading-relaxed text-justify space-y-2">
-          <p class="font-bold">รายงานประจำเดือน <span id="lbl_month_year">มิถุนายน ๒๕๖๙</span></p>
+        <div class="mt-3 text-base"><p><span class="font-bold">เรียน</span> ประธานกรรมการตรวจรับพัสดุ</p></div>
+        
+        <div class="mt-1 text-base leading-relaxed text-justify space-y-1">
+          <p class="font-normal">รายงานประจำเดือน <span id="lbl_month_year">มิถุนายน ๒๕๖๙</span></p>
           <p class="indent-word">
             งานก่อสร้าง <span id="lbl_project_title">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากนานายราวี ดวงแสนพุฒ ถึงหนองหวาย หมู่ที่ ๑๒</span> 
             โดยผู้ว่าจ้างคือ <span id="lbl_employer">องค์การบริหารส่วนตำบลโพนงาม</span> 
             ได้ทำสัญญาจ้างเลขที่ <span id="lbl_contract_no">E๑/๒๕๖๙</span> ลงวันที่ <span id="lbl_contract_date">๕ มิถุนายน ๒๕๖๙</span> 
             กับผู้รับจ้าง <span id="lbl_contractor">ห้างหุ้นส่วนจำกัด เค.เค.มุกดาหารก่อสร้าง</span> 
+            เริ่มสัญญาวันที่ <span id="lbl_contract_start">-</span> สิ้นสุดสัญญาวันที่ <span id="lbl_contract_end">-</span> ระยะเวลาก่อสร้าง <span id="lbl_duration_days">-</span> วัน 
             ในวงเงินค่าก่อสร้าง <span id="lbl_budget_amount">๒,๘๔๙,๒๖๐.๐๐</span> บาท 
             กำหนดอัตราค่าปรับวันละ <span id="lbl_fine_per_day">๗,๑๒๔.๐๐</span> บาท 
             <span id="lbl_extension_info" class="text-slate-900"></span>
           </p>
         </div>
 
-
         <div class="mt-3.5 mb-3">
           <table class="table-custom">
             <thead>
-              <tr><th colspan="3" class="py-1">การปฏิบัติงาน</th><th colspan="4" class="py-1">เงินงบประมาณและการเบิกจ่าย</th></tr>
-              <tr><th colspan="2" class="w-36">% ผลงาน</th><th rowspan="2" class="w-28">ระยะเวลาก่อสร้างคงเหลือ</th><th colspan="2" class="w-32">จำนวนงวดงาน</th><th rowspan="2" class="w-24">ปีงบประมาณ</th><th rowspan="2" class="w-32">จำนวน</th><th rowspan="2" class="w-24">เบิกจ่ายแล้ว</th></tr>
+              <tr><th colspan="3" class="py-1">การปฏิบัติงาน</th><th colspan="5" class="py-1">เงินงบประมาณและการเบิกจ่าย</th></tr>
+              <tr><th colspan="2" class="w-36">% ผลงาน</th><th rowspan="2" class="w-32">ระยะเวลาก่อสร้างคงเหลือ</th><th colspan="2" class="w-32">จำนวนงวดงาน</th><th rowspan="2" class="w-24">ปีงบประมาณ</th><th rowspan="2" class="w-32">จำนวน (บาท)</th><th rowspan="2" class="w-24">เบิกจ่ายแล้ว</th></tr>
               <tr><th class="w-16">ปัจจุบัน</th><th class="w-20">เร็ว/ช้า</th><th class="w-16">ทั้งหมด</th><th class="w-16">ตรวจรับแล้ว</th></tr>
             </thead>
             <tbody id="report_table_tbody"></tbody>
@@ -78,7 +89,7 @@
           </table>
         </div>
 
-        <p class="indent-word text-base pt-1">จึงเรียนมาเพื่อโปรดทราบและพิจารณาอนุมัติ</p>
+        <p class="indent-word text-base pt-1">จึงเรียนมาเพื่อโปรดทราบ</p>
         
         <!-- ลงนามผู้ควบคุมงาน -->
         <div id="inspectorSignatureArea" class="mt-4 flex flex-wrap justify-end gap-x-8 gap-y-4 pr-6 text-center text-base"></div>
@@ -115,6 +126,12 @@
       return numStr.toString().replace(/[0-9]/g, (w) => thaiNums[w]);
     }
 
+    function thaiToArabic(str) {
+      if (!str) return '';
+      const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+      return str.toString().replace(/[๐-๙]/g, match => thaiNums.indexOf(match));
+    }
+
     function thaiDateText(dateStr) {
       if (!dateStr) return '';
       const thaiMonths = {
@@ -143,6 +160,20 @@
       const parts = num.toFixed(2).split('.');
       const integerPart = parseInt(parts[0]).toLocaleString('en-US');
       return toThaiNumber(`${integerPart}.${parts[1]}`);
+    }
+
+    function parseThaiDateStr(str) {
+      if(!str) return null;
+      let arabicStr = thaiToArabic(str);
+      const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+      const parts = arabicStr.trim().split(/\s+/);
+      if (parts.length >= 3) {
+        const d = parseInt(parts[0]);
+        const m = thaiMonths.indexOf(parts[1]);
+        const y = parseInt(parts[2]) - 543;
+        if(!isNaN(d) && m !== -1 && !isNaN(y)) return new Date(y, m, d);
+      }
+      return null;
     }
 
     function loadAllData(isManualAlert = false) {
@@ -186,6 +217,18 @@
             if (projectData.contractorName || projectData.contractor) {
               document.getElementById('lbl_contractor').textContent = toThaiNumber(projectData.contractorName || projectData.contractor);
             }
+            
+            // ดึงข้อมูลวันเริ่ม สิ้นสุด และระยะเวลาก่อสร้าง
+            if (projectData.startDateTh || projectData.startDate) {
+              document.getElementById('lbl_contract_start').textContent = thaiDateText(projectData.startDateTh || projectData.startDate);
+            }
+            if (projectData.endDateTh || projectData.endDate) {
+              document.getElementById('lbl_contract_end').textContent = thaiDateText(projectData.endDateTh || projectData.endDate);
+            }
+            if (projectData.durationDays || projectData.manualDays) {
+              document.getElementById('lbl_duration_days').textContent = toThaiNumber(projectData.durationDays || projectData.manualDays);
+            }
+
             if (projectData.budgetAmount) {
               const tAmount = formatThaiCurrency(projectData.budgetAmount);
               document.getElementById('lbl_budget_amount').textContent = tAmount;
@@ -194,7 +237,6 @@
               document.getElementById('lbl_fine_per_day').textContent = formatThaiCurrency(projectData.finePerDay);
             }
 
-            // ตรวจสอบข้อมูลการขยายสัญญา
             if (projectData.extendContractDate && projectData.extendContractDate.trim() !== '') {
               const extDateTh = thaiDateText(projectData.extendContractDate);
               const extDays = projectData.totalExtendedDays ? toThaiNumber(projectData.totalExtendedDays) : '';
@@ -235,7 +277,6 @@
         else if (latestProgress >= 100) statusText = 'แล้วเสร็จ';
         else statusText = 'ช้า';
 
-        const totalDaysNum = projectData.durationDays ? toThaiNumber(projectData.durationDays) : '๑๔๐';
         const progressTh = toThaiNumber(latestProgress.toFixed(2));
 
         let installments = [];
@@ -281,6 +322,29 @@
         let totalPaidSum = 0;
         let hasNumericPaid = false;
 
+        let totalDaysNum = projectData && projectData.durationDays ? parseInt(projectData.durationDays) : 140;
+        if (projectData && projectData.totalExtendedDays && parseInt(projectData.totalExtendedDays) > 0) {
+          totalDaysNum = parseInt(projectData.totalExtendedDays);
+        }
+
+        let remainDays = totalDaysNum;
+        let timePercent = 0;
+
+        if (projectData && projectData.startDate && monthlyData && monthlyData.reportDate) {
+          const sDate = new Date(projectData.startDate);
+          const eDate = parseThaiDateStr(monthlyData.reportDate);
+          if (sDate && !isNaN(sDate.getTime()) && eDate && !isNaN(eDate.getTime())) {
+            const diffTime = eDate.getTime() - sDate.getTime();
+            const passedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            remainDays = totalDaysNum - passedDays;
+            if (totalDaysNum > 0) {
+              timePercent = (passedDays / totalDaysNum) * 100;
+            }
+          }
+        }
+
+        const remainHtml = `${toThaiNumber(remainDays)} วัน<br>(${toThaiNumber(timePercent.toFixed(2))} %)`;
+
         installments.forEach((item, idx) => {
           const cleanAmt = parseFloat((item.amount || '0').toString().replace(/,/g, '').replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
           totalSumBudget += cleanAmt;
@@ -300,7 +364,7 @@
             rowHTML += `
               <td rowspan="${totalInstallments}" class="text-center align-middle font-bold">${progressTh}</td>
               <td rowspan="${totalInstallments}" class="text-center align-middle">${statusText}</td>
-              <td rowspan="${totalInstallments}" class="text-center align-middle">${totalDaysNum} วัน</td>
+              <td rowspan="${totalInstallments}" class="text-center align-middle leading-tight">${remainHtml}</td>
               <td rowspan="${totalInstallments}" class="text-center align-middle">${totalInstallmentsTh}</td>
               <td rowspan="${totalInstallments}" class="text-center align-middle">${toThaiNumber(acceptedValue)}</td>
             `;
@@ -337,31 +401,6 @@
     }
 
     function renderSignatures(data) {
-      // 1. รายชื่อกรรมการด้านบนของตาราง
-      const defaultComms = [
-        "นางสาวถนอมนวล วะทวีก้านตรงฯ",
-        "จ่าเอกธีรพงษ์ ดรชานนท์",
-        "นางสาวปนัดดา ภูอาษา",
-        "นายวีระศักดิ์ ทับวิชร",
-        "นายอรรถวัต อดทน"
-      ];
-      const comms = data.committees && data.committees.length > 0 ? data.committees : defaultComms;
-      
-      const listArea = document.getElementById('committee_list_area');
-      if (listArea) {
-        listArea.innerHTML = '';
-        comms.forEach((name, idx) => {
-          if (!name) return;
-          const numThai = toThaiNumber(idx + 1);
-          if (idx === 0) {
-            listArea.innerHTML += `<div class="col-span-2"><span>${numThai}. ${name} ประธานกรรมการฯ</span></div>`;
-          } else {
-            listArea.innerHTML += `<div><span>${numThai}. ${name} กรรมการฯ</span></div>`;
-          }
-        });
-      }
-
-      // 2. ส่วนลงนามผู้ควบคุมงานด้านล่าง
       const inspectors = data.inspectors || [{ name: "นายพัทธิยะ วงษาซ้าย", pos: "ผู้ควบคุมงาน" }];
       let inspHTML = "";
       inspectors.forEach(insp => {
@@ -375,15 +414,23 @@
       const inspArea = document.getElementById('inspectorSignatureArea');
       if (inspArea) inspArea.innerHTML = inspHTML;
 
-      // 3. ส่วนลงนามคณะกรรมการตรวจรับพัสดุ
+      const defaultComms = [
+        "นางสาวถนอมนวล วะทวีก้านตรงฯ",
+        "จ่าเอกธีรพงษ์ ดรชานนท์",
+        "นางสาวปนัดดา ภูอาษา",
+        "นายวีระศักดิ์ ทับวิชร",
+        "นายอรรถวัต อดทน"
+      ];
+      const comms = data.committees && data.committees.length > 0 ? data.committees : defaultComms;
       const commArea = document.getElementById('committeeSignatureArea');
+      
       if (commArea) {
         commArea.innerHTML = '';
         comms.forEach((name, idx) => {
           if (!name) return;
           const roleLabel = (idx === 0) ? 'ประธานกรรมการฯ' : 'กรรมการฯ';
           commArea.innerHTML += `
-            <div class="${idx === 0 ? 'col-span-2 mb-4' : 'mb-4'} flex flex-col items-center">
+            <div class="${idx === 0 ? 'col-span-2 mb-2' : 'mb-2'} flex flex-col items-center">
               <div class="inline-block text-center">
                 <p>(ลงชื่อ).................................................... ${roleLabel}</p>
                 <p class="font-medium mt-1">(${name})</p>

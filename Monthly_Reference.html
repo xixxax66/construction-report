@@ -40,8 +40,24 @@
 </head>
 <body class="p-3 sm:p-6 min-h-screen flex items-center justify-center">
 
-  <div class="max-w-4xl w-full bg-slate-200/90 p-6 rounded-2xl shadow-xl border border-slate-300 space-y-6">
+  <div class="max-w-4xl w-full bg-slate-200/90 p-6 rounded-2xl shadow-xl border border-slate-300 space-y-5">
     
+    <!-- แถบแสดงและเลือกโครงการปัจจุบัน -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-300 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <div class="p-2 bg-red-100 text-red-700 rounded-lg">
+          <i data-lucide="folder-kanban" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 block font-bold uppercase">โครงการที่กำลังจัดการรายงาน</span>
+          <span id="lbl_current_project_name" class="font-bold text-slate-800 text-base">กำลังโหลดข้อมูลโครงการ...</span>
+        </div>
+      </div>
+      <a href="Cons_Reference.html" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition">
+        <i data-lucide="settings" class="w-4 h-4"></i> เปลี่ยนข้อมูลโครงการ
+      </a>
+    </div>
+
     <!-- ส่วนหัวและปุ่มลัดด้านบน -->
     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
       
@@ -50,21 +66,14 @@
         <table class="table-box">
           <thead>
             <tr>
-              <th colspan="2" class="bg-red-700 text-white text-center font-bold text-base">ข้อมูลรายงานประจำเดือน</th>
+              <th colspan="2" class="bg-red-700 text-white text-center font-bold text-base">เลือกเดือนและข้อมูลรายงาน</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td class="bg-red-600 text-white font-medium w-44">วันที่ทำรายงาน</td>
-              <td class="bg-white font-medium text-center flex items-center gap-1.5">
-                <input type="text" id="monthly_report_date" value="1 กรกฎาคม 2569" class="w-full text-center outline-none bg-transparent font-medium" placeholder="พิมพ์วันที่...">
-                <input type="date" id="report_date_picker" class="cursor-pointer text-slate-500 text-xs outline-none bg-slate-100 p-1 rounded border border-slate-300" title="เลือกจากปฏิทิน" onchange="onDatePicked(this)">
-              </td>
-            </tr>
-            <tr>
-              <td class="bg-red-600 text-white font-medium">รายงานประจำเดือน</td>
-              <td class="bg-white font-medium text-center flex items-center justify-center gap-2">
-                <select id="monthly_month" class="outline-none bg-transparent font-medium cursor-pointer">
+              <td class="bg-red-600 text-white font-medium">เลือกเดือน/ปี รายงาน</td>
+              <td class="bg-white font-medium text-center flex items-center justify-center gap-2 py-2">
+                <select id="monthly_month" onchange="onMonthOrYearChanged()" class="outline-none bg-slate-50 border border-slate-300 rounded px-2 py-1 font-bold text-slate-800 cursor-pointer">
                   <option value="มกราคม">มกราคม</option>
                   <option value="กุมภาพันธ์">กุมภาพันธ์</option>
                   <option value="มีนาคม">มีนาคม</option>
@@ -78,7 +87,14 @@
                   <option value="พฤศจิกายน">พฤศจิกายน</option>
                   <option value="ธันวาคม">ธันวาคม</option>
                 </select>
-                <input type="text" id="monthly_year" value="2569" class="w-16 text-center outline-none bg-transparent font-medium">
+                <input type="text" id="monthly_year" value="2569" oninput="onMonthOrYearChanged()" class="w-20 text-center outline-none bg-slate-50 border border-slate-300 rounded px-2 py-1 font-bold text-slate-800">
+              </td>
+            </tr>
+            <tr>
+              <td class="bg-red-600 text-white font-medium w-44">วันที่ทำรายงาน</td>
+              <td class="bg-white font-medium text-center flex items-center gap-1.5">
+                <input type="text" id="monthly_report_date" value="1 กรกฎาคม 2569" class="w-full text-center outline-none bg-transparent font-medium" placeholder="พิมพ์วันที่...">
+                <input type="date" id="report_date_picker" class="cursor-pointer text-slate-500 text-xs outline-none bg-slate-100 p-1 rounded border border-slate-300" title="เลือกจากปฏิทิน" onchange="onDatePicked(this)">
               </td>
             </tr>
             <tr>
@@ -103,28 +119,57 @@
           </tbody>
         </table>
         <div class="mt-3 flex justify-between items-center">
-          <button onclick="syncFromWeekReport()" class="btn-3d bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow">
+          <button onclick="syncFromWeekReport()" class="btn-3d bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> ซิงค์จากสัปดาห์
           </button>
-          <button onclick="saveMonthlyInfo()" class="btn-3d bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow">
+          <button onclick="saveMonthlyInfo()" class="btn-3d bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
             <i data-lucide="save" class="w-3.5 h-3.5"></i> บันทึกข้อมูลรายงาน
           </button>
         </div>
       </div>
 
-      <!-- ฝั่งขวา: ปุ่มกลับหน้าหลัก และ กรอกข้อมูลเบื้องต้น -->
+      <!-- ฝั่งขวา: ปุ่มกลับหน้าหลัก และฐานข้อมูลประวัติแยกตามโครงการ -->
       <div class="md:col-span-6 space-y-3 flex flex-col justify-center">
-        <a href="index.html" class="btn-3d bg-white hover:bg-slate-50 p-4 rounded-xl shadow-sm border border-slate-300 flex items-center gap-4 group transition">
-          <img src="https://cdn-icons-png.flaticon.com/512/619/619032.png" alt="Home" class="w-10 h-10 object-contain">
-          <span class="font-bold text-slate-800 text-lg group-hover:text-emerald-700">กลับหน้าหลัก</span>
+        <a href="index.html" class="btn-3d bg-white hover:bg-slate-50 p-3.5 rounded-xl shadow-sm border border-slate-300 flex items-center gap-4 group transition">
+          <img src="https://cdn-icons-png.flaticon.com/512/619/619032.png" alt="Home" class="w-8 h-8 object-contain">
+          <span class="font-bold text-slate-800 text-base group-hover:text-emerald-700">กลับหน้าหลัก</span>
         </a>
 
-        <a href="Cons_Reference.html" class="btn-3d bg-white hover:bg-slate-50 p-4 rounded-xl shadow-sm border border-slate-300 flex items-center gap-4 group transition">
-          <img src="https://cdn-icons-png.flaticon.com/512/1250/1250689.png" alt="Edit" class="w-10 h-10 object-contain">
-          <span class="font-bold text-slate-800 text-lg group-hover:text-emerald-700">กรอกข้อมูลเบื้องต้น</span>
-        </a>
+        <!-- ปุ่มเก็บบันทึกประวัติลงฐานข้อมูลย้อนหลังแยกตามโครงการ -->
+        <button onclick="archiveMonthlyHistory()" class="btn-3d bg-indigo-600 hover:bg-indigo-700 p-3.5 rounded-xl shadow-sm border border-indigo-700 flex items-center gap-3 group transition text-left cursor-pointer w-full text-white">
+          <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+            <i data-lucide="archive" class="w-5 h-5"></i>
+          </div>
+          <div class="flex-1">
+            <span class="font-bold text-sm block">บันทึกประวัติย้อนหลังรายเดือน</span>
+            <span class="text-indigo-100 text-xs block">เก็บสำเนาข้อมูลของโครงการนี้</span>
+          </div>
+        </button>
       </div>
 
+    </div>
+
+    <!-- ตารางแสดงรายการประวัติย้อนหลังของโครงการนี้ -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-300">
+      <h3 class="font-bold text-slate-800 text-base mb-3 border-b pb-2 flex items-center gap-2">
+        <i data-lucide="database" class="w-5 h-5 text-indigo-600"></i> ฐานข้อมูลประวัติรายงานย้อนหลัง (เฉพาะโครงการนี้)
+      </h3>
+      <div class="max-h-40 overflow-y-auto pr-1">
+        <table class="w-full text-sm text-left text-slate-600 border-collapse">
+          <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
+            <tr>
+              <th class="p-2 border">ประจำเดือน/ปี</th>
+              <th class="p-2 border">วันที่ทำรายงาน</th>
+              <th class="p-2 border text-center">แผนงาน (%)</th>
+              <th class="p-2 border text-center">ผลงาน (%)</th>
+              <th class="p-2 border text-center">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="history_table_body">
+            <!-- รายการประวัติจะถูกโหลดแสดงที่นี่โดยอัตโนมัติ -->
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- รายการลิงก์เอกสารรายงานประจำเดือนครบชุด -->
@@ -223,12 +268,23 @@
         </a>
 
         <!-- ปัญหา/อุปสรรคและสรุปผลการดำเนินงาน -->
-        <a href="monthly/problem_summary.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition md:col-span-2">
+        <a href="monthly/problem_summary.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
           <div class="w-10 h-10 rounded-lg bg-orange-100 group-hover:bg-emerald-600 text-orange-600 group-hover:text-white flex items-center justify-center transition">
             <i data-lucide="alert-triangle" class="w-5 h-5"></i>
           </div>
           <div class="flex-1">
             <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">9. ปัญหา/อุปสรรค และสรุปผลการดำเนินงาน</h4>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        </a>
+
+        <!-- รายงานความคืบหน้างานก่อสร้าง -->
+        <a href="monthly/progress_report.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
+          <div class="w-10 h-10 rounded-lg bg-emerald-100 group-hover:bg-emerald-600 text-emerald-600 group-hover:text-white flex items-center justify-center transition">
+            <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+          </div>
+          <div class="flex-1">
+            <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">10. รายงานความคืบหน้างานก่อสร้าง</h4>
           </div>
           <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
@@ -240,8 +296,35 @@
 
   <script>
     lucide.createIcons();
-    const MONTHLY_STORAGE_KEY = 'MONTHLY_REPORT_INFO_DATA';
     const WEEKLY_REF_KEY = 'CONSTRUCTION_WEEKLY_REF_DB';
+
+    let currentProjectID = 'DEFAULT_PROJECT';
+
+    // โหลดข้อมูลชื่อโครงการปัจจุบันเพื่อใช้เป็น Namespace แยกข้อมูล
+    function initProjectContext() {
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          const projectData = JSON.parse(basicRaw);
+          const pName = projectData.projectName || 'โครงการก่อสร้าง';
+          const cNo = projectData.contractNo || 'NO_CONTRACT';
+          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          document.getElementById('lbl_current_project_name').textContent = `${pName} (สัญญาเลขที่ ${cNo})`;
+        } catch(e) {
+          document.getElementById('lbl_current_project_name').textContent = 'โครงการทั่วไป (ไม่ได้ระบุสัญญา)';
+        }
+      } else {
+        document.getElementById('lbl_current_project_name').textContent = 'ยังไม่ได้ตั้งค่าข้อมูลโครงการ (กรุณากรอกข้อมูลเบื้องต้น)';
+      }
+    }
+
+    function getProjectMonthlyKey() {
+      return `MONTHLY_REPORT_INFO_DATA_${currentProjectID}`;
+    }
+
+    function getProjectHistoryKey() {
+      return `CONSTRUCTION_MONTHLY_HISTORY_DB_${currentProjectID}`;
+    }
 
     function onDatePicked(picker) {
       const val = picker.value; // YYYY-MM-DD
@@ -271,9 +354,7 @@
           if (targetWeekObj && targetWeekObj.plan) {
             planVal = parseFloat(targetWeekObj.plan) || 0;
           }
-        } catch(e) {
-          console.error("Error reading weekly reference DB", e);
-        }
+        } catch(e) {}
       }
       document.getElementById('plan_current_percent').textContent = planVal.toFixed(2);
     }
@@ -282,7 +363,6 @@
       const selectedWeek = parseInt(document.getElementById('select_plan_week').value);
       let actualVal = 0;
 
-      // ดึงข้อมูลผลงานจริงจากสัปดาห์ที่เลือก
       const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${selectedWeek}`);
       if (progressRaw) {
         try {
@@ -290,7 +370,6 @@
           actualVal = parseFloat(progData.totalWeightPercent) || 0;
         } catch(e) {}
       } else {
-        // หากไม่มีข้อมูลในสัปดาห์ที่เลือก ให้หาจากสัปดาห์ล่าสุดที่มี
         for (let w = 5; w >= 1; w--) {
           const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
           if (wRaw) {
@@ -313,21 +392,170 @@
     }
 
     function saveMonthlyInfo() {
+      const month = document.getElementById('monthly_month').value;
+      const year = document.getElementById('monthly_year').value;
       const payload = {
-        month: document.getElementById('monthly_month').value,
-        year: document.getElementById('monthly_year').value,
+        month: month,
+        year: year,
         reportDate: document.getElementById('monthly_report_date').value,
         planWeek: document.getElementById('select_plan_week').value,
         planPercent: document.getElementById('plan_current_percent').textContent,
         actualPercent: document.getElementById('actual_current_percent').textContent
       };
-      localStorage.setItem(MONTHLY_STORAGE_KEY, JSON.stringify(payload));
-      alert("บันทึกข้อมูลรายงานประจำเดือนเรียบร้อยแล้วค่ะ!");
+      
+      // บันทึกแยกตามรหัสโครงการปัจจุบัน
+      localStorage.setItem(getProjectMonthlyKey(), JSON.stringify(payload));
+      localStorage.setItem('MONTHLY_REPORT_INFO_DATA', JSON.stringify(payload)); // สำรองไว้หน้าอื่นเรียกใช้
+      
+      archiveMonthlyHistorySilent(payload);
+      alert(`บันทึกข้อมูลรายงานประจำเดือน ${month} ${year} ของโครงการนี้เรียบร้อยแล้วค่ะ!`);
+    }
+
+    function onMonthOrYearChanged() {
+      const month = document.getElementById('monthly_month').value;
+      const year = document.getElementById('monthly_year').value;
+      const targetId = `${month}_${year}`;
+
+      let historyList = [];
+      const rawHistory = localStorage.getItem(getProjectHistoryKey());
+      if (rawHistory) {
+        try { historyList = JSON.parse(rawHistory); } catch(e){}
+      }
+
+      const found = historyList.find(h => h.id === targetId);
+      if (found) {
+        document.getElementById('monthly_report_date').value = found.reportDate;
+        document.getElementById('plan_current_percent').textContent = found.planPercent;
+        document.getElementById('actual_current_percent').textContent = found.actualPercent;
+        if (found.planWeek) document.getElementById('select_plan_week').value = found.planWeek;
+        
+        const payload = {
+          month: month, year: year,
+          reportDate: found.reportDate,
+          planWeek: found.planWeek || '5',
+          planPercent: found.planPercent,
+          actualPercent: found.actualPercent
+        };
+        localStorage.setItem(getProjectMonthlyKey(), JSON.stringify(payload));
+        localStorage.setItem('MONTHLY_REPORT_INFO_DATA', JSON.stringify(payload));
+      } else {
+        updatePlanPercent();
+        updateActualPercent();
+      }
+    }
+
+    function archiveMonthlyHistorySilent(payload) {
+      const record = {
+        id: `${payload.month}_${payload.year}`,
+        monthYear: `${payload.month} ${payload.year}`,
+        reportDate: payload.reportDate,
+        planWeek: payload.planWeek,
+        planPercent: payload.planPercent,
+        actualPercent: payload.actualPercent,
+        savedAt: new Date().toLocaleString('th-TH')
+      };
+
+      let historyList = [];
+      const rawHistory = localStorage.getItem(getProjectHistoryKey());
+      if (rawHistory) {
+        try { historyList = JSON.parse(rawHistory); } catch(e){}
+      }
+
+      const existingIdx = historyList.findIndex(h => h.id === record.id);
+      if (existingIdx !== -1) {
+        historyList[existingIdx] = record;
+      } else {
+        historyList.unshift(record);
+      }
+
+      localStorage.setItem(getProjectHistoryKey(), JSON.stringify(historyList));
+      loadMonthlyHistory();
+    }
+
+    function archiveMonthlyHistory() {
+      saveMonthlyInfo();
+    }
+
+    function loadMonthlyHistory() {
+      const tbody = document.getElementById('history_table_body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      let historyList = [];
+      const rawHistory = localStorage.getItem(getProjectHistoryKey());
+      if (rawHistory) {
+        try { historyList = JSON.parse(rawHistory); } catch(e){}
+      }
+
+      if (historyList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400 border">ยังไม่มีประวัติรายงานย้อนหลังของโครงการนี้</td></tr>`;
+        return;
+      }
+
+      historyList.forEach((item, index) => {
+        tbody.innerHTML += `
+          <tr class="bg-white border-b hover:bg-slate-50">
+            <td class="p-2 border font-medium text-slate-800">${item.monthYear}</td>
+            <td class="p-2 border">${item.reportDate}</td>
+            <td class="p-2 border text-center text-red-600 font-bold">${item.planPercent}%</td>
+            <td class="p-2 border text-center text-emerald-700 font-bold">${item.actualPercent}%</td>
+            <td class="p-2 border text-center">
+              <button onclick="restoreHistory('${item.id}')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded text-xs font-bold mr-1 cursor-pointer" title="เรียกข้อมูลนี้">เรียกใช้</button>
+              <button onclick="deleteHistory(${index})" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-2 py-1 rounded text-xs font-bold cursor-pointer" title="ลบประวัติ">ลบ</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function restoreHistory(id) {
+      let historyList = [];
+      const rawHistory = localStorage.getItem(getProjectHistoryKey());
+      if (rawHistory) {
+        try { historyList = JSON.parse(rawHistory); } catch(e){}
+      }
+      const target = historyList.find(h => h.id === id);
+      if (target) {
+        const parts = target.monthYear.split(' ');
+        document.getElementById('monthly_month').value = parts[0] || 'มิถุนายน';
+        document.getElementById('monthly_year').value = parts[1] || '2569';
+        document.getElementById('monthly_report_date').value = target.reportDate;
+        document.getElementById('plan_current_percent').textContent = target.planPercent;
+        document.getElementById('actual_current_percent').textContent = target.actualPercent;
+        if (target.planWeek) document.getElementById('select_plan_week').value = target.planWeek;
+        
+        const payload = {
+          month: parts[0], year: parts[1],
+          reportDate: target.reportDate,
+          planWeek: target.planWeek || '5',
+          planPercent: target.planPercent,
+          actualPercent: target.actualPercent
+        };
+        localStorage.setItem(getProjectMonthlyKey(), JSON.stringify(payload));
+        localStorage.setItem('MONTHLY_REPORT_INFO_DATA', JSON.stringify(payload));
+
+        loadMonthlyHistory();
+        alert(`ดึงข้อมูลประวัติประจำเดือน ${target.monthYear} ของโครงการนี้มาใช้งานเรียบร้อยแล้วค่ะ!`);
+      }
+    }
+
+    function deleteHistory(index) {
+      if (confirm("คุณอรรถวัตต้องการลบประวัติรายงานนี้ของโครงการนี้ใช่หรือไม่?")) {
+        let historyList = [];
+        const rawHistory = localStorage.getItem(getProjectHistoryKey());
+        if (rawHistory) {
+          try { historyList = JSON.parse(rawHistory); } catch(e){}
+        }
+        historyList.splice(index, 1);
+        localStorage.setItem(getProjectHistoryKey(), JSON.stringify(historyList));
+        loadMonthlyHistory();
+      }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      // โหลดข้อมูลรายงานประจำเดือน
-      const saved = localStorage.getItem(MONTHLY_STORAGE_KEY);
+      initProjectContext();
+
+      const saved = localStorage.getItem(getProjectMonthlyKey()) || localStorage.getItem(MONTHLY_STORAGE_KEY);
       if (saved) {
         try {
           const data = JSON.parse(saved);
@@ -346,6 +574,7 @@
         updatePlanPercent();
         updateActualPercent();
       }
+      loadMonthlyHistory();
     });
   </script>
 </body>

@@ -12,20 +12,20 @@
     @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
     @page { size: A4 portrait; margin: 0; }
     body { font-family: 'THSarabunPSK', sans-serif; background-color: #94a3b8; margin: 0; padding: 0; }
-    .sheet-doc { width: 210mm; min-height: 297mm; padding: 15mm 20mm 15mm 25mm; margin: 20px auto; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 16pt !important; line-height: 1.15 !important; color: #000; box-sizing: border-box; }
-    .sheet-doc p, .sheet-doc span, .sheet-doc label, .sheet-doc div { font-size: 16pt; line-height: 1.2; }
+    .sheet-doc { width: 210mm; min-height: 297mm; padding: 10mm 15mm 10mm 25mm; margin: 20px auto; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 16pt !important; line-height: 1.25 !important; color: #000; box-sizing: border-box; }
+    .sheet-doc p, .sheet-doc span, .sheet-doc label, .sheet-doc div { font-size: 16pt; line-height: 1.3; }
     .doc-title { font-size: 26pt !important; font-weight: bold; }
     .garuda-img { width: 1.5cm; height: auto; position: absolute; left: 0; top: 0; }
     .indent-word { text-indent: 1.8cm !important; }
     .dotted-line { border-bottom: 1px dotted #000; }
     .table-custom { width: 100%; border-collapse: collapse; border: 1.5px solid #000; }
-    .table-custom th, .table-custom td { border: 1px solid #000; padding: 3px 4px; font-size: 14pt !important; text-align: center; }
+    .table-custom th, .table-custom td { border: 1px solid #000; padding: 4px 5px; font-size: 14pt !important; text-align: center; }
     .editable-input { background: transparent; border: none; outline: none; width: 100%; text-align: center; font-family: inherit; font-size: inherit; }
     .editable-input:focus { background-color: #fef08a; }
     @media print {
       body { background: white !important; padding: 0 !important; }
       .no-print { display: none !important; }
-      .sheet-doc { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 15mm 20mm 15mm 25mm !important; }
+      .sheet-doc { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 10mm 15mm 10mm 25mm !important; }
       .editable-input { background: transparent !important; }
     }
   </style>
@@ -34,48 +34,49 @@
   <div class="max-w-7xl w-full grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
     <div class="xl:col-span-8 flex justify-center overflow-x-auto w-full">
       <div class="sheet-doc relative" id="doc-print">
-        <div class="relative text-center mb-4">
+        <div class="relative text-center mb-1">
           <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img">
           <h2 class="doc-title pt-1">บันทึกข้อความ</h2>
         </div>
-        <div class="space-y-1.5 text-base">
+        <div class="space-y-1 text-base">
           <div class="flex flex-wrap items-baseline"><span class="font-bold w-20">ส่วนราชการ</span><span class="flex-1" id="lbl_org">กองช่าง องค์การบริหารส่วนตำบลโพนงาม</span></div>
           <div class="flex justify-between items-baseline">
             <div class="flex items-baseline flex-1"><span class="font-bold w-12">ที่</span><span class="flex-1"><input type="text" id="input_doc_no" class="editable-input text-left font-normal inline-block" style="width: 200px;" value="-"></span></div>
             <div class="flex-1 text-left"><span class="font-bold mr-2">วันที่</span><span id="lbl_report_date">๑๕ มิถุนายน ๒๕๖๙</span></div>
           </div>
           <div class="flex items-baseline justify-between pb-1 dotted-line">
-            <div class="flex items-baseline flex-1"><span class="font-bold w-12">เรื่อง</span><span>รายงานผลการก่อสร้างประจำสัปดาห์ ครั้งที่ <span id="lbl_seq" class="font-bold">๑</span></span></div>
+            <div class="flex items-baseline flex-1"><span class="font-bold w-12">เรื่อง</span><span>รายงานผลการก่อสร้างประจำสัปดาห์ ครั้งที่ <span id="lbl_seq" class="font-normal">๑</span></span></div>
           </div>
         </div>
         <div class="mt-3 text-base"><p><span class="font-bold">เรียน</span> ประธานกรรมการตรวจรับพัสดุ</p></div>
-        <div class="mt-2 text-base leading-relaxed text-justify space-y-2">
-          <p class="indent-word">รายงานครั้งที่ <span id="lbl_seq_body" class="font-semibold">๑</span> สัปดาห์ที่ <span id="lbl_week_slash_year" class="font-semibold">๑/๒๕๖๙</span> ระหว่างวันที่ <span id="lbl_start_date">๗ มิถุนายน ๒๕๖๙</span> ถึงวันที่ <span id="lbl_end_date">๑๓ มิถุนายน ๒๕๖๙</span></p>
+        <div class="mt-2 text-base leading-relaxed text-justify space-y-1">
+          <p class="indent-word">รายงานครั้งที่ <span id="lbl_seq_body" class="font-normal">๑</span> สัปดาห์ที่ <span id="lbl_week_slash_year" class="font-normal">๑/๒๕๖๙</span> ระหว่างวันที่ <span id="lbl_start_date">๗ มิถุนายน ๒๕๖๙</span> ถึงวันที่ <span id="lbl_end_date">๑๓ มิถุนายน ๒๕๖๙</span></p>
           <p class="indent-word">
             งานก่อสร้าง <span id="lbl_project_title">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากนานายราวี ดวงแสนพุฒ ถึงหนองหวาย หมู่ที่ ๑๒</span> 
             โดยผู้ว่าจ้างคือ <span id="lbl_employer">องค์การบริหารส่วนตำบลโพนงาม</span> 
             ได้ทำสัญญาจ้างเลขที่ <span id="lbl_contract_no">E๑/๒๕๖๙</span> ลงวันที่ <span id="lbl_contract_date">๕ มิถุนายน ๒๕๖๙</span> 
             กับผู้รับจ้าง <span id="lbl_contractor">ห้างหุ้นส่วนจำกัด เค.เค.มุกดาหารก่อสร้าง</span> 
+            เริ่มสัญญาวันที่ <span id="lbl_contract_start">-</span> สิ้นสุดสัญญาวันที่ <span id="lbl_contract_end">-</span> ระยะเวลาก่อสร้าง <span id="lbl_duration_days">-</span> วัน 
             ในวงเงินค่าก่อสร้าง <span id="lbl_budget_amount">๒,๘๔๙,๒๖๐.๐๐</span> บาท 
             กำหนดอัตราค่าปรับวันละ <span id="lbl_fine_per_day">๗,๑๒๔.๐๐</span> บาท 
             <span id="lbl_extension_info" class="text-slate-900"></span>
           </p>
         </div>
 
-        <div class="mt-3.5 mb-3">
+        <div class="mt-3.5 mb-2">
           <table class="table-custom">
             <thead>
-              <tr><th colspan="5" class="py-1">การปฏิบัติงาน</th><th colspan="3" class="py-1">เงินงบประมาณและการเบิกจ่าย</th></tr>
-              <tr><th colspan="2" class="w-36">% ผลงาน</th><th rowspan="2" class="w-28">ระยะเวลาก่อสร้างคงเหลือ</th><th colspan="2" class="w-32">จำนวนงวดงาน</th><th rowspan="2" class="w-24">ปีงบประมาณ</th><th rowspan="2" class="w-32">จำนวน (บาท)</th><th rowspan="2" class="w-24">เบิกจ่ายแล้ว</th></tr>
-              <tr><th class="w-16">ปัจจุบัน</th><th class="w-20">เร็ว/ช้า</th><th class="w-16">ทั้งหมด</th><th class="w-16">ตรวจรับแล้ว</th></tr>
+              <tr><th colspan="3" class="py-1 font-normal">การปฏิบัติงาน</th><th colspan="5" class="py-1 font-normal">เงินงบประมาณและการเบิกจ่าย</th></tr>
+              <tr><th colspan="2" class="w-36 font-normal">% ผลงาน</th><th rowspan="2" class="w-32 font-normal">ระยะเวลาก่อสร้างคงเหลือ</th><th colspan="2" class="w-32 font-normal">จำนวนงวดงาน</th><th rowspan="2" class="w-24 font-normal">ปีงบประมาณ</th><th rowspan="2" class="w-32 font-normal">จำนวน (บาท)</th><th rowspan="2" class="w-24 font-normal">เบิกจ่ายแล้ว</th></tr>
+              <tr><th class="w-16 font-normal">ปัจจุบัน</th><th class="w-20 font-normal">เร็ว/ช้า</th><th class="w-16 font-normal">ทั้งหมด</th><th class="w-16 font-normal">ตรวจรับแล้ว</th></tr>
             </thead>
             <tbody id="report_table_tbody"></tbody>
             <tfoot>
               <tr>
                 <td colspan="5" class="border-t border-black"></td>
-                <td class="text-center font-bold">รวม</td>
-                <td id="cell_budget_sum" class="text-center font-bold">๒,๘๔๙,๒๖๐.๐๐</td>
-                <td id="cell_paid_sum" class="text-center font-bold">-</td>
+                <td class="text-center font-normal">รวม</td>
+                <td id="cell_budget_sum" class="text-center font-normal">๒,๘๔๙,๒๖๐.๐๐</td>
+                <td id="cell_paid_sum" class="text-center font-normal">-</td>
               </tr>
             </tfoot>
           </table>
@@ -89,7 +90,7 @@
         <!-- ส่วนลงนามกรรมการ -->
         <div class="mt-4 pt-3 border-t border-slate-300">
           <p class="text-base font-semibold mb-2">- ทราบ</p>
-          <div id="committeeSignatureArea" class="grid grid-cols-2 gap-y-6 gap-x-6 text-center text-base"></div>
+          <div id="committeeSignatureArea" class="grid grid-cols-2 gap-y-4 gap-x-6 text-center text-base"></div>
         </div>
       </div>
     </div>
@@ -207,7 +208,7 @@
       return null;
     }
 
-    function loadAllData() {
+    function loadAllData(isManualAlert = false) {
       const savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentWeekIndex}`);
       if (savedAccepted !== null) {
         acceptedInstallmentsValue = savedAccepted;
@@ -234,6 +235,18 @@
           if (projectData.contractorName) {
             document.getElementById('lbl_contractor').textContent = toThaiNumber(projectData.contractorName);
           }
+          
+          // ดึงข้อมูลวันเริ่ม-สิ้นสุดสัญญา และระยะเวลาทำงาน
+          if (projectData.startDateTh || projectData.startDate) {
+            document.getElementById('lbl_contract_start').textContent = thaiDateText(projectData.startDateTh || projectData.startDate);
+          }
+          if (projectData.endDateTh || projectData.endDate) {
+            document.getElementById('lbl_contract_end').textContent = thaiDateText(projectData.endDateTh || projectData.endDate);
+          }
+          if (projectData.durationDays || projectData.manualDays) {
+            document.getElementById('lbl_duration_days').textContent = toThaiNumber(projectData.durationDays || projectData.manualDays);
+          }
+
           if (projectData.budgetAmount) {
             const tAmount = formatThaiCurrency(projectData.budgetAmount);
             document.getElementById('lbl_budget_amount').textContent = tAmount;
@@ -312,6 +325,10 @@
       else statusText = 'ช้า';
 
       renderTable(actualWeightPercent, statusText, projectData, currentWeekObj);
+      
+      if (isManualAlert) {
+        alert("ปรับปรุงข้อมูลจากระบบเรียบร้อยแล้วค่ะ!");
+      }
     }
 
     function syncInstallmentsFromRef() {
@@ -326,7 +343,7 @@
               paid: inst.paid && inst.paid !== '-' ? formatThaiCurrency(inst.paid) : "-"
             }));
             localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex}`, JSON.stringify(installmentList));
-            loadAllData();
+            loadAllData(false);
             alert("ซิงค์ข้อมืองวดงานจากหน้าข้อมูลเบื้องต้นเรียบร้อยแล้วค่ะ!");
           } else {
             alert("ไม่พบข้อมืองวดงานในหน้าข้อมูลเบื้องต้นค่ะ");
@@ -351,6 +368,7 @@
       // คำนวณวันก่อสร้างรวมและวันคงเหลือ
       let totalDaysNum = projectData && projectData.durationDays ? parseInt(projectData.durationDays) : 140;
       
+      // กรณีมีขยายสัญญา ให้ใช้วันที่รวมขยาย
       if (projectData && projectData.totalExtendedDays && parseInt(projectData.totalExtendedDays) > 0) {
         totalDaysNum = parseInt(projectData.totalExtendedDays);
       }
@@ -456,14 +474,14 @@
     function addInstallmentRow() {
       installmentList.push({ year: "๒๕๖๙", amount: "๐.๐๐", paid: "-" });
       localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex}`, JSON.stringify(installmentList));
-      loadAllData();
+      loadAllData(false);
     }
 
     function removeInstallmentRow() {
       if (installmentList.length > 1) {
         installmentList.pop();
         localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex}`, JSON.stringify(installmentList));
-        loadAllData();
+        loadAllData(false);
       } else {
         alert("ต้องมีอย่างน้อย 1 งวดงานค่ะ");
       }
@@ -474,7 +492,7 @@
       let inspHTML = "";
       inspectors.forEach(insp => {
         if (insp.name) {
-          inspHTML += `<div class="space-y-1 text-center min-w-[220px] mb-3"><p>(ลงชื่อ)........................................................... ${insp.pos || 'ผู้ควบคุมงาน'}</p><p class="font-medium mt-1">(${insp.name})</p></div>`;
+          inspHTML += `<div class="space-y-1 text-center min-w-[220px] mb-2"><p>(ลงชื่อ)........................................................... ${insp.pos || 'ผู้ควบคุมงาน'}</p><p class="font-medium mt-1">(${insp.name})</p></div>`;
         }
       });
       if (!inspHTML) {
@@ -491,16 +509,16 @@
         const roleLabel = (idx === 0) ? 'ประธานกรรมการฯ' : 'กรรมการฯ';
         
         commArea.innerHTML += `
-          <div class="${idx === 0 ? 'col-span-2 mb-3' : 'mb-3'}">
-            <div class="text-center">
+          <div class="${idx === 0 ? 'col-span-2 mb-3' : 'mb-3'} flex flex-col items-center">
+            <div class="inline-block text-center">
               <p>(ลงชื่อ).................................................... ${roleLabel}</p>
-              <p class="font-medium mt-0.5">(${name})</p>
+              <p class="font-medium mt-1">(${name})</p>
             </div>
           </div>`;
       });
     }
 
-    window.addEventListener('DOMContentLoaded', loadAllData);
+    window.addEventListener('DOMContentLoaded', () => loadAllData(false));
   </script>
 </body>
 </html>
