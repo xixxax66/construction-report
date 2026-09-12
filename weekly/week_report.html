@@ -12,20 +12,20 @@
     @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
     @page { size: A4 portrait; margin: 0; }
     body { font-family: 'THSarabunPSK', sans-serif; background-color: #94a3b8; margin: 0; padding: 0; }
-    .sheet-doc { width: 210mm; min-height: 297mm; padding: 10mm 15mm 10mm 25mm; margin: 20px auto; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 16pt !important; line-height: 1.25 !important; color: #000; box-sizing: border-box; }
-    .sheet-doc p, .sheet-doc span, .sheet-doc label, .sheet-doc div { font-size: 16pt; line-height: 1.3; }
+    .sheet-doc { width: 210mm; min-height: 297mm; padding: 15mm 20mm 15mm 25mm; margin: 20px auto; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 16pt !important; line-height: 1.15 !important; color: #000; box-sizing: border-box; }
+    .sheet-doc p, .sheet-doc span, .sheet-doc label, .sheet-doc div { font-size: 16pt; line-height: 1.2; }
     .doc-title { font-size: 26pt !important; font-weight: bold; }
     .garuda-img { width: 1.5cm; height: auto; position: absolute; left: 0; top: 0; }
     .indent-word { text-indent: 1.8cm !important; }
     .dotted-line { border-bottom: 1px dotted #000; }
     .table-custom { width: 100%; border-collapse: collapse; border: 1.5px solid #000; }
-    .table-custom th, .table-custom td { border: 1px solid #000; padding: 4px 5px; font-size: 14pt !important; text-align: center; }
+    .table-custom th, .table-custom td { border: 1px solid #000; padding: 3px 4px; font-size: 14pt !important; text-align: center; }
     .editable-input { background: transparent; border: none; outline: none; width: 100%; text-align: center; font-family: inherit; font-size: inherit; }
     .editable-input:focus { background-color: #fef08a; }
     @media print {
       body { background: white !important; padding: 0 !important; }
       .no-print { display: none !important; }
-      .sheet-doc { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 10mm 15mm 10mm 25mm !important; }
+      .sheet-doc { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 15mm 20mm 15mm 25mm !important; }
       .editable-input { background: transparent !important; }
     }
   </style>
@@ -34,8 +34,8 @@
   <div class="max-w-7xl w-full grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
     <div class="xl:col-span-8 flex justify-center overflow-x-auto w-full">
       <div class="sheet-doc relative" id="doc-print">
-        <div class="relative text-center mb-1">
-          <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Garuda_Emblem_of_Thailand.svg/300px-Garuda_Emblem_of_Thailand.svg.png';">
+        <div class="relative text-center mb-4">
+          <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img">
           <h2 class="doc-title pt-1">บันทึกข้อความ</h2>
         </div>
         <div class="space-y-1 text-base">
@@ -45,52 +45,39 @@
             <div class="flex-1 text-left"><span class="font-bold mr-2">วันที่</span><span id="lbl_report_date">๑๕ มิถุนายน ๒๕๖๙</span></div>
           </div>
           <div class="flex items-baseline justify-between pb-1 dotted-line">
-            <div class="flex items-baseline flex-1"><span class="font-bold w-12">เรื่อง</span><span>รายงานผลการก่อสร้างประจำสัปดาห์ ครั้งที่ <span id="lbl_seq" class="font-normal">๑</span></span></div>
+            <div class="flex items-baseline flex-1"><span class="font-bold w-12">เรื่อง</span><span>รายงานผลการก่อสร้างประจำสัปดาห์ ครั้งที่ <span id="lbl_seq" class="font-bold">๑</span></span></div>
           </div>
         </div>
-        <div class="mt-3 text-base"><p><span class="font-bold">เรียน</span> ประธานกรรมการตรวจรับพัสดุ</p></div>
-        <div class="mt-2 text-base leading-relaxed text-justify space-y-1">
-          <p class="indent-word">รายงานครั้งที่ <span id="lbl_seq_body" class="font-normal">๑</span> สัปดาห์ที่ <span id="lbl_week_slash_year" class="font-normal">๑/๒๕๖๙</span> ระหว่างวันที่ <span id="lbl_start_date">๗ มิถุนายน ๒๕๖๙</span> ถึงวันที่ <span id="lbl_end_date">๑๓ มิถุนายน ๒๕๖๙</span></p>
-          <p class="indent-word">
-            งานก่อสร้าง <span id="lbl_project_title">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากนานายราวี ดวงแสนพุฒ ถึงหนองหวาย หมู่ที่ ๑๒</span> 
-            โดยผู้ว่าจ้างคือ <span id="lbl_employer">องค์การบริหารส่วนตำบลโพนงาม</span> 
-            ได้ทำสัญญาจ้างเลขที่ <span id="lbl_contract_no">E๑/๒๕๖๙</span> ลงวันที่ <span id="lbl_contract_date">๕ มิถุนายน ๒๕๖๙</span> 
-            กับผู้รับจ้าง <span id="lbl_contractor">ห้างหุ้นส่วนจำกัด เค.เค.มุกดาหารก่อสร้าง</span> 
-            เริ่มสัญญาวันที่ <span id="lbl_contract_start">-</span> สิ้นสุดสัญญาวันที่ <span id="lbl_contract_end">-</span> ระยะเวลาก่อสร้าง <span id="lbl_duration_days">-</span> วัน 
-            ในวงเงินค่าก่อสร้าง <span id="lbl_budget_amount">๒,๘๔๙,๒๖๐.๐๐</span> บาท 
-            กำหนดอัตราค่าปรับวันละ <span id="lbl_fine_per_day">๗,๑๒๔.๐๐</span> บาท 
-            <span id="lbl_extension_info" class="text-slate-900"></span>
-          </p>
+        <div class="mt-2 text-base"><p><span class="font-bold">เรียน</span> ประธานกรรมการตรวจรับพัสดุ</p></div>
+        <div class="mt-2 text-base leading-relaxed text-justify space-y-1.5">
+          <p class="indent-word">รายงานครั้งที่ <span id="lbl_seq_body" class="font-semibold">๑</span> สัปดาห์ที่ <span id="lbl_week_slash_year" class="font-semibold">๑/๒๕๖๙</span> ระหว่างวันที่ <span id="lbl_start_date">๗ มิถุนายน ๒๕๖๙</span> ถึงวันที่ <span id="lbl_end_date">๑๓ มิถุนายน ๒๕๖๙</span></p>
+          <p class="indent-word">งานก่อสร้าง <span id="lbl_project_title">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากนานายราวี ดวงแสนพุฒ ถึงหนองหวาย หมู่ที่ ๑๒</span> สัญญาจ้างเลขที่ <span id="lbl_contract_no">E๑/๒๕๖๙</span> ลงวันที่ <span id="lbl_contract_date">๕ มิถุนายน ๒๕๖๙</span> ค่าก่อสร้าง <span id="lbl_budget_amount">๒,๘๔๙,๒๖๐.๐๐</span> บาท</p>
         </div>
 
-        <div class="mt-3.5 mb-2">
+        <div class="mt-2.5 mb-2">
           <table class="table-custom">
             <thead>
-              <tr><th colspan="3" class="py-1 font-normal">การปฏิบัติงาน</th><th colspan="5" class="py-1 font-normal">เงินงบประมาณและการเบิกจ่าย</th></tr>
-              <tr><th colspan="2" class="w-36 font-normal">% ผลงาน</th><th rowspan="2" class="w-32 font-normal">ระยะเวลาก่อสร้างคงเหลือ</th><th colspan="2" class="w-32 font-normal">จำนวนงวดงาน</th><th rowspan="2" class="w-24 font-normal">ปีงบประมาณ</th><th rowspan="2" class="w-32 font-normal">จำนวน (บาท)</th><th rowspan="2" class="w-24 font-normal">เบิกจ่ายแล้ว</th></tr>
-              <tr><th class="w-16 font-normal">ปัจจุบัน</th><th class="w-20 font-normal">เร็ว/ช้า</th><th class="w-16 font-normal">ทั้งหมด</th><th class="w-16 font-normal">ตรวจรับแล้ว</th></tr>
+              <tr><th colspan="5" class="py-0.5">การปฏิบัติงาน</th><th colspan="3" class="py-0.5">เงินงบประมาณและการเบิกจ่าย</th></tr>
+              <tr><th colspan="2" class="w-36">% ผลงาน</th><th rowspan="2" class="w-28">ระยะเวลาก่อสร้างคงเหลือ</th><th colspan="2" class="w-32">จำนวนงวดงาน</th><th rowspan="2" class="w-24">ปีงบประมาณ</th><th rowspan="2" class="w-32">จำนวน (บาท)</th><th rowspan="2" class="w-24">เบิกจ่ายแล้ว</th></tr>
+              <tr><th class="w-16">ปัจจุบัน</th><th class="w-20">เร็ว/ช้า</th><th class="w-16">ทั้งหมด</th><th class="w-16">ตรวจรับแล้ว</th></tr>
             </thead>
             <tbody id="report_table_tbody"></tbody>
             <tfoot>
               <tr>
                 <td colspan="5" class="border-t border-black"></td>
-                <td class="text-center font-normal">รวม</td>
-                <td id="cell_budget_sum" class="text-center font-normal">๒,๘๔๙,๒๖๐.๐๐</td>
-                <td id="cell_paid_sum" class="text-center font-normal">-</td>
+                <td class="text-center font-bold">รวม</td>
+                <td id="cell_budget_sum" class="text-center font-bold">๒,๘๔๙,๒๖๐.๐๐</td>
+                <td id="cell_paid_sum" class="text-center font-bold">-</td>
               </tr>
             </tfoot>
           </table>
         </div>
 
-        <p class="indent-word text-base pt-1">จึงเรียนมาเพื่อโปรดทราบ</p>
-        
-        <!-- ลายเซ็นผู้ควบคุมงาน -->
-        <div id="inspectorSignatureArea" class="mt-4 flex flex-wrap justify-end gap-x-8 gap-y-4 pr-6 text-center text-base"></div>
-        
-        <!-- ลายเซ็นคณะกรรมการ -->
-        <div class="mt-4 pt-3 border-t border-slate-300">
-          <p class="text-base font-semibold mb-2">- ทราบ</p>
-          <div id="committeeSignatureArea" class="grid grid-cols-2 gap-y-6 text-center text-base"></div>
+        <p class="indent-word text-base pt-0.5">จึงเรียนมาเพื่อโปรดทราบ</p>
+        <div id="inspectorSignatureArea" class="mt-2.5 flex justify-end pr-6 text-center text-base"></div>
+        <div class="mt-2.5 pt-1.5 border-t border-slate-300">
+          <p class="text-base font-semibold mb-0.5">- ทราบ</p>
+          <div id="committeeSignatureArea" class="grid grid-cols-2 gap-y-3.5 gap-x-4 text-center text-base"></div>
         </div>
       </div>
     </div>
@@ -113,9 +100,6 @@
       </div>
 
       <div class="grid grid-cols-1 gap-4">
-        <button onclick="loadAllData(true)" class="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl py-4 px-6 font-bold text-2xl shadow-lg flex items-center justify-center gap-3 cursor-pointer">
-          <i data-lucide="refresh-cw" class="w-7 h-7"></i> ปรับปรุงข้อมูล (Sync)
-        </button>
         <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl py-4 px-6 font-bold text-2xl shadow-lg flex items-center justify-center gap-3 cursor-pointer">
           <i data-lucide="printer" class="w-7 h-7"></i> พิมพ์บันทึกข้อความ
         </button>
@@ -137,6 +121,10 @@
       { year: "๒๕๖๙", amount: "๒,๘๔๙,๒๖๐.๐๐", paid: "-" }
     ];
     let acceptedInstallmentsValue = "-";
+    
+    // ตัวแปรเก็บข้อมูลสำหรับใช้คำนวณวันคงเหลือ
+    let globalProjectData = null;
+    let globalCurrentWeekObj = null;
 
     function initProjectContext() {
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
@@ -172,6 +160,7 @@
         "พฤษภาคม": "พฤษภาคม", "มิถุนายน": "มิถุนายน", "กรกฎาคม": "กรกฎาคม", "สิงหาคม": "สิงหาคม",
         "กันยายน": "กันยายน", "ตุลาคม": "ตุลาคม", "พฤศจิกายน": "พฤศจิกายน", "ธันวาคม": "ธันวาคม"
       };
+      
       let cleanStr = dateStr.toString().trim();
       for (const [enM, thM] of Object.entries(thaiMonths)) {
         if (cleanStr.toLowerCase().includes(enM.toLowerCase())) {
@@ -207,7 +196,7 @@
       }
     }
 
-    // 💡 ปรับปรุงฟังก์ชันการแปลงวันที่ให้แม่นยำสูง ป้องกันค่า NaN 100%
+    // 💡 ฟังก์ชันแปลงวันที่ภาษาไทย ป้องกันค่า NaN 
     function parseThaiDateStr(str) {
       if (!str) return null;
       let cleanStr = thaiToArabic(str.toString().trim());
@@ -226,7 +215,7 @@
       if (nums && nums.length >= 2) {
         let d = parseInt(nums[0]);
         let y = parseInt(nums[nums.length - 1]);
-        if (y > 2400) y -= 543; // แปลง พ.ศ. เป็น ค.ศ.
+        if (y > 2400) y -= 543;
         let m = mIndex;
         if (m === -1 && nums.length >= 3) m = parseInt(nums[1]) - 1;
         
@@ -239,9 +228,9 @@
       return !isNaN(parsed.getTime()) ? parsed : null;
     }
 
-    function loadAllData(isManualAlert = false) {
+    function loadAllData() {
       initProjectContext();
-      
+
       const savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentWeekIndex}`);
       if (savedAccepted !== null) {
         acceptedInstallmentsValue = savedAccepted;
@@ -252,9 +241,10 @@
       if (basicRaw) {
         try {
           projectData = JSON.parse(basicRaw);
+          globalProjectData = projectData; // เก็บไว้ใช้คำนวณวัน
+
           if (projectData.organizationName) {
             document.getElementById('lbl_org').textContent = `กองช่าง ${projectData.organizationName}`;
-            document.getElementById('lbl_employer').textContent = toThaiNumber(projectData.organizationName);
           }
           if (projectData.projectName) {
             document.getElementById('lbl_project_title').textContent = toThaiNumber(projectData.projectName);
@@ -265,34 +255,9 @@
           if (projectData.contractDate) {
             document.getElementById('lbl_contract_date').textContent = thaiDateText(projectData.contractDate);
           }
-          if (projectData.contractorName) {
-            document.getElementById('lbl_contractor').textContent = toThaiNumber(projectData.contractorName);
-          }
-          
-          if (projectData.startDateTh || projectData.startDate) {
-            document.getElementById('lbl_contract_start').textContent = thaiDateText(projectData.startDateTh || projectData.startDate);
-          }
-          if (projectData.endDateTh || projectData.endDate) {
-            document.getElementById('lbl_contract_end').textContent = thaiDateText(projectData.endDateTh || projectData.endDate);
-          }
-          if (projectData.durationDays || projectData.manualDays) {
-            document.getElementById('lbl_duration_days').textContent = toThaiNumber(projectData.durationDays || projectData.manualDays);
-          }
-
           if (projectData.budgetAmount) {
             const tAmount = formatThaiCurrency(projectData.budgetAmount);
             document.getElementById('lbl_budget_amount').textContent = tAmount;
-          }
-          if (projectData.finePerDay) {
-            document.getElementById('lbl_fine_per_day').textContent = formatThaiCurrency(projectData.finePerDay);
-          }
-
-          if (projectData.extendContractDate && projectData.extendContractDate.trim() !== '') {
-            const extDateTh = thaiDateText(projectData.extendContractDate);
-            const extDays = projectData.totalExtendedDays ? toThaiNumber(projectData.totalExtendedDays) : '';
-            document.getElementById('lbl_extension_info').textContent = `และได้รับการอนุมัติขยายระยะเวลาทำการก่อสร้างออกไปอีก ${extDays ? extDays + ' วัน' : ''} จนถึงวันที่ ${extDateTh}`;
-          } else {
-            document.getElementById('lbl_extension_info').textContent = '';
           }
 
           const savedInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex}`);
@@ -302,8 +267,11 @@
             let previousInst = null;
             if (currentWeekIndex > 1) {
               const prevData = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex - 1}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex - 1}`);
-              if (prevData) previousInst = JSON.parse(prevData);
+              if (prevData) {
+                previousInst = JSON.parse(prevData);
+              }
             }
+
             if (previousInst && Array.isArray(previousInst) && previousInst.length > 0) {
               installmentList = previousInst;
             } else if (projectData.installments && Array.isArray(projectData.installments) && projectData.installments.length > 0) {
@@ -318,13 +286,14 @@
       }
       renderSignatures(projectData);
 
-      const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`) || localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
-      let currentWeekObj = null;
+      const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
       if (weeklyRefRaw) {
         try {
           const weeksData = JSON.parse(weeklyRefRaw);
-          currentWeekObj = weeksData.find(w => parseInt(w.weekIndex) === currentWeekIndex);
+          const currentWeekObj = weeksData.find(w => w.weekIndex === currentWeekIndex);
           if (currentWeekObj) {
+            globalCurrentWeekObj = currentWeekObj; // เก็บไว้ใช้คำนวณวัน
+
             if (currentWeekObj.seq) {
               document.getElementById('lbl_seq').textContent = toThaiNumber(currentWeekObj.seq);
               document.getElementById('lbl_seq_body').textContent = toThaiNumber(currentWeekObj.seq);
@@ -340,13 +309,11 @@
         } catch(e) {}
       }
 
+      const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentWeekIndex}`);
       let actualWeightPercent = 0;
-      const pRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentWeekIndex}`);
-      if (pRaw) {
-        try {
-          const pData = JSON.parse(pRaw);
-          actualWeightPercent = parseFloat(pData.totalWeightPercent) || 0;
-        } catch(e){}
+      if (progressRaw) {
+        const progData = JSON.parse(progressRaw);
+        actualWeightPercent = parseFloat(progData.totalWeightPercent) || 0;
       }
 
       let statusText = 'ช้า';
@@ -354,9 +321,7 @@
       else if (actualWeightPercent >= 100) statusText = 'แล้วเสร็จ';
       else statusText = 'ช้า';
 
-      renderTable(actualWeightPercent, statusText, projectData, currentWeekObj);
-      
-      if (isManualAlert) alert("ปรับปรุงข้อมูลจากระบบเรียบร้อยแล้วค่ะ!");
+      renderTable(actualWeightPercent, statusText);
     }
 
     function syncInstallmentsFromRef() {
@@ -372,7 +337,14 @@
               paid: inst.paid && inst.paid !== '-' ? formatThaiCurrency(inst.paid) : "-"
             }));
             localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`, JSON.stringify(installmentList));
-            loadAllData(false);
+
+            const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentWeekIndex}`);
+            let actualWeightPercent = 0;
+            if (progressRaw) {
+              actualWeightPercent = parseFloat(JSON.parse(progressRaw).totalWeightPercent) || 0;
+            }
+            let statusText = actualWeightPercent >= 100 ? 'แล้วเสร็จ' : 'ช้า';
+            renderTable(actualWeightPercent, statusText);
             alert("ซิงค์ข้อมืองวดงานจากหน้าข้อมูลเบื้องต้นเรียบร้อยแล้วค่ะ!");
           } else {
             alert("ไม่พบข้อมืองวดงานในหน้าข้อมูลเบื้องต้นค่ะ");
@@ -385,7 +357,7 @@
       }
     }
 
-    function renderTable(actualWeightPercent, statusText, projectData, currentWeekObj) {
+    function renderTable(actualWeightPercent, statusText) {
       const tbody = document.getElementById('report_table_tbody');
       tbody.innerHTML = '';
 
@@ -394,28 +366,28 @@
       let totalPaidSum = 0;
       let hasNumericPaid = false;
 
-      // 💡 ดักข้อผิดพลาด วันคงเหลือ ไม่ให้คำนวณเป็น NaN 
-      let totalDaysNum = parseInt(projectData && (projectData.durationDays || projectData.manualDays));
-      if (isNaN(totalDaysNum) && projectData && projectData.durationWeeks) {
-        totalDaysNum = parseInt(projectData.durationWeeks) * 7;
+      // 💡 คำนวณวันคงเหลือแบบอัตโนมัติ (Dynamic Calculation)
+      let totalDaysNum = parseInt(globalProjectData && (globalProjectData.durationDays || globalProjectData.manualDays));
+      if (isNaN(totalDaysNum) && globalProjectData && globalProjectData.durationWeeks) {
+        totalDaysNum = parseInt(globalProjectData.durationWeeks) * 7;
       }
       if (isNaN(totalDaysNum)) totalDaysNum = 0;
       
-      if (projectData && projectData.totalExtendedDays && parseInt(projectData.totalExtendedDays) > 0) {
-        totalDaysNum = parseInt(projectData.totalExtendedDays);
+      if (globalProjectData && globalProjectData.totalExtendedDays && parseInt(globalProjectData.totalExtendedDays) > 0) {
+        totalDaysNum = parseInt(globalProjectData.totalExtendedDays);
       }
 
       let remainDaysText = "- วัน";
       let timePercentText = "(- %)";
 
-      const rawStartDate = projectData ? (projectData.startDateTh || projectData.startDate) : null;
-      const rawEndDate = currentWeekObj && currentWeekObj.endDate ? currentWeekObj.endDate : (projectData ? (projectData.endDateTh || projectData.endDate) : null);
+      const rawStartDate = globalProjectData ? (globalProjectData.startDateTh || globalProjectData.startDate) : null;
+      const rawEndDate = globalCurrentWeekObj && globalCurrentWeekObj.endDate ? globalCurrentWeekObj.endDate : (globalProjectData ? (globalProjectData.endDateTh || globalProjectData.endDate) : null);
 
       if (rawStartDate && rawEndDate && totalDaysNum > 0) {
         const sDate = parseThaiDateStr(rawStartDate);
         const eDate = parseThaiDateStr(rawEndDate);
         
-        if (sDate && eDate) {
+        if (sDate && eDate && !isNaN(sDate.getTime()) && !isNaN(eDate.getTime())) {
           const diffTime = eDate.getTime() - sDate.getTime();
           const passedDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
           let remainDays = Math.max(0, totalDaysNum - passedDays);
@@ -426,7 +398,6 @@
           timePercentText = `(${toThaiNumber(timePercent.toFixed(2))} %)`;
         }
       }
-
       const remainHtml = `${remainDaysText}<br>${timePercentText}`;
 
       installmentList.forEach((item, idx) => {
@@ -447,7 +418,7 @@
           rowHTML += `
             <td rowspan="${totalInstallments}" class="text-center align-middle">${toThaiNumber(actualWeightPercent.toFixed(2))}</td>
             <td rowspan="${totalInstallments}" class="text-center align-middle">${statusText}</td>
-            <td rowspan="${totalInstallments}" class="text-center align-middle leading-tight">${remainHtml}</td>
+            <td rowspan="${totalInstallments}" class="text-center align-middle">${remainHtml}</td>
             <td rowspan="${totalInstallments}" class="text-center align-middle">${toThaiNumber(totalInstallments)}</td>
             <td rowspan="${totalInstallments}" class="text-center align-middle">
               <input type="text" class="editable-input text-center" value="${toThaiNumber(acceptedInstallmentsValue)}" onchange="updateAccepted(this.value)">
@@ -512,20 +483,32 @@
     function addInstallmentRow() {
       installmentList.push({ year: "๒๕๖๙", amount: "๐.๐๐", paid: "-" });
       localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`, JSON.stringify(installmentList));
-      loadAllData(false);
+
+      const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentWeekIndex}`);
+      let actualWeightPercent = 0;
+      if (progressRaw) {
+        actualWeightPercent = parseFloat(JSON.parse(progressRaw).totalWeightPercent) || 0;
+      }
+      renderTable(actualWeightPercent, actualWeightPercent >= 100 ? 'แล้วเสร็จ' : 'ช้า');
     }
 
     function removeInstallmentRow() {
       if (installmentList.length > 1) {
         installmentList.pop();
         localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`, JSON.stringify(installmentList));
-        loadAllData(false);
+
+        const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentWeekIndex}`);
+        let actualWeightPercent = 0;
+        if (progressRaw) {
+          actualWeightPercent = parseFloat(JSON.parse(progressRaw).totalWeightPercent) || 0;
+        }
+        renderTable(actualWeightPercent, actualWeightPercent >= 100 ? 'แล้วเสร็จ' : 'ช้า');
       } else {
         alert("ต้องมีอย่างน้อย 1 งวดงานค่ะ");
       }
     }
 
-    // 💡 ปรับปรุงฟังก์ชันลายเซ็น รองรับข้อมูลที่เป็น Object และจัดกึ่งกลางอัตโนมัติ
+    // 💡 จัดการรายชื่อคณะกรรมการให้มาครบ จัดกึ่งกลาง และไม่ตกบรรทัด
     function renderSignatures(data) {
       const inspectors = data.inspectors || [{ name: "นายพัทธิยะ วงษาซ้าย", pos: "ผู้ควบคุมงาน" }];
       let inspHTML = "";
@@ -534,21 +517,17 @@
         const inspPos = typeof insp === 'object' ? insp.pos : "ผู้ควบคุมงาน";
         if (inspName) {
           inspHTML += `
-            <div class="flex flex-col items-end mb-2 pr-10">
-              <div class="inline-block text-center whitespace-nowrap">
-                <p>(ลงชื่อ)........................................................... ${inspPos}</p>
-                <p class="font-medium mt-1">(${inspName})</p>
-              </div>
+            <div class="space-y-0.5 text-center min-w-[220px] mb-2">
+              <p class="whitespace-nowrap">(ลงชื่อ)........................................................... ${inspPos}</p>
+              <p class="font-medium">(${inspName})</p>
             </div>`;
         }
       });
       if (!inspHTML) {
         inspHTML = `
-          <div class="flex flex-col items-end mb-2 pr-10">
-            <div class="inline-block text-center whitespace-nowrap">
-              <p>(ลงชื่อ)........................................................... ผู้ควบคุมงาน</p>
-              <p class="font-medium mt-1">(นายพัทธิยะ วงษาซ้าย)</p>
-            </div>
+          <div class="space-y-0.5 text-center min-w-[220px]">
+            <p class="whitespace-nowrap">(ลงชื่อ)........................................................... ผู้ควบคุมงาน</p>
+            <p class="font-medium">(นายพัทธิยะ วงษาซ้าย)</p>
           </div>`;
       }
       document.getElementById('inspectorSignatureArea').innerHTML = inspHTML;
@@ -558,24 +537,18 @@
       commArea.innerHTML = '';
       
       if (comms.length === 0) {
-        // หากไม่มีข้อมูลในระบบ ให้ใช้ค่าเริ่มต้นและจัดกึ่งกลาง
+        // หากไม่มีข้อมูล ให้ใช้ค่าเริ่มต้น
         commArea.innerHTML = `
-          <div class="col-span-2 mb-4 flex justify-center">
-            <div class="inline-block text-center whitespace-nowrap">
-              <p>(ลงชื่อ)........................................................... ประธานกรรมการฯ</p>
+          <div class="col-span-2 flex justify-center mb-3">
+            <div class="text-center">
+              <p class="whitespace-nowrap">(ลงชื่อ).................................................... ประธานกรรมการฯ</p>
               <p class="font-medium mt-1">(นางสาวถนอมนวล วะทวีก้านตรงฯ)</p>
             </div>
           </div>
-          <div class="mb-4 flex justify-center">
-            <div class="inline-block text-center whitespace-nowrap">
-              <p>(ลงชื่อ)........................................................... กรรมการฯ</p>
+          <div class="flex justify-center mb-3">
+            <div class="text-center">
+              <p class="whitespace-nowrap">(ลงชื่อ).................................................... กรรมการฯ</p>
               <p class="font-medium mt-1">(จ่าเอกธีรพงษ์ ดรชานนท์)</p>
-            </div>
-          </div>
-          <div class="mb-4 flex justify-center">
-            <div class="inline-block text-center whitespace-nowrap">
-              <p>(ลงชื่อ)........................................................... กรรมการฯ</p>
-              <p class="font-medium mt-1">(นางสาวปนัดดา ภูอาษา)</p>
             </div>
           </div>`;
         return;
@@ -583,7 +556,6 @@
 
       comms.forEach((item, idx) => {
         if (!item) return;
-        // ดึงชื่อออกมา ไม่ว่าข้อมูลจะเป็นแค่ String ("นาย ก") หรือ Object ({name: "นาย ก"})
         const cName = typeof item === 'object' ? item.name : item;
         const cPos = typeof item === 'object' ? item.pos : "";
         if (!cName) return;
@@ -591,20 +563,18 @@
         const roleLabel = cPos ? cPos : (idx === 0 ? 'ประธานกรรมการฯ' : 'กรรมการฯ');
         
         if (idx === 0) {
-          // ประธานกรรมการ กินพื้นที่ 2 คอลัมน์และอยู่ตรงกลาง
           commArea.innerHTML += `
-            <div class="col-span-2 mb-4 flex justify-center">
-              <div class="inline-block text-center whitespace-nowrap">
-                <p>(ลงชื่อ)........................................................... ${roleLabel}</p>
+            <div class="col-span-2 flex justify-center mb-3">
+              <div class="text-center">
+                <p class="whitespace-nowrap">(ลงชื่อ).................................................... ${roleLabel}</p>
                 <p class="font-medium mt-1">(${cName})</p>
               </div>
             </div>`;
         } else {
-          // กรรมการ จัดกึ่งกลางในคอลัมน์ของตัวเอง
           commArea.innerHTML += `
-            <div class="mb-4 flex justify-center">
-              <div class="inline-block text-center whitespace-nowrap">
-                <p>(ลงชื่อ)........................................................... ${roleLabel}</p>
+            <div class="flex justify-center mb-3">
+              <div class="text-center">
+                <p class="whitespace-nowrap">(ลงชื่อ).................................................... ${roleLabel}</p>
                 <p class="font-medium mt-1">(${cName})</p>
               </div>
             </div>`;
@@ -612,7 +582,7 @@
       });
     }
 
-    window.addEventListener('DOMContentLoaded', () => loadAllData(false));
+    window.addEventListener('DOMContentLoaded', loadAllData);
   </script>
 </body>
 </html>
