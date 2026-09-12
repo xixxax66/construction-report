@@ -535,7 +535,6 @@
         try { list = JSON.parse(raw); } catch(e){}
       }
 
-      // ตรวจสอบโครงการปัจจุบันจากฟอร์ม หากยังไม่มีในลิสต์ ให้เพิ่มเข้าไปอัตโนมัติ
       const currentData = getFormData();
       if (currentData.contractNo && !list.some(p => p.id === currentData.projectID)) {
         list.push({ id: currentData.projectID, name: currentData.projectName, contractNo: currentData.contractNo });
@@ -576,7 +575,6 @@
 
       const newProjId = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
       
-      // ล้างฟอร์มบางส่วนเพื่อเตรียมกรอกใหม่
       document.getElementById('contractNo').value = cNo;
       document.getElementById('projectName').value = "โครงการก่อสร้าง...";
       document.getElementById('budgetAmount').value = "0.00";
@@ -586,7 +584,6 @@
       localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(payload));
       localStorage.setItem(`LOCAL_BASIC_INFO_${newProjId}`, JSON.stringify(payload));
 
-      // บันทึกลงรายการโครงการทั้งหมด
       let list = [];
       const raw = localStorage.getItem(PROJECT_LIST_KEY);
       if (raw) { try { list = JSON.parse(raw); } catch(e){} }
@@ -622,7 +619,6 @@
       localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(payload));
       localStorage.setItem(`LOCAL_BASIC_INFO_${payload.projectID}`, JSON.stringify(payload));
 
-      // อัปเดตรายการโครงการทั้งหมด
       let list = [];
       const raw = localStorage.getItem(PROJECT_LIST_KEY);
       if (raw) { try { list = JSON.parse(raw); } catch(e){} }
