@@ -596,7 +596,7 @@
       return projectDatabase;
     }
 
-    async function saveProjectToCloudAndLocal() {
+async function saveProjectToCloudAndLocal() {
       const btn = document.getElementById('btn-cloud-backup');
       try {
         if (btn) {
@@ -645,8 +645,11 @@
 
         if (btn) btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังอัปโหลด...`;
 
+        // เพิ่ม mode และ redirect: 'follow' เพื่อให้วิ่งตามการ Redirect ของ Google ได้อย่างสมบูรณ์
         const response = await fetch(getActiveUrl(), {
           method: 'POST',
+          mode: 'cors',
+          redirect: 'follow',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
@@ -676,7 +679,7 @@
         }
       }
     }
-
+    
     function downloadProjectJSON() {
       const data = exportAllProjectData();
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
