@@ -461,14 +461,23 @@
     const thaiMonths = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
     const urlParams = new URLSearchParams(window.location.search);
     const currentWeekIndex = parseInt(urlParams.get('week')) || 1;
-    const WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentWeekIndex}`;
-    const GOOGLE_SCRIPT_URL = localStorage.getItem('CONSTRUCTION_GAS_URL') || 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
+    
+    // 💡 ปรับปรุง: ดึง projectID เพื่อแยกข้อมูลให้ชัดเจน
+    let currentProjectID = 'DEFAULT_PROJ';
+    let WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentProjectID}_${currentWeekIndex}`; 
+
+    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
+    
+    function getActiveUrl() {
+      return localStorage.getItem('CONSTRUCTION_GAS_URL') || DEFAULT_GAS_URL;
+    }
 
     document.getElementById('badge-week').textContent = `สัปดาห์ที่ ${currentWeekIndex}`;
 
     function buildDynamicDays() {
       let startDateStr = "";
-      const refDataRaw = localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+      // รองรับการดึงข้อมูลแบบแยกโปรเจกต์
+      const refDataRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
       
       if (refDataRaw) {
         const weeks = JSON.parse(refDataRaw);
@@ -649,6 +658,7 @@
     function getFormData() {
       const data = {
         weekIndex: currentWeekIndex,
+        projectID: currentProjectID, // บันทึก Project ID เข้าไปด้วย
         dailyLogs: [],
         labor: {
           lead: [], worker: [],
@@ -775,8 +785,11 @@
       btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> บันทึก...`;
 
       try {
-        await fetch(GOOGLE_SCRIPT_URL, {
+        // 💡 ปรับปรุง: ใส่ mode: 'cors' และ redirect: 'follow' เพื่อส่งข้อมูลขึ้น Cloud ได้แบบไม่สะดุด
+        await fetch(getActiveUrl(), {
           method: 'POST',
+          mode: 'cors',
+          redirect: 'follow',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'save_week_log', ...payload })
         });
@@ -791,21 +804,29 @@
     }
 
     function loadProjectData() {
-      const raw = localStorage.getItem('LOCAL_BASIC_INFO');
-      if (raw) {
-        const data = JSON.parse(raw);
-        if (data.inspectors && data.inspectors[0]) {
-          document.getElementById('txt-inspector-name').textContent = data.inspectors[0].name;
-          document.getElementById('txt-inspector-pos').textContent = data.inspectors[0].pos;
-        }
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          const projectData = JSON.parse(basicRaw);
+          if (projectData.contractNo) {
+            currentProjectID = `PROJ_${projectData.contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            // อัปเดต Storage Key ให้ผูกกับโครงการนี้
+            WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentProjectID}_${currentWeekIndex}`;
+          }
+          if (projectData.inspectors && projectData.inspectors[0]) {
+            document.getElementById('txt-inspector-name').textContent = projectData.inspectors[0].name;
+            document.getElementById('txt-inspector-pos').textContent = projectData.inspectors[0].pos;
+          }
+        } catch(e) {}
       }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      loadProjectData(); // โหลด Project ID ก่อน
       buildDynamicDays();
-      loadProjectData();
       
-      const cached = localStorage.getItem(WEEK_STORAGE_KEY);
+      // ดึงข้อมูลตาม Storage Key ที่ผูกกับ Project ID แล้ว
+      const cached = localStorage.getItem(WEEK_STORAGE_KEY) || localStorage.getItem(`WEEK_LOG_DATA_${currentWeekIndex}`);
       if (cached) {
         setFormData(JSON.parse(cached));
       } else {
