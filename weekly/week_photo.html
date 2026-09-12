@@ -366,200 +366,7 @@
       } else {
         el.parentElement.classList.remove('empty-desc');
       }
-      localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
-    }
-
-    function openImageEditor(idx) {
-      currentEditingIdx = idx;
-      const item = photosList[idx];
-      if (!item.rawSrc && !item.src) {
-        showSourcePickerChoice(idx);
-        return;
-      }
-      loadEditorWithImage(item.rawSrc || item.src);
-    }
-
-    function showSourcePickerChoice(idx) {
-      currentEditingIdx = idx;
-      const choice = confirm("ต้องการเลือกรูปภาพจากเครื่องคอมพิวเตอร์?\n(กด 'Cancel' เพื่อเลือกรูปจาก Google Drive)");
-      if (choice) {
-        document.getElementById('global_file_input').click();
-      } else {
-        openDrivePicker();
-      }
-    }
-
-    async function openDrivePicker() {
-      const modal = document.getElementById('drive_picker_modal');
-      const grid = document.getElementById('drive_photo_grid');
-      modal.classList.remove('hidden');
-      grid.innerHTML = '<p class="col-span-3 text-center text-slate-500 py-6">กำลังดึงรูปภาพจาก Google Drive...</p>';
-
-      try {
-        const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
-        const res = await fetch(`${centralUrl}?action=get_drive_photos`);
-        const result = await res.json();
-        
-        if (result.status === 'success' && result.photos.length > 0) {
-          grid.innerHTML = '';
-          result.photos.forEach(p => {
-            grid.innerHTML += `
-              <div class="border rounded-lg p-1.5 cursor-pointer hover:border-blue-500 hover:shadow bg-slate-50 flex flex-col items-center" onclick="selectPhotoFromDrive('${p.url}')">
-                <div class="w-full aspect-square bg-slate-200 rounded overflow-hidden flex items-center justify-center">
-                  <img src="${p.url}" class="w-full h-full object-cover" crossorigin="anonymous">
-                </div>
-                <span class="text-[10px] text-slate-600 truncate w-full text-center mt-1">${p.name}</span>
-              </div>`;
-          });
-        } else {
-          grid.innerHTML = '<p class="col-span-3 text-center text-slate-500 py-6">ไม่พบรูปภาพใน Google Drive</p>';
-        }
-      } catch (err) {
-        grid.innerHTML = '<p class="col-span-3 text-center text-rose-500 py-6">ไม่สามารถโหลดรูปจาก Google Drive ได้</p>';
-      }
-    }
-
-    function closeDrivePicker() {
-      document.getElementById('drive_picker_modal').classList.add('hidden');
-    }
-
-    function selectPhotoFromDrive(url) {
-      closeDrivePicker();
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = function() {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        canvas.getContext('2d').drawImage(img, 0, 0);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-
-        photosList[currentEditingIdx].rawSrc = dataUrl;
-        photosList[currentEditingIdx].src = dataUrl;
-        photosList[currentEditingIdx].zoom = 1;
-        photosList[currentEditingIdx].posX = 0;
-        photosList[currentEditingIdx].posY = 0;
-        photosList[currentEditingIdx].rotate = 0;
-
-        renderAllPages();
-        loadEditorWithImage(dataUrl);
-      };
-      img.src = url;
-    }
-
-    function loadEditorWithImage(sourceImage) {
-      const modal = document.getElementById('image_editor_modal');
-      const cropperImg = document.getElementById('cropper_image');
-      const item = photosList[currentEditingIdx];
-
-      cropperImg.src = sourceImage;
-      cropperImg.onload = function() {
-        cropState.imgWidth = cropperImg.naturalWidth;
-        cropState.imgHeight = cropperImg.naturalHeight;
-        cropState.scale = item.zoom || 1;
-        cropState.translateX = item.posX || 0;
-        cropState.translateY = item.posY || 0;
-        cropState.rotation = item.rotate || 0;
-
-        document.getElementById('zoom_slider').value = cropState.scale;
-        document.getElementById('zoom_val').textContent = Math.round(cropState.scale * 100) + '%';
-        
-        updateCropperTransform();
-        modal.classList.remove('hidden');
-      };
-    }
-
-    function closeImageEditor() {
-      document.getElementById('image_editor_modal').classList.add('hidden');
-    }
-
-    function handleFileSelected(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          const maxDim = 1600;
-          let w = img.width, h = img.height;
-          if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
-          else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          
-          const rawDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-          photosList[currentEditingIdx].rawSrc = rawDataUrl;
-          photosList[currentEditingIdx].src = rawDataUrl;
-          photosList[currentEditingIdx].zoom = 1;
-          photosList[currentEditingIdx].posX = 0;
-          photosList[currentEditingIdx].posY = 0;
-          photosList[currentEditingIdx].rotate = 0;
-
-          renderAllPages();
-          loadEditorWithImage(rawDataUrl);
-        };
-        img.src = evt.target.result;
-      };
-      reader.readAsDataURL(file);
-      e.target.value = '';
-    }
-
-    function startCropDrag(e) {
-      cropState.isDragging = true;
-      cropState.startX = e.clientX - cropState.translateX;
-      cropState.startY = e.clientY - cropState.translateY;
-    }
-    function onCropMove(e) {
-      if (!cropState.isDragging) return;
-      cropState.translateX = e.clientX - cropState.startX;
-      cropState.translateY = e.clientY - cropState.startY;
-      updateCropperTransform();
-    }
-    function endCropDrag() { cropState.isDragging = false; }
-
-    function startCropTouch(e) {
-      if (e.touches.length === 1) {
-        cropState.isDragging = true;
-        cropState.startX = e.touches[0].clientX - cropState.translateX;
-        cropState.startY = e.touches[0].clientY - cropState.translateY;
-      }
-    }
-    function onCropTouchMove(e) {
-      if (!cropState.isDragging || e.touches.length !== 1) return;
-      cropState.translateX = e.touches[0].clientX - cropState.translateX;
-      cropState.translateY = e.touches[0].clientY - cropState.startY;
-      updateCropperTransform();
-    }
-
-    function onZoomChange(val) {
-      cropState.scale = parseFloat(val);
-      document.getElementById('zoom_val').textContent = Math.round(cropState.scale * 100) + '%';
-      updateCropperTransform();
-    }
-
-    function rotateCropImage(deg) {
-      cropState.rotation = (cropState.rotation + deg) % 360;
-      updateCropperTransform();
-    }
-
-    function resetCropTransform() {
-      cropState.scale = 1;
-      cropState.translateX = 0;
-      cropState.translateY = 0;
-      cropState.rotation = 0;
-      document.getElementById('zoom_slider').value = 1;
-      document.getElementById('zoom_val').textContent = '100%';
-      updateCropperTransform();
-    }
-
-    function updateCropperTransform() {
-      const img = document.getElementById('cropper_image');
-      if (img) {
-        img.style.transform = `translate(calc(-50% + ${cropState.translateX}px), calc(-50% + ${cropState.translateY}px)) scale(${cropState.scale}) rotate(${cropState.rotation}deg)`;
-        img.style.top = '50%';
-        img.style.left = '50%';
-      }
+      savePhotosToLocalSafe();
     }
 
     function confirmCroppedImage() {
@@ -592,23 +399,29 @@
       ctx.drawImage(img, -w / 2, -h / 2, w, h);
       ctx.restore();
 
-      item.src = canvas.toDataURL('image/jpeg', 0.85);
+      item.src = canvas.toDataURL('image/jpeg', 0.8);
+      item.rawSrc = ""; // 💡เคลียร์ภาพดิบทิ้งทันทีเพื่อประหยัดพื้นที่หน่วยความจำเครื่อง
+      
       renderAllPages();
       closeImageEditor();
-      localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
+      savePhotosToLocalSafe();
     }
 
-    function addPhotoSlot() {
-      photosList.push({ src: "", desc: "", rawSrc: "", zoom: 1, posX: 0, posY: 0, rotate: 0 });
-      renderAllPages();
-      localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
-    }
-
-    function removePhotoSlot(idx) {
-      if (photosList.length <= 1) return alert("ต้องมีรูปภาพอย่างน้อย 1 ช่องค่ะ");
-      photosList.splice(idx, 1);
-      renderAllPages();
-      localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
+    function savePhotosToLocalSafe() {
+      try {
+        // สร้างสำเนาข้อมูลโดยตัด rawSrc ออกทั้งหมดเพื่อป้องกันหน่วยความจำเต็ม
+        const lightPhotos = photosList.map(p => ({
+          src: p.src.startsWith('data:image') ? '' : p.src, // ถ้ายังไม่อัปโหลด ให้เคลียร์ชั่วคราวหรือเก็บบีบอัด
+          desc: p.desc,
+          zoom: p.zoom,
+          posX: p.posX,
+          posY: p.posY,
+          rotate: p.rotate
+        }));
+        localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
+      } catch (err) {
+        console.warn("localStorage quota exceeded, skipping local cache backup.");
+      }
     }
 
     async function savePhotoRecord() {
@@ -651,7 +464,7 @@
         if (resJson.status === 'success' && resJson.photos) {
           resJson.photos.forEach((p, i) => {
             if (photosList[i]) {
-              photosList[i].src = p.src;
+              photosList[i].src = p.src; // เปลี่ยนเป็นลิงก์ URL จาก Google Drive โดยตรง
               photosList[i].rawSrc = "";
             }
           });
