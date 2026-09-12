@@ -251,19 +251,21 @@
     
     let totalContractWeeks = 20;
     let currentProjectID = 'DEFAULT_PROJ';
+    let currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
     let prevWeekTotalWeight = 0;
     let isDataInvalid = false;
     
     const urlParams = new URLSearchParams(window.location.search);
-    const currentWeekIndex = parseInt(urlParams.get('week')) || 1; // ลำดับ 1-5 ในเดือน
+    const currentWeekIndex = parseInt(urlParams.get('week')) || 1; 
     
-    let actualContractWeek = currentWeekIndex; // สัปดาห์ตามสัญญาจริง เช่น สัปดาห์ที่ 9
-    let reportSeq = currentWeekIndex;          // ครั้งที่รายงานจริง
-    let plannedProgressFromRef = null;        // แผนงาน % จาก Weekly_Reference (ถ้ามี)
+    let actualContractWeek = currentWeekIndex; 
+    let reportSeq = currentWeekIndex;          
+    let plannedProgressFromRef = null;        
     
-    let STORAGE_KEY = `WEEK_PROGRESS_DATA_${currentWeekIndex}`;
+    // 💡 ปรับปรุง: Storage Key ให้ผูกกับ Project ID และ Month รอบรายงาน
+    let STORAGE_KEY = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
     
-    document.getElementById('link-report').href = `week_report.html?week=${currentWeekIndex}`;
+    document.getElementById('link-report').href = `week_report.html?week=${currentWeekIndex}&month=${currentReportMonth}`;
 
     function loadProjectContractData() {
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
@@ -272,7 +274,8 @@
           const projectData = JSON.parse(basicRaw);
           if (projectData.contractNo) {
             currentProjectID = `PROJ_${projectData.contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
-            STORAGE_KEY = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentWeekIndex}`;
+            currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
+            STORAGE_KEY = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
           }
           if (projectData.organizationName) {
             document.getElementById('lbl-org').textContent = projectData.organizationName;
@@ -300,8 +303,8 @@
       }
 
       if (currentWeekIndex > 1) {
-        const prevProgKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentWeekIndex - 1}`;
-        const prevProgRaw = localStorage.getItem(prevProgKey) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentWeekIndex - 1}`);
+        const prevProgKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex - 1}`;
+        const prevProgRaw = localStorage.getItem(prevProgKey) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentWeekIndex - 1}`);
         if (prevProgRaw) {
           try {
             const pObj = JSON.parse(prevProgRaw);
@@ -311,9 +314,9 @@
       }
     }
 
-    // ดึงค่าสัปดาห์ตามสัญญาและครั้งที่รายงานจริงจาก Weekly_Reference[cite: 8]
     function loadActualWeekData() {
-      const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || 
+      const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`) || 
+                           localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || 
                            localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
       if (weeklyRefRaw) {
         try {
@@ -329,7 +332,7 @@
 
       const badgeEl = document.getElementById('badge-week');
       if (badgeEl) {
-        badgeEl.textContent = `สัปดาห์ที่ ${actualContractWeek} (ครั้งที่ ${reportSeq})`;
+        badgeEl.textContent = `สัปดาห์ที่ ${actualContractWeek} (ครั้งที่ ${reportSeq}) [รอบเดือน: ${currentReportMonth}]`;
       }
     }
 
@@ -387,8 +390,9 @@
 
     async function pullProgressFromCloud() {
       try {
-        if (typeof CENTRAL_GAS_URL !== 'undefined') {
-          const res = await fetch(`${CENTRAL_GAS_URL}?action=get_week_progress&weekIndex=${currentWeekIndex}&projectID=${currentProjectID}`);
+        const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
+        if (centralUrl) {
+          const res = await fetch(`${centralUrl}?action=get_week_progress&weekIndex=${currentWeekIndex}&projectID=${currentProjectID}&month=${currentReportMonth}`);
           const result = await res.json();
           if (result.status === 'success' && result.data) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(result.data));
@@ -400,7 +404,7 @@
     function pullDataFromPreviousWeek() {
       if (currentWeekIndex <= 1) return alert("สัปดาห์ที่ 1 ไม่มีข้อมูลสัปดาห์ก่อนหน้าในรอบเดือนนี้ค่ะ");
       
-      const prevStorageKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentWeekIndex - 1}`;
+      const prevStorageKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex - 1}`;
       const prevRaw = localStorage.getItem(prevStorageKey);
       if (!prevRaw) {
         return alert(`ไม่พบข้อมูลบันทึกของสัปดาห์ก่อนหน้า กรุณาบันทึกข้อมูลก่อนหน้านี้ก่อนนะคะ`);
@@ -603,7 +607,6 @@
       }
     }
 
-    // ปรับการวิเคราะห์ S-Curve ให้คำนวณตามสัปดาห์จริงตามสัญญา[cite: 8]
     function updateSCurveAnalysis(actualProgress) {
       let plannedProgress = 0;
       if (plannedProgressFromRef !== null && !isNaN(plannedProgressFromRef)) {
@@ -653,6 +656,7 @@
       
       return {
         weekIndex: currentWeekIndex,
+        reportMonth: currentReportMonth,
         actualWeek: actualContractWeek,
         seq: reportSeq,
         projectID: currentProjectID,
@@ -678,18 +682,25 @@
         const payload = getFormData();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
         
-        localStorage.setItem(`LATEST_PROGRESS_SUMMARY_${currentProjectID}_${currentWeekIndex}`, JSON.stringify({
+        localStorage.setItem(`LATEST_PROGRESS_SUMMARY_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`, JSON.stringify({
           totalWeight: payload.totalWeightPercent,
           status: payload.totalWeightPercent >= 100 ? 'แล้วเสร็จ' : (payload.totalWeightPercent > 0 ? 'ปฏิบัติงาน' : 'ยังไม่ทำงาน')
         }));
 
-        if (typeof syncDataToCloud === 'function') {
-          await syncDataToCloud('save_week_progress', payload);
+        const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
+        if (centralUrl) {
+          await fetch(centralUrl, {
+            method: 'POST',
+            mode: 'cors',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'save_week_progress', ...payload })
+          });
         }
-        alert(`บันทึกผลการดำเนินงานสัปดาห์ที่ ${actualContractWeek} (ครั้งที่ ${reportSeq}) ของโครงการนี้เรียบร้อยแล้วค่ะ`);
+        alert(`บันทึกผลการดำเนินงานสัปดาห์ที่ ${actualContractWeek} (รอบเดือน: ${currentReportMonth}) เรียบร้อยแล้วค่ะ`);
       } catch (err) {
         console.error(err);
-        alert(`บันทึกข้อมูลลงเครื่องสำเร็จ (แยกตามโครงการเรียบร้อย)`);
+        alert(`บันทึกข้อมูลลงเครื่องสำเร็จ (แยกตามรอบเดือนเรียบร้อย)`);
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล`;
@@ -722,7 +733,7 @@
         }
       } else {
         if (currentWeekIndex > 1) {
-          const prevStorageKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentWeekIndex - 1}`;
+          const prevStorageKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex - 1}`;
           const prevRaw = localStorage.getItem(prevStorageKey);
           if (prevRaw) {
             try {
