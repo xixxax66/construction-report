@@ -22,8 +22,6 @@
     .table-custom th, .table-custom td { border: 1px solid #000; padding: 4px 5px; font-size: 14pt !important; text-align: center; }
     .editable-input { background: transparent; border: none; outline: none; width: 100%; text-align: center; font-family: inherit; font-size: inherit; }
     .editable-input:focus { background-color: #fef08a; }
-    .signature-name { position: relative; left: -24px; }
-    .chairman-signature-name { left: -32px; }
     @media print {
       body { background: white !important; padding: 0 !important; }
       .no-print { display: none !important; }
@@ -86,11 +84,13 @@
 
         <p class="indent-word text-base pt-1">จึงเรียนมาเพื่อโปรดทราบ</p>
         
+        <!-- ลายเซ็นผู้ควบคุมงาน -->
         <div id="inspectorSignatureArea" class="mt-4 flex flex-wrap justify-end gap-x-8 gap-y-4 pr-6 text-center text-base"></div>
         
+        <!-- ลายเซ็นคณะกรรมการ -->
         <div class="mt-4 pt-3 border-t border-slate-300">
           <p class="text-base font-semibold mb-2">- ทราบ</p>
-          <div id="committeeSignatureArea" class="grid grid-cols-2 gap-y-4 gap-x-6 text-center text-base"></div>
+          <div id="committeeSignatureArea" class="grid grid-cols-2 gap-y-6 text-center text-base"></div>
         </div>
       </div>
     </div>
@@ -172,7 +172,6 @@
         "พฤษภาคม": "พฤษภาคม", "มิถุนายน": "มิถุนายน", "กรกฎาคม": "กรกฎาคม", "สิงหาคม": "สิงหาคม",
         "กันยายน": "กันยายน", "ตุลาคม": "ตุลาคม", "พฤศจิกายน": "พฤศจิกายน", "ธันวาคม": "ธันวาคม"
       };
-      
       let cleanStr = dateStr.toString().trim();
       for (const [enM, thM] of Object.entries(thaiMonths)) {
         if (cleanStr.toLowerCase().includes(enM.toLowerCase())) {
@@ -208,25 +207,30 @@
       }
     }
 
+    // 💡 ปรับปรุงฟังก์ชันการแปลงวันที่ให้แม่นยำสูง ป้องกันค่า NaN 100%
     function parseThaiDateStr(str) {
       if (!str) return null;
       let cleanStr = thaiToArabic(str.toString().trim());
       const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+      const thaiMonthsAbbr = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
       
+      let mIndex = -1;
       for (let i = 0; i < thaiMonths.length; i++) {
-        if (cleanStr.includes(thaiMonths[i])) {
-          cleanStr = cleanStr.replace(thaiMonths[i], (i + 1).toString());
+        if (cleanStr.includes(thaiMonths[i]) || cleanStr.includes(thaiMonthsAbbr[i])) {
+          mIndex = i;
           break;
         }
       }
       
-      const parts = cleanStr.split(/[\s\-\/]+/);
-      if (parts.length >= 3) {
-        const d = parseInt(parts[0]);
-        const m = parseInt(parts[1]) - 1;
-        let y = parseInt(parts[2]);
-        if (y > 2400) y -= 543;
-        if (!isNaN(d) && !isNaN(m) && !isNaN(y)) {
+      const nums = cleanStr.match(/\d+/g);
+      if (nums && nums.length >= 2) {
+        let d = parseInt(nums[0]);
+        let y = parseInt(nums[nums.length - 1]);
+        if (y > 2400) y -= 543; // แปลง พ.ศ. เป็น ค.ศ.
+        let m = mIndex;
+        if (m === -1 && nums.length >= 3) m = parseInt(nums[1]) - 1;
+        
+        if (!isNaN(d) && m !== -1 && !isNaN(y)) {
           return new Date(y, m, d);
         }
       }
@@ -298,11 +302,8 @@
             let previousInst = null;
             if (currentWeekIndex > 1) {
               const prevData = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex - 1}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex - 1}`);
-              if (prevData) {
-                previousInst = JSON.parse(prevData);
-              }
+              if (prevData) previousInst = JSON.parse(prevData);
             }
-
             if (previousInst && Array.isArray(previousInst) && previousInst.length > 0) {
               installmentList = previousInst;
             } else if (projectData.installments && Array.isArray(projectData.installments) && projectData.installments.length > 0) {
@@ -355,9 +356,7 @@
 
       renderTable(actualWeightPercent, statusText, projectData, currentWeekObj);
       
-      if (isManualAlert) {
-        alert("ปรับปรุงข้อมูลจากระบบเรียบร้อยแล้วค่ะ!");
-      }
+      if (isManualAlert) alert("ปรับปรุงข้อมูลจากระบบเรียบร้อยแล้วค่ะ!");
     }
 
     function syncInstallmentsFromRef() {
@@ -395,32 +394,40 @@
       let totalPaidSum = 0;
       let hasNumericPaid = false;
 
-      let totalDaysNum = projectData && (projectData.durationDays || projectData.manualDays) ? parseInt(projectData.durationDays || projectData.manualDays) : 140;
+      // 💡 ดักข้อผิดพลาด วันคงเหลือ ไม่ให้คำนวณเป็น NaN 
+      let totalDaysNum = parseInt(projectData && (projectData.durationDays || projectData.manualDays));
+      if (isNaN(totalDaysNum) && projectData && projectData.durationWeeks) {
+        totalDaysNum = parseInt(projectData.durationWeeks) * 7;
+      }
+      if (isNaN(totalDaysNum)) totalDaysNum = 0;
+      
       if (projectData && projectData.totalExtendedDays && parseInt(projectData.totalExtendedDays) > 0) {
         totalDaysNum = parseInt(projectData.totalExtendedDays);
       }
 
-      let remainDays = totalDaysNum;
-      let timePercent = 0;
+      let remainDaysText = "- วัน";
+      let timePercentText = "(- %)";
 
-      const rawStartDate = projectData.startDateTh || projectData.startDate;
-      const rawEndDate = currentWeekObj && currentWeekObj.endDate ? currentWeekObj.endDate : (projectData.endDateTh || projectData.endDate);
+      const rawStartDate = projectData ? (projectData.startDateTh || projectData.startDate) : null;
+      const rawEndDate = currentWeekObj && currentWeekObj.endDate ? currentWeekObj.endDate : (projectData ? (projectData.endDateTh || projectData.endDate) : null);
 
-      if (rawStartDate && rawEndDate) {
+      if (rawStartDate && rawEndDate && totalDaysNum > 0) {
         const sDate = parseThaiDateStr(rawStartDate);
         const eDate = parseThaiDateStr(rawEndDate);
-        if (sDate && !isNaN(sDate.getTime()) && eDate && !isNaN(eDate.getTime())) {
+        
+        if (sDate && eDate) {
           const diffTime = eDate.getTime() - sDate.getTime();
-          const passedDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1);
-          remainDays = Math.max(0, totalDaysNum - passedDays);
-          if (totalDaysNum > 0) {
-            timePercent = (passedDays / totalDaysNum) * 100;
-            if (timePercent > 100) timePercent = 100;
-          }
+          const passedDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
+          let remainDays = Math.max(0, totalDaysNum - passedDays);
+          let timePercent = (passedDays / totalDaysNum) * 100;
+          if (timePercent > 100) timePercent = 100;
+
+          remainDaysText = `${toThaiNumber(remainDays)} วัน`;
+          timePercentText = `(${toThaiNumber(timePercent.toFixed(2))} %)`;
         }
       }
 
-      const remainHtml = `${toThaiNumber(remainDays)} วัน<br>(${toThaiNumber(timePercent.toFixed(2))} %)`;
+      const remainHtml = `${remainDaysText}<br>${timePercentText}`;
 
       installmentList.forEach((item, idx) => {
         const cleanAmt = parseFloat((item.amount || '0').toString().replace(/,/g, '').replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
@@ -518,24 +525,27 @@
       }
     }
 
+    // 💡 ปรับปรุงฟังก์ชันลายเซ็น รองรับข้อมูลที่เป็น Object และจัดกึ่งกลางอัตโนมัติ
     function renderSignatures(data) {
       const inspectors = data.inspectors || [{ name: "นายพัทธิยะ วงษาซ้าย", pos: "ผู้ควบคุมงาน" }];
       let inspHTML = "";
       inspectors.forEach(insp => {
-        if (insp.name) {
+        const inspName = typeof insp === 'object' ? insp.name : insp;
+        const inspPos = typeof insp === 'object' ? insp.pos : "ผู้ควบคุมงาน";
+        if (inspName) {
           inspHTML += `
-            <div class="flex flex-col items-end mb-2 pr-12">
-              <div class="text-center whitespace-nowrap">
-                <p>(ลงชื่อ)........................................................... ${insp.pos || 'ผู้ควบคุมงาน'}</p>
-                <p class="font-medium mt-1">(${insp.name})</p>
+            <div class="flex flex-col items-end mb-2 pr-10">
+              <div class="inline-block text-center whitespace-nowrap">
+                <p>(ลงชื่อ)........................................................... ${inspPos}</p>
+                <p class="font-medium mt-1">(${inspName})</p>
               </div>
             </div>`;
         }
       });
       if (!inspHTML) {
         inspHTML = `
-          <div class="flex flex-col items-end mb-2 pr-12">
-            <div class="text-center whitespace-nowrap">
+          <div class="flex flex-col items-end mb-2 pr-10">
+            <div class="inline-block text-center whitespace-nowrap">
               <p>(ลงชื่อ)........................................................... ผู้ควบคุมงาน</p>
               <p class="font-medium mt-1">(นายพัทธิยะ วงษาซ้าย)</p>
             </div>
@@ -548,41 +558,54 @@
       commArea.innerHTML = '';
       
       if (comms.length === 0) {
+        // หากไม่มีข้อมูลในระบบ ให้ใช้ค่าเริ่มต้นและจัดกึ่งกลาง
         commArea.innerHTML = `
-          <div class="col-span-2 mb-3 flex flex-col items-center">
-            <div class="text-center whitespace-nowrap">
+          <div class="col-span-2 mb-4 flex justify-center">
+            <div class="inline-block text-center whitespace-nowrap">
               <p>(ลงชื่อ)........................................................... ประธานกรรมการฯ</p>
               <p class="font-medium mt-1">(นางสาวถนอมนวล วะทวีก้านตรงฯ)</p>
             </div>
           </div>
-          <div class="mb-3 flex flex-col items-end pr-10">
-            <div class="text-center whitespace-nowrap">
+          <div class="mb-4 flex justify-center">
+            <div class="inline-block text-center whitespace-nowrap">
               <p>(ลงชื่อ)........................................................... กรรมการฯ</p>
               <p class="font-medium mt-1">(จ่าเอกธีรพงษ์ ดรชานนท์)</p>
+            </div>
+          </div>
+          <div class="mb-4 flex justify-center">
+            <div class="inline-block text-center whitespace-nowrap">
+              <p>(ลงชื่อ)........................................................... กรรมการฯ</p>
+              <p class="font-medium mt-1">(นางสาวปนัดดา ภูอาษา)</p>
             </div>
           </div>`;
         return;
       }
 
-      comms.forEach((name, idx) => {
-        if (!name) return;
-        const roleLabel = (idx === 0) ? 'ประธานกรรมการฯ' : 'กรรมการฯ';
+      comms.forEach((item, idx) => {
+        if (!item) return;
+        // ดึงชื่อออกมา ไม่ว่าข้อมูลจะเป็นแค่ String ("นาย ก") หรือ Object ({name: "นาย ก"})
+        const cName = typeof item === 'object' ? item.name : item;
+        const cPos = typeof item === 'object' ? item.pos : "";
+        if (!cName) return;
+
+        const roleLabel = cPos ? cPos : (idx === 0 ? 'ประธานกรรมการฯ' : 'กรรมการฯ');
         
         if (idx === 0) {
+          // ประธานกรรมการ กินพื้นที่ 2 คอลัมน์และอยู่ตรงกลาง
           commArea.innerHTML += `
-            <div class="col-span-2 mb-3 flex flex-col items-center">
-              <div class="text-center whitespace-nowrap">
+            <div class="col-span-2 mb-4 flex justify-center">
+              <div class="inline-block text-center whitespace-nowrap">
                 <p>(ลงชื่อ)........................................................... ${roleLabel}</p>
-                <p class="font-medium mt-1">(${name})</p>
+                <p class="font-medium mt-1">(${cName})</p>
               </div>
             </div>`;
         } else {
-          const alignClass = (idx % 2 !== 0) ? 'flex flex-col items-end pr-10' : 'flex flex-col items-start pl-10';
+          // กรรมการ จัดกึ่งกลางในคอลัมน์ของตัวเอง
           commArea.innerHTML += `
-            <div class="mb-3 ${alignClass}">
-              <div class="text-center whitespace-nowrap">
+            <div class="mb-4 flex justify-center">
+              <div class="inline-block text-center whitespace-nowrap">
                 <p>(ลงชื่อ)........................................................... ${roleLabel}</p>
-                <p class="font-medium mt-1">(${name})</p>
+                <p class="font-medium mt-1">(${cName})</p>
               </div>
             </div>`;
         }
