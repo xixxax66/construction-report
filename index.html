@@ -604,11 +604,32 @@
         const fileDesc = fileDescInput ? fileDescInput.value.trim() : '';
 
         const backupData = exportAllProjectData();
+
+        const basicInfoRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+        let currentProjId = "DEFAULT";
+        let currentContractNo = "DEFAULT";
+        if (basicInfoRaw) {
+          try {
+            const bInfo = JSON.parse(basicInfoRaw);
+            if (bInfo.contractNo) {
+              currentContractNo = bInfo.contractNo;
+              currentProjId = `PROJ_${currentContractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            } else if (bInfo.projectID) {
+              currentProjId = bInfo.projectID;
+            }
+          } catch(e) {}
+        }
+        
+        backupData.projectID = currentProjId;
+        backupData.contractNo = currentContractNo;
+
         const currentLogs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
 
         const payload = {
           action: 'save_full_project_database',
           folderId: folderId,
+          projectID: currentProjId,
+          contractNo: currentContractNo,
           timestamp: new Date().toLocaleString('th-TH'),
           database: backupData,
           logs: currentLogs
@@ -628,8 +649,7 @@
           const syncTime = new Date().toLocaleString('th-TH');
           localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
           
-          // ใช้ชื่อไฟล์จริงบน Drive (เช่น Project_PROJ_xxx_Database.json) บันทึกลง Log ให้ตรงกัน 100%
-          const actualFileName = result.savedFileName || `Project_${backupData.projectID || 'DEFAULT'}_Database.json`;
+          const actualFileName = result.savedFileName || `Project_${currentProjId}_Database.json`;
           addLogRecord(actualFileName, fileDesc, { success: true });
 
           updateProjectUI();
