@@ -35,7 +35,7 @@
     <div class="xl:col-span-8 flex justify-center overflow-x-auto w-full">
       <div class="sheet-doc relative" id="doc-print">
         <div class="relative text-center mb-1">
-          <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img">
+          <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Garuda_Emblem_of_Thailand.svg/300px-Garuda_Emblem_of_Thailand.svg.png';">
           <h2 class="doc-title pt-1">บันทึกข้อความ</h2>
         </div>
         <div class="space-y-1 text-base">
@@ -130,11 +130,23 @@
     lucide.createIcons();
     const urlParams = new URLSearchParams(window.location.search);
     const currentWeekIndex = parseInt(urlParams.get('week')) || 1;
+    let currentProjectID = 'DEFAULT_PROJ';
 
     let installmentList = [
       { year: "๒๕๖๙", amount: "๒,๘๔๙,๒๖๐.๐๐", paid: "-" }
     ];
     let acceptedInstallmentsValue = "-";
+
+    function initProjectContext() {
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          const projectData = JSON.parse(basicRaw);
+          const cNo = projectData.contractNo || 'NO_CONTRACT';
+          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        } catch(e) {}
+      }
+    }
 
     function toThaiNumber(numStr) {
       if (numStr === null || numStr === undefined) return '';
@@ -209,12 +221,14 @@
     }
 
     function loadAllData(isManualAlert = false) {
-      const savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentWeekIndex}`);
+      initProjectContext();
+      
+      const savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentWeekIndex}`);
       if (savedAccepted !== null) {
         acceptedInstallmentsValue = savedAccepted;
       }
 
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
       let projectData = {};
       if (basicRaw) {
         try {
@@ -236,7 +250,6 @@
             document.getElementById('lbl_contractor').textContent = toThaiNumber(projectData.contractorName);
           }
           
-          // ดึงข้อมูลวันเริ่ม-สิ้นสุดสัญญา และระยะเวลาทำงาน
           if (projectData.startDateTh || projectData.startDate) {
             document.getElementById('lbl_contract_start').textContent = thaiDateText(projectData.startDateTh || projectData.startDate);
           }
@@ -255,7 +268,6 @@
             document.getElementById('lbl_fine_per_day').textContent = formatThaiCurrency(projectData.finePerDay);
           }
 
-          // ตรวจสอบการขยายสัญญา
           if (projectData.extendContractDate && projectData.extendContractDate.trim() !== '') {
             const extDateTh = thaiDateText(projectData.extendContractDate);
             const extDays = projectData.totalExtendedDays ? toThaiNumber(projectData.totalExtendedDays) : '';
@@ -264,13 +276,13 @@
             document.getElementById('lbl_extension_info').textContent = '';
           }
 
-          const savedInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex}`);
+          const savedInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex}`);
           if (savedInst) {
             installmentList = JSON.parse(savedInst);
           } else {
             let previousInst = null;
             if (currentWeekIndex > 1) {
-              const prevData = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex - 1}`);
+              const prevData = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex - 1}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex - 1}`);
               if (prevData) {
                 previousInst = JSON.parse(prevData);
               }
@@ -290,7 +302,7 @@
       }
       renderSignatures(projectData);
 
-      const weeklyRefRaw = localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+      const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
       let currentWeekObj = null;
       if (weeklyRefRaw) {
         try {
@@ -312,11 +324,15 @@
         } catch(e) {}
       }
 
-      const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentWeekIndex}`);
+      // ระบบ Fallback: วนลูปหาสัปดาห์ล่าสุดที่มีข้อมูลบันทึกไว้ เพื่อดึง % ผลงานมาแสดง
       let actualWeightPercent = 0;
-      if (progressRaw) {
-        const progData = JSON.parse(progressRaw);
-        actualWeightPercent = parseFloat(progData.totalWeightPercent) || 0;
+      for (let w = currentWeekIndex; w >= 1; w--) {
+        const pRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+        if (pRaw) {
+          const pData = JSON.parse(pRaw);
+          actualWeightPercent = parseFloat(pData.totalWeightPercent) || 0;
+          break; // เจอข้อมูลสัปดาห์ล่าสุดแล้ว หยุดลูป
+        }
       }
 
       let statusText = 'ช้า';
@@ -332,7 +348,8 @@
     }
 
     function syncInstallmentsFromRef() {
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      initProjectContext();
+      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
           const projectData = JSON.parse(basicRaw);
@@ -342,7 +359,7 @@
               amount: formatThaiCurrency(inst.amount || "๐.๐๐"),
               paid: inst.paid && inst.paid !== '-' ? formatThaiCurrency(inst.paid) : "-"
             }));
-            localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex}`, JSON.stringify(installmentList));
+            localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`, JSON.stringify(installmentList));
             loadAllData(false);
             alert("ซิงค์ข้อมืองวดงานจากหน้าข้อมูลเบื้องต้นเรียบร้อยแล้วค่ะ!");
           } else {
@@ -365,10 +382,7 @@
       let totalPaidSum = 0;
       let hasNumericPaid = false;
 
-      // คำนวณวันก่อสร้างรวมและวันคงเหลือ
       let totalDaysNum = projectData && projectData.durationDays ? parseInt(projectData.durationDays) : 140;
-      
-      // กรณีมีขยายสัญญา ให้ใช้วันที่รวมขยาย
       if (projectData && projectData.totalExtendedDays && parseInt(projectData.totalExtendedDays) > 0) {
         totalDaysNum = parseInt(projectData.totalExtendedDays);
       }
@@ -436,12 +450,12 @@
 
     function updateAccepted(val) {
       acceptedInstallmentsValue = toThaiNumber(val);
-      localStorage.setItem(`WEEK_REPORT_ACCEPTED_${currentWeekIndex}`, acceptedInstallmentsValue);
+      localStorage.setItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentWeekIndex}`, acceptedInstallmentsValue);
     }
 
     function updateInstallment(index, field, value) {
       installmentList[index][field] = toThaiNumber(value);
-      localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex}`, JSON.stringify(installmentList));
+      localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`, JSON.stringify(installmentList));
 
       let totalSum = 0;
       let totalPaidSum = 0;
@@ -473,14 +487,14 @@
 
     function addInstallmentRow() {
       installmentList.push({ year: "๒๕๖๙", amount: "๐.๐๐", paid: "-" });
-      localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex}`, JSON.stringify(installmentList));
+      localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`, JSON.stringify(installmentList));
       loadAllData(false);
     }
 
     function removeInstallmentRow() {
       if (installmentList.length > 1) {
         installmentList.pop();
-        localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex}`, JSON.stringify(installmentList));
+        localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`, JSON.stringify(installmentList));
         loadAllData(false);
       } else {
         alert("ต้องมีอย่างน้อย 1 งวดงานค่ะ");
