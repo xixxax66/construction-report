@@ -78,7 +78,7 @@
       </div>
     </div>
 
-    <!-- แถบเลือกโครงการบนหน้าหลัก (เชื่อมโยงกับ Cons_Reference) -->
+    <!-- แถบเลือกโครงการบนหน้าหลัก -->
     <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-300 flex items-center justify-between gap-3">
       <div class="flex items-center gap-2 flex-1">
         <i data-lucide="folder-kanban" class="w-5 h-5 text-emerald-600 shrink-0"></i>
@@ -148,9 +148,8 @@
         <span class="text-xs text-slate-500">ซิงค์ล่าสุดเมื่อ: <strong id="lbl_last_sync_time" class="text-slate-700 font-semibold">-</strong></span>
       </div>
 
-      <!-- แผงตั้งค่า URL -->
       <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-        <label class="text-xs font-bold text-slate-700">ลิงก์ Google Apps Script URL (จำเป็นสำหรับการซิงค์):</label>
+        <label class="text-xs font-bold text-slate-700">ลิงก์ Google Apps Script URL:</label>
         <div class="flex gap-2">
           <input type="text" id="input_gas_url" class="cell-input text-xs font-mono" placeholder="https://script.google.com/macros/s/.../exec">
           <button onclick="saveCustomGasUrl()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer">บันทึก</button>
@@ -189,7 +188,6 @@
         </div>
       </div>
 
-      <!-- ปุ่ม Action หลัก -->
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 pt-2">
         <button onclick="saveProjectToCloudAndLocal()" id="btn-cloud-backup" class="btn-3d bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer md:col-span-2">
           <i data-lucide="cloud-upload" class="w-4 h-4"></i> สำรองขึ้น Cloud (พร้อมเก็บประวัติ)
@@ -236,7 +234,7 @@
 
   </div>
 
-<script>
+  <script>
     lucide.createIcons();
 
     const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
@@ -348,7 +346,6 @@
       lucide.createIcons();
     }
 
-    // --- ระบบเลือกสลับโครงการบนหน้าหลัก ---
     function loadIndexProjectDropdown() {
       const select = document.getElementById('index_project_selector');
       if (!select) return;
@@ -395,7 +392,6 @@
       }
     }
 
-    // 🔍 โหลดเฉพาะประวัติ Log ส่วนกลางมาแสดงผล เพื่อให้เห็นประวัติกู้คืนตรงกันทุกเครื่อง
     async function loadLogsOnly() {
       try {
         const logResult = await requestJSONP('get_backup_logs', { folderId: DEFAULT_FOLDER_ID });
@@ -488,7 +484,6 @@
       folderHistory = [];
     }
 
-    // 📥 ดึงข้อมูลล่าสุดจาก Cloud เมื่อผู้ใช้กดปุ่ม "ดึงจาก Cloud" ด้วยตนเองเท่านั้น
     async function forcePullForIpad() {
       resetBadge('loading', 'กำลังดึงข้อมูล...');
       try {
@@ -601,7 +596,6 @@
       return projectDatabase;
     }
 
-    // 📤 บันทึกข้อมูลขึ้น Cloud เมื่อผู้ใช้กดปุ่ม "สำรองขึ้น Cloud" ด้วยตนเองเท่านั้น
     async function saveProjectToCloudAndLocal() {
       const btn = document.getElementById('btn-cloud-backup');
       try {
@@ -774,7 +768,6 @@
       }
     }
 
-    // 🚀 เริ่มต้นเปิดหน้าเว็บ (โหลดเฉพาะหน้าจอ UI และโหลดตารางประวัติ Log ส่วนกลางมาแสดงผล โดยไม่ทับข้อมูลโครงการเอง)
     window.addEventListener('DOMContentLoaded', () => {
       updateProjectUI();
       renderLogs();
@@ -785,7 +778,6 @@
       const yyyy = today.getFullYear() + 543;
       document.getElementById('backupFileName').value = `Backup_${dd}_${mm}_${yyyy}`;
 
-      // โหลดเฉพาะประวัติ Log ส่วนกลางมาแสดงให้ตรงกันทุกเครื่อง
       loadLogsOnly();
     });
   </script>
