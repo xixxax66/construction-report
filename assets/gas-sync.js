@@ -1,6 +1,6 @@
 /**
  * assets/gas-sync.js
- * ระบบเชื่อมต่อและซิงค์ข้อมูลอัตโนมัติผ่าน Google Apps Script (รองรับ iPadOS / iOS 100%)
+ * ระบบ Auto-Sync ข้ามอุปกรณ์ รองรับ iPadOS / iOS 100% ด้วยเทคนิค JSONP
  */
 
 const GAS_SYNC_CONFIG = {
@@ -13,31 +13,51 @@ const GAS_SYNC_CONFIG = {
 };
 
 /**
- * ดึงฐานข้อมูลล่าสุดจาก Cloud ลงมาทับ localStorage ในเครื่อง (Pull)
+ * ดึงข้อมูลด้วย JSONP เพื่อข้ามข้อจำกัด CORS / Redirect บน iPad
+ */
+function fetchJsonp(url, timeout = 12000) {
+  return new Promise((resolve, reject) => {
+    const callbackName = 'gas_callback_' + Math.round(100000 * Math.random());
+    const script = document.createElement('script');
+
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('Connection timed out'));
+    }, timeout);
+
+    function cleanup() {
+      if (window[callbackName]) delete window[callbackName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      clearTimeout(timer);
+    }
+
+    window[callbackName] = function(data) {
+      cleanup();
+      resolve(data);
+    };
+
+    const separator = url.includes('?') ? '&' : '?';
+    script.src = `${url}${separator}callback=${callbackName}&_t=${Date.now()}`;
+    script.onerror = function() {
+      cleanup();
+      reject(new Error('Script load error'));
+    };
+
+    document.head.appendChild(script);
+  });
+}
+
+/**
+ * ดึงฐานข้อมูลล่าสุดจาก Cloud ลงมาทับ localStorage (Pull)
  */
 async function pullDataFromCloud(silent = false) {
   const gasUrl = GAS_SYNC_CONFIG.getGasUrl();
 
   try {
-    const fetchUrl = `${gasUrl}?action=get_latest_project_database&_t=${Date.now()}`;
-    
-    // ตั้งค่า redirect: 'follow' และ mode: 'cors' ให้ผ่านระบบความปลอดภัยของ iPad
-    const res = await fetch(fetchUrl, {
-      method: 'GET',
-      mode: 'cors',
-      redirect: 'follow',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
+    const fetchUrl = `${gasUrl}?action=get_latest_project_database`;
+    const result = await fetchJsonp(fetchUrl);
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    const result = await res.json();
-
-    if (result.status === 'success' && result.database) {
+    if (result && result.status === 'success' && result.database) {
       let count = 0;
       const db = result.database;
 
@@ -56,19 +76,19 @@ async function pullDataFromCloud(silent = false) {
         location.reload();
       }
       return { success: true, count, lastUpdated: result.lastUpdated };
-    } else if (result.status === 'empty') {
-      if (!silent) alert('ยังไม่มีไฟล์ข้อมูลสำรองบน Google Drive ค่ะ กรุณากดสำรองข้อมูลจากโน้ตบุ๊กก่อนนะคะ');
+    } else if (result && result.status === 'empty') {
+      if (!silent) alert('ยังไม่มีไฟล์ข้อมูลสำรองบน Google Drive ค่ะ');
       return { success: false, empty: true };
     }
   } catch (err) {
-    console.warn('Auto-pull failed or offline:', err);
-    if (!silent) alert('ไม่สามารถเชื่อมต่อ Cloud ได้ โปรดตรวจสอบสัญญาณอินเทอร์เน็ต');
+    console.warn('Auto-pull failed via JSONP:', err);
+    if (!silent) alert('ไม่สามารถเชื่อมต่อ Cloud ได้ โปรดตรวจสอบว่าได้อัปเดต Code.gs เป็น New Version หรือยังนะคะ');
   }
   return { success: false };
 }
 
 /**
- * บันทึกและส่งข้อมูลในเครื่องทั้งหมดขึ้น Cloud (Push)
+ * ส่งข้อมูลขึ้น Cloud (Push)
  */
 async function pushDataToCloud(silent = false) {
   const gasUrl = GAS_SYNC_CONFIG.getGasUrl();
@@ -95,7 +115,6 @@ async function pushDataToCloud(silent = false) {
   };
 
   try {
-    // สำหรับ iPad ต้องส่ง Content-Type เป็น text/plain เพื่อเลี่ยง CORS Preflight (OPTIONS)
     const res = await fetch(gasUrl, {
       method: 'POST',
       mode: 'cors',
@@ -109,14 +128,13 @@ async function pushDataToCloud(silent = false) {
     if (result.status === 'success') {
       const syncTime = new Date().toLocaleString('th-TH');
       localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
-
       saveBackupHistoryRecord(syncTime);
 
       if (!silent) alert(`สำรองข้อมูลและส่งขึ้น Cloud เรียบร้อยแล้วค่ะ!\nเวลา: ${syncTime}`);
       return { success: true, fileUrl: result.fileUrl };
     }
   } catch (err) {
-    console.error('Push data failed:', err);
+    console.error('Push failed:', err);
     if (!silent) alert('เกิดข้อผิดพลาดในการส่งข้อมูลขึ้น Cloud');
   }
   return { success: false };
