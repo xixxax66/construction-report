@@ -281,8 +281,8 @@
       document.getElementById('input_gas_url').value = getActiveUrl();
     }
 
-    // ฟังก์ชันเลือกโฟลเดอร์ Drive
-    async function openFolderPicker(folderId = "root") {
+    // ฟังก์ชันเลือกโฟลเดอร์ Drive (ปรับปรุงทะลุบล็อก CORS สำหรับ iPad)
+    function openFolderPicker(folderId = "root") {
       const modal = document.getElementById('folder_picker_modal');
       const grid = document.getElementById('folder_list_grid');
       const btnBack = document.getElementById('btn_picker_back');
@@ -293,10 +293,31 @@
       lucide.createIcons();
       btnBack.disabled = folderHistory.length === 0;
 
-      try {
-        const response = await fetch(`${getActiveUrl()}?action=get_drive_folders&parentId=${encodeURIComponent(folderId)}`);
-        const result = await response.json();
+      // ทำความสะอาด URL
+      let url = getActiveUrl();
+      if (url.includes('?')) url = url.split('?')[0];
 
+      // สร้างชื่อ Callback และ URL สำหรับ JSONP
+      const callbackName = 'gas_folder_callback_' + Date.now();
+      const fetchUrl = `${url}?action=get_drive_folders&parentId=${encodeURIComponent(folderId)}&callback=${callbackName}&_t=${Date.now()}`;
+
+      // เผื่อเวลาเน็ตหลุด
+      const timeoutId = setTimeout(() => {
+        cleanup();
+        grid.innerHTML = '<div class="text-center text-rose-500 py-6">หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ โปรดตรวจสอบสัญญาณอินเทอร์เน็ตค่ะ</div>';
+      }, 15000);
+
+      // ฟังก์ชันล้างค่า
+      function cleanup() {
+        if (window[callbackName]) delete window[callbackName];
+        const scriptTags = document.querySelectorAll(`script[src="${fetchUrl}"]`);
+        scriptTags.forEach(tag => tag.remove());
+        clearTimeout(timeoutId);
+      }
+
+      // รับข้อมูลจากเซิร์ฟเวอร์
+      window[callbackName] = function(result) {
+        cleanup();
         if (result.status === 'success') {
           currentPickerFolderId = result.parentId;
           currentPickerFolderName = result.parentName;
@@ -323,9 +344,16 @@
         } else {
           grid.innerHTML = `<div class="text-center text-rose-500 py-6">ข้อผิดพลาด: ${result.message}</div>`;
         }
-      } catch (err) {
-        grid.innerHTML = '<div class="text-center text-rose-500 py-6">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (โปรดตรวจสอบ Web App URL)</div>';
-      }
+      };
+
+      // ยิงคำสั่งดึงข้อมูลด้วย <script>
+      const script = document.createElement('script');
+      script.src = fetchUrl;
+      script.onerror = function() {
+        cleanup();
+        grid.innerHTML = '<div class="text-center text-rose-500 py-6">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (เบราว์เซอร์บล็อกหรือเน็ตหลุด)</div>';
+      };
+      document.body.appendChild(script);
     }
 
     function navigateToFolder(id, name) {
