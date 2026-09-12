@@ -22,6 +22,8 @@
     .table-custom th, .table-custom td { border: 1px solid #000; padding: 4px 5px; font-size: 14pt !important; text-align: center; }
     .editable-input { background: transparent; border: none; outline: none; width: 100%; text-align: center; font-family: inherit; font-size: inherit; }
     .editable-input:focus { background-color: #fef08a; }
+    .signature-name { position: relative; left: -16px; }
+    .chairman-signature-name { left: -24px; }
     @media print {
       body { background: white !important; padding: 0 !important; }
       .no-print { display: none !important; }
@@ -84,10 +86,8 @@
 
         <p class="indent-word text-base pt-1">จึงเรียนมาเพื่อโปรดทราบ</p>
         
-        <!-- ส่วนลงนามผู้ควบคุมงาน -->
         <div id="inspectorSignatureArea" class="mt-4 flex flex-wrap justify-end gap-x-8 gap-y-4 pr-6 text-center text-base"></div>
         
-        <!-- ส่วนลงนามกรรมการ -->
         <div class="mt-4 pt-3 border-t border-slate-300">
           <p class="text-base font-semibold mb-2">- ทราบ</p>
           <div id="committeeSignatureArea" class="grid grid-cols-2 gap-y-4 gap-x-6 text-center text-base"></div>
@@ -131,6 +131,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentWeekIndex = parseInt(urlParams.get('week')) || 1;
     let currentProjectID = 'DEFAULT_PROJ';
+    let currentReportMonth = urlParams.get('month') || 'SEP_2569';
 
     let installmentList = [
       { year: "๒๕๖๙", amount: "๒,๘๔๙,๒๖๐.๐๐", paid: "-" }
@@ -144,6 +145,7 @@
           const projectData = JSON.parse(basicRaw);
           const cNo = projectData.contractNo || 'NO_CONTRACT';
           currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
         } catch(e) {}
       }
     }
@@ -302,7 +304,7 @@
       }
       renderSignatures(projectData);
 
-      const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+      const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`) || localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
       let currentWeekObj = null;
       if (weeklyRefRaw) {
         try {
@@ -324,15 +326,13 @@
         } catch(e) {}
       }
 
-      // ระบบ Fallback: วนลูปหาสัปดาห์ล่าสุดที่มีข้อมูลบันทึกไว้ เพื่อดึง % ผลงานมาแสดง
       let actualWeightPercent = 0;
-      for (let w = currentWeekIndex; w >= 1; w--) {
-        const pRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
-        if (pRaw) {
+      const pRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentWeekIndex}`);
+      if (pRaw) {
+        try {
           const pData = JSON.parse(pRaw);
           actualWeightPercent = parseFloat(pData.totalWeightPercent) || 0;
-          break; // เจอข้อมูลสัปดาห์ล่าสุดแล้ว หยุดลูป
-        }
+        } catch(e){}
       }
 
       let statusText = 'ช้า';
@@ -506,11 +506,11 @@
       let inspHTML = "";
       inspectors.forEach(insp => {
         if (insp.name) {
-          inspHTML += `<div class="space-y-1 text-center min-w-[220px] mb-2"><p>(ลงชื่อ)........................................................... ${insp.pos || 'ผู้ควบคุมงาน'}</p><p class="font-medium mt-1">(${insp.name})</p></div>`;
+          inspHTML += `<div class="space-y-1 text-center min-w-[220px] mb-2"><p>(ลงชื่อ)................................................. ${insp.pos || 'ผู้ควบคุมงาน'}</p><p class="signature-name font-medium mt-1">(${insp.name})</p></div>`;
         }
       });
       if (!inspHTML) {
-        inspHTML = `<div class="space-y-1 text-center min-w-[220px]"><p>(ลงชื่อ)........................................................... ผู้ควบคุมงาน</p><p class="font-medium mt-1">(นายพัทธิยะ วงษาซ้าย)</p></div>`;
+        inspHTML = `<div class="space-y-1 text-center min-w-[220px]"><p>(ลงชื่อ)................................................. ผู้ควบคุมงาน</p><p class="signature-name font-medium mt-1">(นายพัทธิยะ วงษาซ้าย)</p></div>`;
       }
       document.getElementById('inspectorSignatureArea').innerHTML = inspHTML;
 
@@ -526,7 +526,7 @@
           <div class="${idx === 0 ? 'col-span-2 mb-3' : 'mb-3'} flex flex-col items-center">
             <div class="inline-block text-center">
               <p>(ลงชื่อ).................................................... ${roleLabel}</p>
-              <p class="font-medium mt-1">(${name})</p>
+              <p class="signature-name ${idx === 0 ? 'chairman-signature-name' : ''} font-medium mt-1">(${name})</p>
             </div>
           </div>`;
       });
