@@ -236,7 +236,7 @@
 
   </div>
 
-  <script>
+<script>
     lucide.createIcons();
 
     const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
@@ -395,41 +395,15 @@
       }
     }
 
-    // 🚀 ระบบ Auto-Sync ตรวจสอบและซิงค์ข้อมูลตามโครงการที่เลือกอยู่ปัจจุบัน
-    async function checkRealtimeSync() {
-      resetBadge('loading', 'กำลังซิงค์ข้อมูล Real-time...');
+    // 🔍 โหลดเฉพาะประวัติ Log ส่วนกลางมาแสดงผล เพื่อให้เห็นประวัติกู้คืนตรงกันทุกเครื่อง
+    async function loadLogsOnly() {
       try {
-        const activeProj = JSON.parse(localStorage.getItem('LOCAL_BASIC_INFO') || '{}');
-        const projId = activeProj.projectID || '';
-
-        const result = await requestJSONP('get_latest_project_database', { projectID: projId });
-        if (result && result.status === 'success' && result.database) {
-          const cloudDb = result.database;
-          
-          // บันทึกแยกเก็บตาม Project ID ใน LocalStorage เพื่อไม่ให้ทับกัน
-          if (projId) {
-            localStorage.setItem(`LOCAL_BASIC_INFO_${projId}`, JSON.stringify(cloudDb));
-          }
-          localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(cloudDb));
-
-          try {
-            const logResult = await requestJSONP('get_backup_logs', { folderId: DEFAULT_FOLDER_ID });
-            if (logResult && logResult.status === 'success' && logResult.data) {
-              localStorage.setItem(LOG_KEY, JSON.stringify(logResult.data));
-              renderLogs();
-            }
-          } catch(e) {}
-
-          const syncTime = new Date().toLocaleString('th-TH');
-          localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
-          updateProjectUI();
-          resetBadge('success', 'ข้อมูลเป็นปัจจุบันแล้ว');
-        } else {
-          resetBadge('ready', 'พร้อมใช้งาน');
+        const logResult = await requestJSONP('get_backup_logs', { folderId: DEFAULT_FOLDER_ID });
+        if (logResult && logResult.status === 'success' && logResult.data) {
+          localStorage.setItem(LOG_KEY, JSON.stringify(logResult.data));
+          renderLogs();
         }
-      } catch (err) {
-        resetBadge('ready', 'โหมดออฟไลน์ (พร้อมใช้งาน)');
-      }
+      } catch(e) {}
     }
 
     async function openFolderPicker(folderId = DEFAULT_FOLDER_ID) {
@@ -514,6 +488,7 @@
       folderHistory = [];
     }
 
+    // 📥 ดึงข้อมูลล่าสุดจาก Cloud เมื่อผู้ใช้กดปุ่ม "ดึงจาก Cloud" ด้วยตนเองเท่านั้น
     async function forcePullForIpad() {
       resetBadge('loading', 'กำลังดึงข้อมูล...');
       try {
@@ -533,12 +508,7 @@
             localStorage.setItem(`LOCAL_BASIC_INFO_${activeProj.projectID}`, JSON.stringify(db));
           }
 
-          try {
-            const logResult = await requestJSONP('get_backup_logs', { folderId: DEFAULT_FOLDER_ID });
-            if (logResult && logResult.status === 'success' && logResult.data) {
-              localStorage.setItem(LOG_KEY, JSON.stringify(logResult.data));
-            }
-          } catch(e) {}
+          await loadLogsOnly();
 
           const syncTime = new Date().toLocaleString('th-TH');
           localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
@@ -631,6 +601,7 @@
       return projectDatabase;
     }
 
+    // 📤 บันทึกข้อมูลขึ้น Cloud เมื่อผู้ใช้กดปุ่ม "สำรองขึ้น Cloud" ด้วยตนเองเท่านั้น
     async function saveProjectToCloudAndLocal() {
       const btn = document.getElementById('btn-cloud-backup');
       try {
@@ -803,6 +774,7 @@
       }
     }
 
+    // 🚀 เริ่มต้นเปิดหน้าเว็บ (โหลดเฉพาะหน้าจอ UI และโหลดตารางประวัติ Log ส่วนกลางมาแสดงผล โดยไม่ทับข้อมูลโครงการเอง)
     window.addEventListener('DOMContentLoaded', () => {
       updateProjectUI();
       renderLogs();
@@ -813,7 +785,8 @@
       const yyyy = today.getFullYear() + 543;
       document.getElementById('backupFileName').value = `Backup_${dd}_${mm}_${yyyy}`;
 
-      checkRealtimeSync();
+      // โหลดเฉพาะประวัติ Log ส่วนกลางมาแสดงให้ตรงกันทุกเครื่อง
+      loadLogsOnly();
     });
   </script>
 </body>
