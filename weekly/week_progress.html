@@ -564,24 +564,21 @@
 
       if (!progRaw) return alert(`ไม่พบบันทึกข้อมูลผลงานของเดือน ${srcMonth} (สัปดาห์ที่ ${srcWeekIndex}) ในระบบเครื่อง`);
 
-      if (!confirm(`ต้องการดึงข้อมูลผลงานสะสมจาก เดือน ${srcMonth} (สัปดาห์ที่ ${srcWeekIndex}) มาเป็นยอดตั้งต้นในสัปดาห์นี้ใช่หรือไม่?`)) return;
+      if (!confirm(`ต้องการดึง "รายการงานทั้งหมด" และผลงานสะสมจาก เดือน ${srcMonth} (สัปดาห์ที่ ${srcWeekIndex}) มาใช้งานในสัปดาห์นี้ใช่หรือไม่?`)) return;
 
       try {
         const sourceData = JSON.parse(progRaw);
-        if (sourceData.tasks && Array.isArray(sourceData.tasks)) {
-          // 💡 ปรับปรุง: ดึงข้อมูลตามลำดับแถว (Index) และคำนวณยอดสะสม (prev + curr) มาใส่ช่อง prev ของปัจจุบันทันที
-          currentTasks = currentTasks.map((t, idx) => {
-            const st = sourceData.tasks[idx];
-            let sourceAccum = 0;
-            if (st) {
-              const p = parseFloat(st.prev) || 0;
-              const c = parseFloat(st.curr) || 0;
-              sourceAccum = p + c;
-            }
+        if (sourceData.tasks && Array.isArray(sourceData.tasks) && sourceData.tasks.length > 0) {
+          // 💡 ดึงโครงสร้างรายการงาน ชื่อ มูลค่า และรวมผลงานสะสม (prev + curr) มาตั้งต้นใหม่ทั้งหมด
+          currentTasks = sourceData.tasks.map(st => {
+            const p = parseFloat(st.prev) || 0;
+            const c = parseFloat(st.curr) || 0;
+            const sourceAccum = p + c;
+
             return {
-              name: t.name || (st ? st.name : ""),
-              cost: t.cost || (st ? st.cost : 0),
-              proportion: t.proportion || (st ? st.proportion : 0),
+              name: st.name || "",
+              cost: parseFloat(st.cost) || 0,
+              proportion: parseFloat(st.proportion) || 0,
               prev: sourceAccum > 0 ? sourceAccum.toFixed(2) : "",
               curr: ""
             };
@@ -589,7 +586,7 @@
         }
         renderTables();
         closeManualImportModal();
-        alert(`ดึงข้อมูลผลงานสะสมมาใส่ช่อง "ถึงสัปดาห์ก่อน" เรียบร้อยแล้วค่ะ!`);
+        alert(`ดึงรายการงานและยอดผลงานสะสมเรียบร้อยแล้วค่ะ!`);
       } catch (err) {
         console.error(err);
         alert("เกิดข้อผิดพลาดในการประมวลผลข้อมูลดึงย้อนหลัง");
