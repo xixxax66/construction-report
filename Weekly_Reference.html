@@ -179,7 +179,7 @@
       </div>
       <div class="flex items-center gap-3">
         <button onclick="saveWeeklyBatch()" id="btn-save-all" class="btn-3d flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-lg shadow cursor-pointer">
-          <i data-lucide="save" class="w-5 h-5"></i> บันทึกข้อมูลทั้งหมด (Google Sheets)
+          <i data-lucide="save" class="w-5 h-5"></i> บันทึกข้อมูลทั้งหมด
         </button>
         <button onclick="loadWeeklyBatch()" id="btn-load-all" class="btn-3d flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-lg shadow cursor-pointer">
           <i data-lucide="refresh-cw" class="w-5 h-5"></i> โหลดข้อมูลล่าสุด
@@ -392,9 +392,12 @@
   <script>
     lucide.createIcons();
 
-    const STORAGE_KEY_GAS_URL = 'CONSTRUCTION_GAS_URL';
-    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
-    const currentGasUrl = localStorage.getItem(STORAGE_KEY_GAS_URL) || DEFAULT_GAS_URL;
+    // กำหนด URL ของ Google Script กลาง
+    const GOOGLE_SCRIPT_URL = localStorage.getItem('CONSTRUCTION_GAS_URL') || 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
+    
+    function getActiveUrl() {
+      return localStorage.getItem('CONSTRUCTION_GAS_URL') || GOOGLE_SCRIPT_URL;
+    }
 
     let currentProjectID = 'DEFAULT_PROJ';
 
@@ -406,6 +409,47 @@
 
     function getProjectWeeklyKey() {
       return `CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`;
+    }
+
+    // ฟังก์ชันยิง JSONP เพื่อหลีกเลี่ยงปัญหา CORS
+    function requestJSONP(action, params = {}) {
+      return new Promise((resolve, reject) => {
+        let url = getActiveUrl();
+        if (url.includes('?')) url = url.split('?')[0];
+
+        const callbackName = 'gas_cb_' + Date.now() + Math.round(Math.random() * 1000);
+        let fetchUrl = `${url}?action=${action}&callback=${callbackName}&_t=${Date.now()}`;
+
+        for (const [key, value] of Object.entries(params)) {
+          fetchUrl += `&${key}=${encodeURIComponent(value)}`;
+        }
+
+        const script = document.createElement('script');
+        script.src = fetchUrl;
+
+        const timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error('หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ (Timeout)'));
+        }, 15000);
+
+        function cleanup() {
+          if (window[callbackName]) delete window[callbackName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          clearTimeout(timeoutId);
+        }
+
+        window[callbackName] = function(result) {
+          cleanup();
+          resolve(result);
+        };
+
+        script.onerror = function() {
+          cleanup();
+          reject(new Error('เครือข่ายขัดข้อง หรือถูกเบราว์เซอร์บล็อกสคริปต์ค่ะ'));
+        };
+
+        document.body.appendChild(script);
+      });
     }
 
     function initProjectContext() {
@@ -443,7 +487,6 @@
       if (modal) modal.classList.add('hidden');
     }
 
-    // สร้างตัวเลือกวันอาทิตย์ในเดือนที่เลือก (รวมวันอาทิตย์ปลายเดือนก่อนหน้า)
     function updateSundayChoices() {
       const mIdx = parseInt(document.getElementById('modal_calc_month').value) || 0;
       const thYear = parseInt(document.getElementById('modal_calc_year').value) || 2569;
@@ -453,18 +496,16 @@
       sel.innerHTML = '';
 
       let firstDay = new Date(ceYear, mIdx, 1);
-      let dayOfWeek = firstDay.getDay(); // 0 = วันอาทิตย์
+      let dayOfWeek = firstDay.getDay(); 
 
       let sundays = [];
 
-      // 1. ถ้าวันที่ 1 ไม่ใช่วันอาทิตย์ ให้หาวันอาทิตย์ปลายเดือนก่อนหน้า
       if (dayOfWeek !== 0) {
         let prevSun = new Date(firstDay);
         prevSun.setDate(firstDay.getDate() - dayOfWeek);
         sundays.push({ date: prevSun, label: `วันอาทิตย์ที่ ${formatToThaiDate(prevSun)} (คาบเกี่ยวปลายเดือนก่อน)` });
       }
 
-      // 2. หาวันอาทิตย์ทั้งหมดที่อยู่ในเดือนนี้
       let cur = new Date(firstDay);
       if (dayOfWeek !== 0) {
         cur.setDate(firstDay.getDate() + (7 - dayOfWeek));
@@ -479,13 +520,11 @@
         const opt = document.createElement('option');
         opt.value = item.date.toISOString().slice(0, 10);
         opt.textContent = item.label;
-        // ถ้ามีวันอาทิตย์แรกที่อยู่ในเดือนจริง ให้เลือกเป็นค่าเริ่มต้น
         if (dayOfWeek !== 0 && idx === 1) opt.selected = true;
         sel.appendChild(opt);
       });
     }
 
-    // คำนวณช่วง 5 สัปดาห์จากวันอาทิตย์ที่เลือก
     function executeGenerateDatesByMonth() {
       const chosenDateStr = document.getElementById('modal_calc_sunday_choice').value;
       if (!chosenDateStr) return;
@@ -508,13 +547,13 @@
       let runningSunday = new Date(chosenSunday);
 
       for (let i = 1; i <= 5; i++) {
-        let wStart = new Date(runningSunday); // วันอาทิตย์
+        let wStart = new Date(runningSunday); 
         
         let wEnd = new Date(runningSunday);
-        wEnd.setDate(wEnd.getDate() + 6); // วันเสาร์ (ครบ 7 วัน)
+        wEnd.setDate(wEnd.getDate() + 6); 
 
         let wRep = new Date(wEnd);
-        wRep.setDate(wRep.getDate() + 2); // วันจันทร์ถัดไป
+        wRep.setDate(wRep.getDate() + 2); 
 
         const startTh = formatToThaiDate(wStart);
         const endTh = formatToThaiDate(wEnd);
@@ -562,7 +601,7 @@
       }
 
       for (let w = 1; w <= 5; w++) {
-        const logRaw = localStorage.getItem(`WEEK_LOG_DATA_${w}`);
+        const logRaw = localStorage.getItem(`WEEK_LOG_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_LOG_DATA_${w}`);
         if (logRaw) { try { exportData.weeksData.logs[w] = JSON.parse(logRaw); } catch(e){} }
 
         const progRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
@@ -571,8 +610,8 @@
         const photoRaw = localStorage.getItem(`WEEK_PHOTO_DATA_${w}`);
         if (photoRaw) { try { exportData.weeksData.photos[w] = JSON.parse(photoRaw); } catch(e){} }
 
-        const repInstRaw = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${w}`);
-        const repAccRaw = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${w}`);
+        const repInstRaw = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${w}`);
+        const repAccRaw = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_REPORT_ACCEPTED_${w}`);
         exportData.weeksData.reports[w] = {
           installments: repInstRaw ? JSON.parse(repInstRaw) : null,
           accepted: repAccRaw || null
@@ -625,6 +664,7 @@
           if (imported.weeksData) {
             for (let w = 1; w <= 5; w++) {
               if (imported.weeksData.logs && imported.weeksData.logs[w]) {
+                localStorage.setItem(`WEEK_LOG_DATA_${targetProjID}_${w}`, JSON.stringify(imported.weeksData.logs[w]));
                 localStorage.setItem(`WEEK_LOG_DATA_${w}`, JSON.stringify(imported.weeksData.logs[w]));
               }
               if (imported.weeksData.progress && imported.weeksData.progress[w]) {
@@ -636,9 +676,11 @@
               }
               if (imported.weeksData.reports && imported.weeksData.reports[w]) {
                 if (imported.weeksData.reports[w].installments) {
+                  localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${targetProjID}_${w}`, JSON.stringify(imported.weeksData.reports[w].installments));
                   localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${w}`, JSON.stringify(imported.weeksData.reports[w].installments));
                 }
                 if (imported.weeksData.reports[w].accepted) {
+                  localStorage.setItem(`WEEK_REPORT_ACCEPTED_${targetProjID}_${w}`, imported.weeksData.reports[w].accepted);
                   localStorage.setItem(`WEEK_REPORT_ACCEPTED_${w}`, imported.weeksData.reports[w].accepted);
                 }
               }
@@ -739,7 +781,10 @@
       const statusEl = document.getElementById('sync-status');
       const payload = getBatchData();
 
+      // บันทึกลงในเครื่อง โดยแยกตามโปรเจกต์
       localStorage.setItem(getProjectWeeklyKey(), JSON.stringify(payload.weeks));
+      
+      // บังคับเซฟลงค่าเริ่มต้นเพื่อให้หน้าย่อยดึงไปใช้ได้ชั่วคราว
       localStorage.setItem('CONSTRUCTION_WEEKLY_REF_DB', JSON.stringify(payload.weeks));
 
       btn.disabled = true;
@@ -747,8 +792,10 @@
       lucide.createIcons();
 
       try {
-        const res = await fetch(currentGasUrl, {
+        const res = await fetch(getActiveUrl(), {
           method: 'POST',
+          mode: 'cors',
+          redirect: 'follow', // แก้ปัญหาปุ่มกดไม่ติด (CORS Redirect)
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
@@ -756,7 +803,7 @@
         if (result.status === 'success') {
           statusEl.textContent = 'บันทึกสำเร็จ (ซิงค์ชีตแล้ว)';
           statusEl.className = 'text-base px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold ml-2 shadow-sm';
-          alert('บันทึกข้อมูลตั้งต้นรายสัปดาห์ของโครงการนี้ลง Google Sheets เรียบร้อยแล้วค่ะ');
+          alert('บันทึกข้อมูลตั้งต้นรายสัปดาห์ของโครงการนี้ลงตารางส่วนกลางเรียบร้อยแล้วค่ะ');
         } else {
           throw new Error(result.message);
         }
@@ -766,7 +813,7 @@
         alert('บันทึกข้อมูลของโครงการนี้ไว้ในระบบเครื่องเรียบร้อยแล้วค่ะ');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> บันทึกข้อมูลทั้งหมด (Google Sheets)`;
+        btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> บันทึกข้อมูลทั้งหมด`;
         lucide.createIcons();
       }
     }
@@ -778,15 +825,15 @@
       lucide.createIcons();
 
       try {
-        const res = await fetch(`${currentGasUrl}?action=get_weekly_reference&projectID=${currentProjectID}`);
-        const result = await res.json();
+        const result = await requestJSONP('get_weekly_reference', { projectID: currentProjectID });
+        
         if (result && result.weeks && result.weeks.length > 0) {
           populateData(result.weeks);
           localStorage.setItem(getProjectWeeklyKey(), JSON.stringify(result.weeks));
           localStorage.setItem('CONSTRUCTION_WEEKLY_REF_DB', JSON.stringify(result.weeks));
-          alert('ดึงข้อมูลรายสัปดาห์ล่าสุดของโครงการนี้จาก Google Sheets เรียบร้อยแล้วค่ะ');
+          alert('ดึงข้อมูลรายสัปดาห์ล่าสุดของโครงการนี้เรียบร้อยแล้วค่ะ');
         } else {
-          throw new Error('ไม่พบข้อมูลในชีต');
+          throw new Error('ไม่พบข้อมูลส่วนกลาง');
         }
       } catch (err) {
         const cached = localStorage.getItem(getProjectWeeklyKey()) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
