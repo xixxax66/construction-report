@@ -477,7 +477,6 @@
   <script>
     lucide.createIcons();
 
-    // กำหนด URL ของ Google Script กลาง
     const GOOGLE_SCRIPT_URL = localStorage.getItem('CONSTRUCTION_GAS_URL') || 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
 
     function autoExpandTextarea(element) {
@@ -489,13 +488,13 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentWeekIndex = parseInt(urlParams.get('week')) || 1;
     
-    // ตั้งค่าตัวแปรประจำโปรเจกต์
+    // 💡 ปรับปรุงตัวแปรเก็บข้อมูลให้ยึดโยงกับ Contract และ Month
     let currentProjectID = 'DEFAULT_PROJ';
-    let WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentProjectID}_${currentWeekIndex}`;
+    let currentReportMonth = urlParams.get('month') || 'SEP_2569';
+    let WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
 
     document.getElementById('badge-week').textContent = `สัปดาห์ที่ ${currentWeekIndex}`;
 
-    // ฟังก์ชันยิง JSONP เพื่อหลีกเลี่ยงปัญหา CORS เวลาดึงข้อมูลลง iPad
     function requestJSONP(action, params = {}) {
       return new Promise((resolve, reject) => {
         let url = GOOGLE_SCRIPT_URL;
@@ -538,7 +537,9 @@
 
     function buildDynamicDays() {
       let startDateStr = "";
-      const refDataRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+      const refDataRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`) || 
+                         localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || 
+                         localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
       
       if (refDataRaw) {
         const weeks = JSON.parse(refDataRaw);
@@ -552,7 +553,7 @@
         }
       }
 
-      let baseDate = new Date(2026, 5, 7);
+      let baseDate = new Date();
       if (startDateStr) {
         const parts = startDateStr.split(' ');
         if (parts.length >= 3) {
@@ -719,7 +720,8 @@
     function getFormData() {
       const data = {
         weekIndex: currentWeekIndex,
-        projectID: currentProjectID, // บันทึก Project ID เข้าไปด้วยเสมอ
+        projectID: currentProjectID, 
+        reportMonth: currentReportMonth,
         dailyLogs: [],
         labor: {
           lead: [], worker: [],
@@ -845,7 +847,6 @@
       let logs = [];
       if (logsRaw) { try { logs = JSON.parse(logsRaw); } catch(e){} }
       
-      // กรองเฉพาะไฟล์ที่สำรองสำเร็จและมีชื่อไฟล์
       const validLogs = logs.filter(l => l.status && l.status.success && l.fileName);
       
       if (validLogs.length === 0) {
@@ -879,14 +880,16 @@
         
         if (result && result.status === 'success' && result.database) {
           const db = result.database;
-          const targetKey = `WEEK_LOG_DATA_${currentProjectID}_${currentWeekIndex}`;
-          const legacyKey = `WEEK_LOG_DATA_${currentWeekIndex}`;
+          const targetKey = `WEEK_LOG_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
+          const legacyKey = `WEEK_LOG_DATA_${currentProjectID}_${currentWeekIndex}`;
           
           let extractedData = null;
           if (db[targetKey]) {
             extractedData = typeof db[targetKey] === 'string' ? JSON.parse(db[targetKey]) : db[targetKey];
           } else if (db[legacyKey]) {
             extractedData = typeof db[legacyKey] === 'string' ? JSON.parse(db[legacyKey]) : db[legacyKey];
+          } else if (db[`WEEK_LOG_DATA_${currentWeekIndex}`]) {
+            extractedData = typeof db[`WEEK_LOG_DATA_${currentWeekIndex}`] === 'string' ? JSON.parse(db[`WEEK_LOG_DATA_${currentWeekIndex}`]) : db[`WEEK_LOG_DATA_${currentWeekIndex}`];
           }
 
           if (extractedData) {
@@ -941,8 +944,8 @@
           const projectData = JSON.parse(basicRaw);
           if (projectData.contractNo) {
             currentProjectID = `PROJ_${projectData.contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
-            // กำหนด Key หลักใหม่ให้ผูกกับ Project ID
-            WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentProjectID}_${currentWeekIndex}`;
+            currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
+            WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
           }
           if (projectData.inspectors && projectData.inspectors[0]) {
             document.getElementById('txt-inspector-name').textContent = projectData.inspectors[0].name;
@@ -956,7 +959,10 @@
       loadProjectData();
       buildDynamicDays();
       
-      const cached = localStorage.getItem(WEEK_STORAGE_KEY) || localStorage.getItem(`WEEK_LOG_DATA_${currentWeekIndex}`);
+      const cached = localStorage.getItem(WEEK_STORAGE_KEY) || 
+                     localStorage.getItem(`WEEK_LOG_DATA_${currentProjectID}_${currentWeekIndex}`) || 
+                     localStorage.getItem(`WEEK_LOG_DATA_${currentWeekIndex}`);
+                     
       if (cached) {
         setFormData(JSON.parse(cached));
       } else {
