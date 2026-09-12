@@ -187,6 +187,27 @@
 </head>
 <body class="p-2 sm:p-4 min-h-screen flex flex-col items-center">
 
+  <!-- Modal คัดลอกข้อมูลจากไฟล์สำรองบน Google Drive -->
+  <div id="restore_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+          <i data-lucide="history" class="w-5 h-5 text-indigo-600"></i> ดึงข้อมูลจากไฟล์สำรอง (Drive)
+        </h3>
+        <button onclick="closeRestoreModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-6 h-6"></i></button>
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-slate-700 mb-2">เลือกไฟล์สำรองที่ต้องการนำมาใช้ซ้ำ:</label>
+        <select id="sel_backup_history" class="w-full border-2 border-slate-300 rounded-xl p-2.5 font-bold text-slate-800 bg-slate-50 outline-none cursor-pointer"></select>
+        <p class="text-xs text-slate-500 mt-2">* ระบบจะดูดเฉพาะข้อมูลการปฏิบัติงานของ "สัปดาห์ที่ <span id="lbl_modal_week"></span>" จากไฟล์เดือนที่เลือก มาเติมในหน้าจอนี้อัตโนมัติ</p>
+      </div>
+      <div class="flex gap-2 pt-2 border-t">
+        <button onclick="closeRestoreModal()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-sm cursor-pointer">ยกเลิก</button>
+        <button onclick="confirmRestoreFromDrive()" id="btn-confirm-restore" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">ยืนยันดึงข้อมูล</button>
+      </div>
+    </div>
+  </div>
+
   <!-- แถบควบคุมด้านบน -->
   <div class="max-w-[210mm] w-full mb-3 flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl shadow border border-slate-300 no-print">
     <div class="flex items-center gap-2">
@@ -198,6 +219,9 @@
       <span id="txt-date-range" class="text-xs text-slate-500 font-medium ml-2">ช่วงวันที่: -</span>
     </div>
     <div class="flex items-center gap-2">
+      <button onclick="openRestoreModal()" class="btn-3d flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-bold cursor-pointer" title="ดึงข้อมูลจากเดือนอื่นที่เคยสำรองไว้">
+        <i data-lucide="cloud-download" class="w-4 h-4"></i> ดึงข้อมูลสำรอง
+      </button>
       <button onclick="saveLogData()" id="btn-save" class="btn-3d flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-bold cursor-pointer">
         <i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล
       </button>
@@ -453,6 +477,9 @@
   <script>
     lucide.createIcons();
 
+    // กำหนด URL ของ Google Script กลาง
+    const GOOGLE_SCRIPT_URL = localStorage.getItem('CONSTRUCTION_GAS_URL') || 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
+
     function autoExpandTextarea(element) {
       element.style.height = 'auto';
       element.style.height = Math.max(element.scrollHeight, 24) + 'px';
@@ -462,21 +489,55 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentWeekIndex = parseInt(urlParams.get('week')) || 1;
     
-    // 💡 ปรับปรุง: ดึง projectID เพื่อแยกข้อมูลให้ชัดเจน
+    // ตั้งค่าตัวแปรประจำโปรเจกต์
     let currentProjectID = 'DEFAULT_PROJ';
-    let WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentProjectID}_${currentWeekIndex}`; 
-
-    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
-    
-    function getActiveUrl() {
-      return localStorage.getItem('CONSTRUCTION_GAS_URL') || DEFAULT_GAS_URL;
-    }
+    let WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentProjectID}_${currentWeekIndex}`;
 
     document.getElementById('badge-week').textContent = `สัปดาห์ที่ ${currentWeekIndex}`;
 
+    // ฟังก์ชันยิง JSONP เพื่อหลีกเลี่ยงปัญหา CORS เวลาดึงข้อมูลลง iPad
+    function requestJSONP(action, params = {}) {
+      return new Promise((resolve, reject) => {
+        let url = GOOGLE_SCRIPT_URL;
+        if (url.includes('?')) url = url.split('?')[0];
+
+        const callbackName = 'gas_cb_' + Date.now() + Math.round(Math.random() * 1000);
+        let fetchUrl = `${url}?action=${action}&callback=${callbackName}&_t=${Date.now()}`;
+
+        for (const [key, value] of Object.entries(params)) {
+          fetchUrl += `&${key}=${encodeURIComponent(value)}`;
+        }
+
+        const script = document.createElement('script');
+        script.src = fetchUrl;
+
+        const timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error('หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ (Timeout)'));
+        }, 15000);
+
+        function cleanup() {
+          if (window[callbackName]) delete window[callbackName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          clearTimeout(timeoutId);
+        }
+
+        window[callbackName] = function(result) {
+          cleanup();
+          resolve(result);
+        };
+
+        script.onerror = function() {
+          cleanup();
+          reject(new Error('เครือข่ายขัดข้อง หรือถูกเบราว์เซอร์บล็อกสคริปต์ค่ะ'));
+        };
+
+        document.body.appendChild(script);
+      });
+    }
+
     function buildDynamicDays() {
       let startDateStr = "";
-      // รองรับการดึงข้อมูลแบบแยกโปรเจกต์
       const refDataRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
       
       if (refDataRaw) {
@@ -658,7 +719,7 @@
     function getFormData() {
       const data = {
         weekIndex: currentWeekIndex,
-        projectID: currentProjectID, // บันทึก Project ID เข้าไปด้วย
+        projectID: currentProjectID, // บันทึก Project ID เข้าไปด้วยเสมอ
         dailyLogs: [],
         labor: {
           lead: [], worker: [],
@@ -776,6 +837,77 @@
       }
     }
 
+    // --- ระบบดึงข้อมูลจากไฟล์สำรอง (Restore from Google Drive) ---
+    function openRestoreModal() {
+      const sel = document.getElementById('sel_backup_history');
+      sel.innerHTML = '';
+      const logsRaw = localStorage.getItem('BACKUP_HISTORY_LOG');
+      let logs = [];
+      if (logsRaw) { try { logs = JSON.parse(logsRaw); } catch(e){} }
+      
+      // กรองเฉพาะไฟล์ที่สำรองสำเร็จและมีชื่อไฟล์
+      const validLogs = logs.filter(l => l.status && l.status.success && l.fileName);
+      
+      if (validLogs.length === 0) {
+        sel.innerHTML = `<option value="">ไม่พบประวัติไฟล์สำรองบน Google Drive</option>`;
+      } else {
+        validLogs.forEach(log => {
+          sel.innerHTML += `<option value="${log.fileName}">${log.fileName} (${log.desc || 'ไม่มีรายละเอียด'})</option>`;
+        });
+      }
+      
+      document.getElementById('lbl_modal_week').textContent = currentWeekIndex;
+      document.getElementById('restore_modal').classList.remove('hidden');
+    }
+
+    function closeRestoreModal() {
+      document.getElementById('restore_modal').classList.add('hidden');
+    }
+
+    async function confirmRestoreFromDrive() {
+      const sel = document.getElementById('sel_backup_history');
+      const fileName = sel.value;
+      if (!fileName) return alert('กรุณาเลือกไฟล์สำรองของเดือนที่ต้องการดึงข้อมูลค่ะ');
+
+      const btn = document.getElementById('btn-confirm-restore');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังโหลดข้อมูล...`;
+      lucide.createIcons();
+
+      try {
+        const result = await requestJSONP('get_specific_project_database', { targetFileName: fileName });
+        
+        if (result && result.status === 'success' && result.database) {
+          const db = result.database;
+          const targetKey = `WEEK_LOG_DATA_${currentProjectID}_${currentWeekIndex}`;
+          const legacyKey = `WEEK_LOG_DATA_${currentWeekIndex}`;
+          
+          let extractedData = null;
+          if (db[targetKey]) {
+            extractedData = typeof db[targetKey] === 'string' ? JSON.parse(db[targetKey]) : db[targetKey];
+          } else if (db[legacyKey]) {
+            extractedData = typeof db[legacyKey] === 'string' ? JSON.parse(db[legacyKey]) : db[legacyKey];
+          }
+
+          if (extractedData) {
+            setFormData(extractedData);
+            closeRestoreModal();
+            alert(`คัดลอกข้อมูลสัปดาห์ที่ ${currentWeekIndex} จากไฟล์ ${fileName} สำเร็จ!\n\n⚠️ คำแนะนำ: กรุณาตรวจสอบข้อมูลบนหน้าจอ และกดปุ่ม "บันทึกข้อมูล" สีเขียวด้านบนเพื่อจัดเก็บลงในสัปดาห์ปัจจุบันด้วยนะคะ`);
+          } else {
+            alert(`ไม่พบข้อมูลการปฏิบัติงานของสัปดาห์ที่ ${currentWeekIndex} ในไฟล์สำรองเดือนนี้ค่ะ`);
+          }
+        } else {
+          alert(`เกิดข้อผิดพลาด: ${result ? result.message : 'ไม่สามารถดึงข้อมูลจาก Google Drive ได้'}`);
+        }
+      } catch (err) {
+        alert(`ข้อผิดพลาดการเชื่อมต่อ: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `ยืนยันดึงข้อมูล`;
+        lucide.createIcons();
+      }
+    }
+
     async function saveLogData() {
       const btn = document.getElementById('btn-save');
       const payload = getFormData();
@@ -785,8 +917,7 @@
       btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> บันทึก...`;
 
       try {
-        // 💡 ปรับปรุง: ใส่ mode: 'cors' และ redirect: 'follow' เพื่อส่งข้อมูลขึ้น Cloud ได้แบบไม่สะดุด
-        await fetch(getActiveUrl(), {
+        await fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
           mode: 'cors',
           redirect: 'follow',
@@ -810,7 +941,7 @@
           const projectData = JSON.parse(basicRaw);
           if (projectData.contractNo) {
             currentProjectID = `PROJ_${projectData.contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
-            // อัปเดต Storage Key ให้ผูกกับโครงการนี้
+            // กำหนด Key หลักใหม่ให้ผูกกับ Project ID
             WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentProjectID}_${currentWeekIndex}`;
           }
           if (projectData.inspectors && projectData.inspectors[0]) {
@@ -822,10 +953,9 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      loadProjectData(); // โหลด Project ID ก่อน
+      loadProjectData();
       buildDynamicDays();
       
-      // ดึงข้อมูลตาม Storage Key ที่ผูกกับ Project ID แล้ว
       const cached = localStorage.getItem(WEEK_STORAGE_KEY) || localStorage.getItem(`WEEK_LOG_DATA_${currentWeekIndex}`);
       if (cached) {
         setFormData(JSON.parse(cached));
