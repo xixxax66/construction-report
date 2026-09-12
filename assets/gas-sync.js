@@ -4,7 +4,7 @@
  */
 
 const GAS_SYNC_CONFIG = {
-  defaultUrl: 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec',
+  defaultUrl: 'https://script.google.com/macros/s/AKfycbz9T8I8iojUCXX9D71RRftcemcLsv5-mG1ND1pVbJugwHuDCffxMLHkIKU6V_y6zieJ5A/exec',
   autoSyncFileName: 'Project_Database_AutoSync.json',
   
   getGasUrl() {
