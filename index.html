@@ -639,19 +639,33 @@
         // กำหนดชื่อไฟล์: ถ้ามีพิมพ์ให้ใช้ตามที่พิมพ์เป๊ะๆ ถ้าไม่มีให้สร้างอัตโนมัติตามเลขสัญญา
         const timestampForName = new Date().toISOString().slice(0, 10).replace(/-/g, "");
         const cleanContract = String(currentContractNo).replace(/[/\\?%*:|"<>]/g, '_');
-        const finalFileName = fName || `Backup_${cleanContract}_${timestampForName}`;
+        let finalFileName = fName || `Backup_${cleanContract}_${timestampForName}`;
+        
+        // บังคับเติมนามสกุล .json เสมอ
+        if (!finalFileName.endsWith(".json")) {
+          finalFileName += ".json";
+        }
 
-        const currentLogs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+        // 💡 จุดสำคัญที่แก้ไข: สร้างประวัติ Log ใหม่ล่าสุดเตรียมไว้ก่อนส่งขึ้น Cloud
+        let logsToSend = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+        const newLogEntry = { 
+          time: new Date().toLocaleString('th-TH'), 
+          fileName: finalFileName, 
+          desc: fileDesc, 
+          status: { success: true } 
+        };
+        logsToSend.unshift(newLogEntry); // ดันรายการใหม่ขึ้นไปไว้บนสุด
+        if (logsToSend.length > 50) logsToSend.pop(); // จำกัด 50 รายการ
 
         const payload = {
           action: 'save_full_project_database',
           folderId: folderId,
           projectID: currentProjId,
           contractNo: currentContractNo,
-          fileName: finalFileName, // ส่งชื่อไฟล์ที่ต้องการไปให้เซิร์ฟเวอร์
+          fileName: finalFileName,
           timestamp: new Date().toLocaleString('th-TH'),
           database: backupData,
-          logs: currentLogs
+          logs: logsToSend // ส่ง Log ที่รวมรายการล่าสุดนี้ขึ้นไปด้วยเลย
         };
 
         if (btnBottom) btnBottom.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังอัปโหลด...`;
@@ -659,7 +673,7 @@
         const response = await fetch(getActiveUrl(), {
           method: 'POST',
           mode: 'cors',
-          redirect: 'follow', // แก้ไขปุ่มกดด้านบนไม่ทำงาน
+          redirect: 'follow', 
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
@@ -670,18 +684,21 @@
           const syncTime = new Date().toLocaleString('th-TH');
           localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
           
-          // ใช้ชื่อไฟล์จริงที่เซิร์ฟเวอร์สร้างสำเร็จ บันทึกลง Log (รับรองกดกู้คืนได้ชัวร์ 100%)
-          const actualFileName = result.savedFileName; 
-          addLogRecord(actualFileName, fileDesc, { success: true });
+          // เมื่อขึ้น Cloud สำเร็จ ค่อยเซฟ Log ที่เตรียมไว้ลงในเครื่องเพื่อให้อัปเดตตรงกัน
+          localStorage.setItem(LOG_KEY, JSON.stringify(logsToSend));
+          renderLogs();
 
           updateProjectUI();
-          alert(`สำรองข้อมูลและบันทึกไฟล์ "${actualFileName}" เรียบร้อยแล้วค่ะ!`);
+          alert(`สำรองข้อมูลและอัปเดตประวัติ Log ไฟล์ "${result.savedFileName || finalFileName}" เรียบร้อยแล้วค่ะ!`);
         } else {
           throw new Error(result ? result.message : 'เซิร์ฟเวอร์ปฏิเสธการตอบกลับ');
         }
 
       } catch (err) {
         alert(`ไม่สามารถเชื่อมต่อ Cloud ได้ค่ะ\nสาเหตุ: ${err.message}`);
+        // ถ้าอัปโหลดไม่สำเร็จ ให้เซฟลงประวัติ Log ในเครื่องว่าสถานะล้มเหลว
+        const failedFileName = fName || `Backup_Local_${new Date().getTime()}`;
+        addLogRecord(failedFileName, fileDesc || 'เกิดข้อผิดพลาดในการอัปโหลด', { localOnly: true });
       } finally {
         if (btnBottom) { btnBottom.disabled = false; btnBottom.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> สำรองขึ้น Cloud (พร้อมเก็บประวัติ)`; }
         if (btnTop) { btnTop.disabled = false; btnTop.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i>`; }
