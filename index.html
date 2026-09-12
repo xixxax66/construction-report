@@ -157,10 +157,10 @@
             <div class="flex-1 overflow-hidden relative">
               <input type="text" id="driveFolderId" class="cell-input text-xs text-transparent" placeholder="[ค่าเริ่มต้น] จัดเก็บในไดรฟ์หลัก (Root)">
               <div id="lbl_selected_folder" class="absolute inset-0 bg-transparent flex items-center text-blue-700 font-bold px-3 pointer-events-none">
-                📁 ค่าเริ่มต้น: ไดรฟ์หลัก
+                📁 โฟลเดอร์เริ่มต้นระบบ
               </div>
             </div>
-            <button type="button" onclick="openFolderPicker('root')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0 transition">
+            <button type="button" onclick="openFolderPicker('11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0 transition">
               <i data-lucide="folder-search" class="w-4 h-4"></i> เลือกโฟลเดอร์
             </button>
           </div>
@@ -230,9 +230,20 @@
   <script>
     lucide.createIcons();
 
-    // ตั้งค่า URL เริ่มต้น
+    // 1. ตัวแปรและตั้งค่าเบื้องต้น
     const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
     const LOG_KEY = 'BACKUP_HISTORY_LOG';
+    const DEFAULT_FOLDER_ID = '11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd'; // โฟลเดอร์เริ่มต้นระบบ
+    
+    let folderHistory = [];
+    let currentPickerFolderId = DEFAULT_FOLDER_ID;
+    let currentPickerFolderName = "โฟลเดอร์เริ่มต้นระบบ";
+
+    const ALL_SYSTEM_KEYS = [
+      'LOCAL_BASIC_INFO', 'CONSTRUCTION_WEEKLY_REF_DB', 'MONTHLY_REPORT_INFO_DATA',
+      'MONTHLY_INSPECTION_DATES_DB', 'MONTHLY_MATERIAL_REPORT_DB', 'MONTHLY_PROBLEM_SUMMARY_DB',
+      'LOCAL_START_DATE_RECORD', 'LOCAL_EXPEDITE_RECORD', 'LOCAL_DELIVERY_RECORD', 'PROJECT_FULL_BACKUP_SNAPSHOT'
+    ];
 
     function getActiveUrl() {
       return localStorage.getItem('CONSTRUCTION_GAS_URL') || DEFAULT_URL;
@@ -248,18 +259,51 @@
       }
     }
 
-    // รายชื่อ Key ข้อมูลทั้งหมดใน LocalStorage ที่เกี่ยวข้อง
-    const ALL_SYSTEM_KEYS = [
-      'LOCAL_BASIC_INFO', 'CONSTRUCTION_WEEKLY_REF_DB', 'MONTHLY_REPORT_INFO_DATA',
-      'MONTHLY_INSPECTION_DATES_DB', 'MONTHLY_MATERIAL_REPORT_DB', 'MONTHLY_PROBLEM_SUMMARY_DB',
-      'LOCAL_START_DATE_RECORD', 'LOCAL_EXPEDITE_RECORD', 'LOCAL_DELIVERY_RECORD', 'PROJECT_FULL_BACKUP_SNAPSHOT'
-    ];
+    // 2. ฟังก์ชันหลักสำหรับเจาะระบบ CORS (JSONP Promise)
+    // ฟังก์ชันนี้จะจัดการการสร้าง <script> ทะลุบล็อกให้แบบอัตโนมัติ นำไปใช้ได้ทั้งดึงข้อมูล และหาโฟลเดอร์
+    function requestJSONP(action, params = {}) {
+      return new Promise((resolve, reject) => {
+        let url = getActiveUrl();
+        if (url.includes('?')) url = url.split('?')[0];
 
-    let folderHistory = [];
-    let currentPickerFolderId = "root";
-    let currentPickerFolderName = "ไดรฟ์ของฉัน";
+        const callbackName = 'gas_cb_' + Date.now() + Math.round(Math.random() * 1000);
+        let fetchUrl = `${url}?action=${action}&callback=${callbackName}&_t=${Date.now()}`;
 
-    // อัปเดตข้อมูลบนหน้าจอ
+        // นำพารามิเตอร์เสริมมาต่อท้าย
+        for (const [key, value] of Object.entries(params)) {
+          fetchUrl += `&${key}=${encodeURIComponent(value)}`;
+        }
+
+        const script = document.createElement('script');
+        script.src = fetchUrl;
+
+        // เผื่อเวลาเน็ตหลุด (15 วินาที)
+        const timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error('หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ (Timeout)'));
+        }, 15000);
+
+        function cleanup() {
+          if (window[callbackName]) delete window[callbackName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          clearTimeout(timeoutId);
+        }
+
+        window[callbackName] = function(result) {
+          cleanup();
+          resolve(result);
+        };
+
+        script.onerror = function() {
+          cleanup();
+          reject(new Error('เครือข่ายขัดข้อง หรือถูกเบราว์เซอร์บล็อกการโหลดสคริปต์ค่ะ'));
+        };
+
+        document.body.appendChild(script);
+      });
+    }
+
+    // 3. ระบบแสดงผลบนหน้าจอ (UI Updates)
     function updateProjectUI() {
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
@@ -281,8 +325,23 @@
       document.getElementById('input_gas_url').value = getActiveUrl();
     }
 
-    // ฟังก์ชันเลือกโฟลเดอร์ Drive (ปรับปรุงทะลุบล็อก CORS สำหรับ iPad)
-    function openFolderPicker(folderId = "root") {
+    function resetBadge(type, message) {
+      const syncBadge = document.getElementById('sync-status');
+      if (type === 'loading') {
+        syncBadge.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> ${message}`;
+        syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 flex items-center gap-1.5';
+      } else if (type === 'error') {
+        syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span> ${message}`;
+        syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-300 flex items-center gap-1.5';
+      } else {
+        syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span> ${message}`;
+        syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300 flex items-center gap-1.5';
+      }
+      lucide.createIcons();
+    }
+
+    // 4. ระบบการค้นหาโฟลเดอร์ Google Drive (ใช้ requestJSONP)
+    async function openFolderPicker(folderId = DEFAULT_FOLDER_ID) {
       const modal = document.getElementById('folder_picker_modal');
       const grid = document.getElementById('folder_list_grid');
       const btnBack = document.getElementById('btn_picker_back');
@@ -293,32 +352,11 @@
       lucide.createIcons();
       btnBack.disabled = folderHistory.length === 0;
 
-      // ทำความสะอาด URL
-      let url = getActiveUrl();
-      if (url.includes('?')) url = url.split('?')[0];
+      try {
+        // ดึงข้อมูลผ่าน JSONP 
+        const result = await requestJSONP('get_drive_folders', { parentId: folderId });
 
-      // สร้างชื่อ Callback และ URL สำหรับ JSONP
-      const callbackName = 'gas_folder_callback_' + Date.now();
-      const fetchUrl = `${url}?action=get_drive_folders&parentId=${encodeURIComponent(folderId)}&callback=${callbackName}&_t=${Date.now()}`;
-
-      // เผื่อเวลาเน็ตหลุด
-      const timeoutId = setTimeout(() => {
-        cleanup();
-        grid.innerHTML = '<div class="text-center text-rose-500 py-6">หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ โปรดตรวจสอบสัญญาณอินเทอร์เน็ตค่ะ</div>';
-      }, 15000);
-
-      // ฟังก์ชันล้างค่า
-      function cleanup() {
-        if (window[callbackName]) delete window[callbackName];
-        const scriptTags = document.querySelectorAll(`script[src="${fetchUrl}"]`);
-        scriptTags.forEach(tag => tag.remove());
-        clearTimeout(timeoutId);
-      }
-
-      // รับข้อมูลจากเซิร์ฟเวอร์
-      window[callbackName] = function(result) {
-        cleanup();
-        if (result.status === 'success') {
+        if (result && result.status === 'success') {
           currentPickerFolderId = result.parentId;
           currentPickerFolderName = result.parentName;
           folderNameEl.textContent = currentPickerFolderName;
@@ -342,18 +380,11 @@
             lucide.createIcons();
           }
         } else {
-          grid.innerHTML = `<div class="text-center text-rose-500 py-6">ข้อผิดพลาด: ${result.message}</div>`;
+          grid.innerHTML = `<div class="text-center text-rose-500 py-6">ข้อผิดพลาด: ${result ? result.message : 'ไม่ทราบสาเหตุ'}</div>`;
         }
-      };
-
-      // ยิงคำสั่งดึงข้อมูลด้วย <script>
-      const script = document.createElement('script');
-      script.src = fetchUrl;
-      script.onerror = function() {
-        cleanup();
-        grid.innerHTML = '<div class="text-center text-rose-500 py-6">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (เบราว์เซอร์บล็อกหรือเน็ตหลุด)</div>';
-      };
-      document.body.appendChild(script);
+      } catch (err) {
+        grid.innerHTML = `<div class="text-center text-rose-500 py-6">${err.message}</div>`;
+      }
     }
 
     function navigateToFolder(id, name) {
@@ -372,10 +403,10 @@
       const inputEl = document.getElementById('driveFolderId');
       const labelEl = document.getElementById('lbl_selected_folder');
       
-      if (currentPickerFolderId === 'root') {
+      if (currentPickerFolderId === 'root' || currentPickerFolderId === DEFAULT_FOLDER_ID) {
         inputEl.value = '';
-        labelEl.textContent = '📁 ค่าเริ่มต้น: ไดรฟ์หลัก';
-        localStorage.removeItem('SELECTED_DRIVE_FOLDER_ID');
+        labelEl.textContent = '📁 โฟลเดอร์เริ่มต้นระบบ';
+        localStorage.setItem('SELECTED_DRIVE_FOLDER_ID', DEFAULT_FOLDER_ID);
       } else {
         inputEl.value = currentPickerFolderId;
         labelEl.textContent = `📁 ${currentPickerFolderName}`;
@@ -394,7 +425,36 @@
       folderHistory = [];
     }
 
-    // รวบรวมข้อมูลทั้งหมดใน LocalStorage
+    // 5. ระบบการดึงข้อมูลจาก Cloud สำหรับ iPad (ใช้ requestJSONP)
+    async function forcePullForIpad() {
+      resetBadge('loading', 'กำลังดึงข้อมูล...');
+
+      try {
+        const result = await requestJSONP('get_latest_project_database');
+        
+        if (result && result.status === 'success' && result.database) {
+          let count = 0;
+          const db = result.database;
+          Object.keys(db).forEach(key => {
+            const val = typeof db[key] === 'object' ? JSON.stringify(db[key]) : String(db[key]);
+            localStorage.setItem(key, val);
+            count++;
+          });
+          const syncTime = new Date().toLocaleString('th-TH');
+          localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
+          alert(`ดึงข้อมูลลงเครื่องสำเร็จค่ะ! อัปเดต ${count} รายการ`);
+          location.reload();
+        } else {
+          alert('ไม่พบไฟล์ฐานข้อมูลบน Cloud ค่ะ');
+          resetBadge('ready', 'พร้อมใช้งาน');
+        }
+      } catch (err) {
+        alert(`เกิดข้อผิดพลาดในการนำเข้าข้อมูลค่ะ:\n${err.message}`);
+        resetBadge('error', 'พบข้อผิดพลาด');
+      }
+    }
+
+    // 6. การรวบรวมข้อมูลทั้งหมด (Export) 
     function exportAllProjectData() {
       const projectDatabase = {};
       
@@ -436,183 +496,72 @@
       return projectDatabase;
     }
 
-    // ประวัติการบันทึก
-    function addLogRecord(fileName, desc, statusObj) {
-      let logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
-      const timestamp = new Date().toLocaleString('th-TH');
-      logs.unshift({ time: timestamp, fileName: fileName, desc: desc, status: statusObj });
-      if (logs.length > 50) logs.pop();
-      localStorage.setItem(LOG_KEY, JSON.stringify(logs));
-      renderLogs();
-    }
-
-    function renderLogs() {
-      const tbody = document.getElementById('log_tbody');
-      tbody.innerHTML = '';
-      const logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
-      
-      if (logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-slate-400">ยังไม่มีประวัติการสำรองข้อมูล</td></tr>`;
-        return;
-      }
-
-      logs.forEach(log => {
-        let statusHtml = '';
-        if (log.status.success) {
-          statusHtml = `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold whitespace-nowrap">✔️ สำเร็จ (Cloud)</span>`;
-        } else if (log.status.localOnly) {
-          statusHtml = `<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold whitespace-nowrap">⚠️ เครื่อง (Local)</span>`;
-        } else {
-          statusHtml = `<span class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-xs font-bold whitespace-nowrap">❌ ล้มเหลว</span>`;
-        }
-
-        tbody.innerHTML += `
-          <tr class="hover:bg-slate-50 transition">
-            <td class="text-slate-600 whitespace-nowrap">${log.time}</td>
-            <td class="font-medium text-slate-800 break-words">${log.fileName || '-'}</td>
-            <td class="text-slate-500 text-xs break-words">${log.desc || '-'}</td>
-            <td class="text-center">${statusHtml}</td>
-          </tr>`;
-      });
-    }
-
-    function clearLogs() {
-      if (confirm('คุณแน่ใจหรือไม่ว่าต้องการล้างประวัติการสำรองข้อมูลทั้งหมดคะ?')) {
-        localStorage.removeItem(LOG_KEY);
-        renderLogs();
-      }
-    }
-
-        // 1. สำรองข้อมูลขึ้น Cloud (Push) - อัปเดตแก้บล็อก CORS และแสดง Error ละเอียด
+    // 7. การสำรองข้อมูลขึ้น Cloud (Push)
     async function saveProjectToCloudAndLocal() {
       const btn = document.getElementById('btn-cloud-backup');
-      const folderId = document.getElementById('driveFolderId').value || localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || '11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd';
-      const fileNameInput = document.getElementById('backupFileName').value.trim();
-      const fileDesc = document.getElementById('backupFileDesc').value.trim();
-      
-      const timestampForName = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-      const finalFileName = fileNameInput || `Project_Backup_${timestampForName}`;
-
-      btn.disabled = true;
-      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังสำรอง...`;
-      lucide.createIcons();
-
-      const backupData = exportAllProjectData();
-      localStorage.setItem('PROJECT_FULL_BACKUP_SNAPSHOT', JSON.stringify(backupData));
-
-      const payload = {
-        action: 'save_full_project_database',
-        fileName: finalFileName,
-        folderId: folderId,
-        timestamp: new Date().toLocaleString('th-TH'),
-        database: backupData
-      };
-
       try {
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังเตรียมข้อมูล...`;
+          lucide.createIcons();
+        }
+
+        const driveFolderInput = document.getElementById('driveFolderId');
+        const folderId = (driveFolderInput ? driveFolderInput.value : '') || localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || DEFAULT_FOLDER_ID;
+        
+        const fileNameInput = document.getElementById('backupFileName');
+        const fName = fileNameInput ? fileNameInput.value.trim() : '';
+        
+        const fileDescInput = document.getElementById('backupFileDesc');
+        const fileDesc = fileDescInput ? fileDescInput.value.trim() : '';
+        
+        const timestampForName = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+        const finalFileName = fName || `Project_Backup_${timestampForName}`;
+
+        const backupData = exportAllProjectData();
+        localStorage.setItem('PROJECT_FULL_BACKUP_SNAPSHOT', JSON.stringify(backupData));
+
+        const payload = {
+          action: 'save_full_project_database',
+          fileName: finalFileName,
+          folderId: folderId,
+          timestamp: new Date().toLocaleString('th-TH'),
+          database: backupData
+        };
+
+        if (btn) btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังอัปโหลด...`;
+
         const response = await fetch(getActiveUrl(), {
           method: 'POST',
-          mode: 'cors',
-          redirect: 'follow',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
+
         const result = await response.json();
         
-        if (result.status === 'success') {
+        if (result && result.status === 'success') {
           const syncTime = new Date().toLocaleString('th-TH');
           localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
           addLogRecord(finalFileName, fileDesc, { success: true });
           updateProjectUI();
           alert('สำรองข้อมูลขึ้น Google Drive เรียบร้อยแล้วค่ะ!');
         } else {
-          throw new Error(result.message || 'เซิร์ฟเวอร์ปฏิเสธการบันทึก');
+          throw new Error(result ? result.message : 'เซิร์ฟเวอร์ปฏิเสธการตอบกลับ');
         }
+
       } catch (err) {
-        addLogRecord(finalFileName, fileDesc, { localOnly: true });
-        alert(`ไม่สามารถเชื่อมต่อ Cloud ได้ค่ะ สาเหตุ:\n${err.message}\n\n(ระบบได้บันทึกข้อมูลสำรองลงในเครื่องแทนชั่วคราวแล้ว)`);
+        alert(`ไม่สามารถเชื่อมต่อ Cloud ได้ค่ะ\nสาเหตุ: ${err.message}\n\n(ระบบได้ทำการสำรองข้อมูลไว้ในเครื่องแทนชั่วคราวแล้วนะคะ)`);
+        addLogRecord('การสำรองข้อมูล (พบปัญหาเครือข่าย)', '', { localOnly: true });
       } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> สำรองขึ้น Cloud (พร้อมเก็บประวัติ)`;
-        lucide.createIcons();
-      }
-    }
-
-    // 2.ระบบดึงข้อมูลจาก Cloud สำหรับ iPad และ Chrome มือถือ (ทะลุบล็อก CORS ด้วย JSONP)
-    function forcePullForIpad() {
-      // ทำความสะอาด URL ก่อนเสมอ
-      let url = getActiveUrl();
-      if (url.includes('?')) {
-        url = url.split('?')[0]; 
-      }
-
-      const syncBadge = document.getElementById('sync-status');
-      syncBadge.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังดึงข้อมูล...`;
-      syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 flex items-center gap-1.5';
-      lucide.createIcons();
-
-      // สร้างชื่อฟังก์ชันพิเศษ (Callback) ให้ส่งไปกับลิงก์
-      const callbackName = 'gas_callback_' + Date.now();
-      const fetchUrl = `${url}?action=get_latest_project_database&callback=${callbackName}`;
-
-      // เผื่อเวลาเน็ตหลุดหรือเซิร์ฟเวอร์ไม่ตอบสนอง
-      const timeoutId = setTimeout(() => {
-        cleanup();
-        alert('หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ (Timeout) โปรดตรวจสอบสัญญาณอินเทอร์เน็ตค่ะ');
-        resetBadgeError();
-      }, 15000);
-
-      // ฟังก์ชันล้างค่าขยะ
-      function cleanup() {
-        if (window[callbackName]) delete window[callbackName];
-        const scriptTags = document.querySelectorAll(`script[src="${fetchUrl}"]`);
-        scriptTags.forEach(tag => tag.remove());
-        clearTimeout(timeoutId);
-      }
-
-      function resetBadgeError() {
-        syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span> พบข้อผิดพลาด`;
-        syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-300 flex items-center gap-1.5';
-      }
-
-      // ดักจับข้อมูลที่ Google ตอบกลับมา (เข้าฟังก์ชันนี้อัตโนมัติ)
-      window[callbackName] = function(result) {
-        cleanup();
-        try {
-          if (result && result.status === 'success' && result.database) {
-            let count = 0;
-            const db = result.database;
-            Object.keys(db).forEach(key => {
-              const val = typeof db[key] === 'object' ? JSON.stringify(db[key]) : String(db[key]);
-              localStorage.setItem(key, val);
-              count++;
-            });
-            const syncTime = new Date().toLocaleString('th-TH');
-            localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
-            alert(`ดึงข้อมูลลงเครื่องสำเร็จค่ะ! อัปเดต ${count} รายการ`);
-            location.reload();
-          } else {
-            alert('ไม่พบไฟล์ฐานข้อมูลบน Cloud ค่ะ');
-            syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span> พร้อมใช้งาน`;
-            syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300 flex items-center gap-1.5';
-          }
-        } catch(e) {
-          alert(`เกิดข้อผิดพลาดในการนำเข้าข้อมูลค่ะ:\n${e.message}`);
-          resetBadgeError();
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> สำรองขึ้น Cloud (พร้อมเก็บประวัติ)`;
+          lucide.createIcons();
         }
-      };
-
-      // ใช้เทคนิคการฝัง Script Tag เพื่อหลบการบล็อก CORS ของ Safari/Chrome
-      const script = document.createElement('script');
-      script.src = fetchUrl;
-      script.onerror = function() {
-        cleanup();
-        alert('เครือข่ายขัดข้อง หรือถูกเบราว์เซอร์บล็อกการโหลดสคริปต์อย่างสมบูรณ์ค่ะ');
-        resetBadgeError();
-      };
-      document.body.appendChild(script);
+      }
     }
 
-    // นำเข้า / ส่งออก ลงเครื่องตรงๆ
+    // 8. นำเข้า / ส่งออก / จัดการ LocalStorage
     function downloadProjectJSON() {
       const fileNameInput = document.getElementById('backupFileName').value.trim();
       const fileDesc = document.getElementById('backupFileDesc').value.trim();
@@ -668,7 +617,54 @@
       }
     }
 
-    // เริ่มต้นระบบเมื่อเปิดหน้าเว็บ
+    // 9. ประวัติการสำรองข้อมูล (Log)
+    function addLogRecord(fileName, desc, statusObj) {
+      let logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      const timestamp = new Date().toLocaleString('th-TH');
+      logs.unshift({ time: timestamp, fileName: fileName, desc: desc, status: statusObj });
+      if (logs.length > 50) logs.pop();
+      localStorage.setItem(LOG_KEY, JSON.stringify(logs));
+      renderLogs();
+    }
+
+    function renderLogs() {
+      const tbody = document.getElementById('log_tbody');
+      tbody.innerHTML = '';
+      const logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      
+      if (logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-slate-400">ยังไม่มีประวัติการสำรองข้อมูล</td></tr>`;
+        return;
+      }
+
+      logs.forEach(log => {
+        let statusHtml = '';
+        if (log.status.success) {
+          statusHtml = `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold whitespace-nowrap">✔️ สำเร็จ (Cloud)</span>`;
+        } else if (log.status.localOnly) {
+          statusHtml = `<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold whitespace-nowrap">⚠️ เครื่อง (Local)</span>`;
+        } else {
+          statusHtml = `<span class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-xs font-bold whitespace-nowrap">❌ ล้มเหลว</span>`;
+        }
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="text-slate-600 whitespace-nowrap">${log.time}</td>
+            <td class="font-medium text-slate-800 break-words">${log.fileName || '-'}</td>
+            <td class="text-slate-500 text-xs break-words">${log.desc || '-'}</td>
+            <td class="text-center">${statusHtml}</td>
+          </tr>`;
+      });
+    }
+
+    function clearLogs() {
+      if (confirm('คุณแน่ใจหรือไม่ว่าต้องการล้างประวัติการสำรองข้อมูลทั้งหมดคะ?')) {
+        localStorage.removeItem(LOG_KEY);
+        renderLogs();
+      }
+    }
+
+    // 10. เริ่มต้นระบบเมื่อเปิดหน้าเว็บ
     window.addEventListener('DOMContentLoaded', () => {
       updateProjectUI();
       renderLogs();
