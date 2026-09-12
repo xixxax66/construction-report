@@ -202,11 +202,8 @@
     
     let currentProjectID = 'DEFAULT_PROJ';
     let currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
-    
-    // 💡 ปรับปรุง: Storage Key ให้ผูกกับ Project ID และ Month รอบรายงาน
     let PHOTO_STORAGE_KEY = `WEEK_PHOTO_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
 
-    // ตัวแปรส่วนกลางสำหรับวาดหน้ากระดาษ
     let projectTitle = "โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก";
     let inspName = "นายพัทธิยะ วงษาซ้าย";
     let inspPos = "ผู้ควบคุมงาน";
@@ -530,7 +527,7 @@
     }
     function onCropTouchMove(e) {
       if (!cropState.isDragging || e.touches.length !== 1) return;
-      cropState.translateX = e.touches[0].clientX - cropState.startX;
+      cropState.translateX = e.touches[0].clientX - cropState.translateX;
       cropState.translateY = e.touches[0].clientY - cropState.startY;
       updateCropperTransform();
     }
@@ -616,15 +613,14 @@
 
     async function savePhotoRecord() {
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
-      let imageFolderId = "";
+      let imageFolderId = "11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd";
+      let contractNo = "DEFAULT";
       if (basicRaw) {
         try {
           const pData = JSON.parse(basicRaw);
-          // ดึง ID โฟลเดอร์รูปภาพของโครงการที่เซิร์ฟเวอร์สร้างไว้
           imageFolderId = pData.imageFolderId || pData.driveFolderId || "11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd";
-        } catch(e) {
-          imageFolderId = "11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd";
-        }
+          contractNo = pData.contractNo || "DEFAULT";
+        } catch(e) {}
       }
 
       document.getElementById('upload_modal').classList.remove('hidden');
@@ -635,6 +631,7 @@
         const payload = {
           action: 'save_week_photos',
           projectID: currentProjectID,
+          contractNo: contractNo,
           reportMonth: currentReportMonth,
           weekIndex: currentWeekIndex,
           folderId: imageFolderId,
@@ -655,13 +652,13 @@
           resJson.photos.forEach((p, i) => {
             if (photosList[i]) {
               photosList[i].src = p.src;
-              photosList[i].rawSrc = ""; // เคลียร์ภาพดิบเพื่อประหยัดพื้นที่
+              photosList[i].rawSrc = "";
             }
           });
           
           localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
           renderAllPages();
-          alert("อัปโหลดภาพขึ้น Google Drive เข้าสู่โฟลเดอร์ของโครงการเรียบร้อยแล้วค่ะ!");
+          alert("อัปโหลดภาพขึ้น Google Drive เข้าสู่โฟลเดอร์ย่อยของโครงการเรียบร้อยแล้วค่ะ!");
         } else {
           throw new Error(resJson.message || "เซิร์ฟเวอร์ไม่ตอบกลับสถานะสำเร็จ");
         }
