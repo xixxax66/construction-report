@@ -483,10 +483,11 @@
       }
     }
 
-    // 1. สำรองข้อมูลขึ้น Cloud (Push)
+        // 1. สำรองข้อมูลขึ้น Cloud (Push)
     async function saveProjectToCloudAndLocal() {
       const btn = document.getElementById('btn-cloud-backup');
-      const folderId = document.getElementById('driveFolderId').value || localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || 'root';
+      // เปลี่ยนจาก 'root' เป็น Folder ID ของคุณอรรถวัต
+      const folderId = document.getElementById('driveFolderId').value || localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || '11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd';
       const fileNameInput = document.getElementById('backupFileName').value.trim();
       const fileDesc = document.getElementById('backupFileDesc').value.trim();
       
