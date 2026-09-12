@@ -508,33 +508,41 @@
     }
 
     // 2. ระบบดึงข้อมูลจาก Cloud สำหรับ iPad (แก้ไขบัคการตัดคำ JSON)
+    // ระบบดึงข้อมูลจาก Cloud ทะลุบล็อก CORS ด้วยเทคนิค JSONP
     function forcePullForIpad() {
       const url = getActiveUrl();
-      const fetchUrl = `${url}?action=get_latest_project_database&_t=${Date.now()}`;
-      
       const syncBadge = document.getElementById('sync-status');
       syncBadge.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังดึงข้อมูล...`;
       syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 flex items-center gap-1.5';
       lucide.createIcons();
 
-      fetch(fetchUrl, {
-        method: 'GET',
-        headers: { 'Accept': 'text/plain, application/json' }
-      })
-      .then(response => response.text())
-      .then(text => {
+      // สร้างชื่อฟังก์ชันสุ่มเพื่อรับข้อมูล
+      const callbackName = 'gas_callback_' + Math.round(100000 * Math.random());
+      const fetchUrl = `${url}?action=get_latest_project_database&callback=${callbackName}&_t=${Date.now()}`;
+
+      // สร้างแท็ก script เพื่อโหลดข้อมูลข้ามโดเมน (ทะลุ CORS)
+      const script = document.createElement('script');
+      script.src = fetchUrl;
+
+      // ตั้งเวลาเผื่อเน็ตหลุด (15 วินาที)
+      const timeoutId = setTimeout(() => {
+        cleanup();
+        alert('หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ (Timeout) กรุณาลองใหม่อีกครั้งค่ะ');
+        syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span> พบข้อผิดพลาด`;
+        syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-300 flex items-center gap-1.5';
+      }, 15000);
+
+      // ฟังก์ชันเคลียร์ขยะหลังโหลดเสร็จ
+      function cleanup() {
+        if (window[callbackName]) delete window[callbackName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        clearTimeout(timeoutId);
+      }
+
+      // เมื่อเซิร์ฟเวอร์ส่งข้อมูลกลับมา จะทำงานในบล็อกนี้
+      window[callbackName] = function(result) {
+        cleanup(); 
         try {
-          // ค้นหาตำแหน่งเริ่มต้น { และสิ้นสุด } เพื่อดึงข้อมูล JSON ที่แท้จริงออกมาอย่างปลอดภัย
-          let cleanJson = text;
-          const firstBrace = text.indexOf('{');
-          const lastBrace = text.lastIndexOf('}');
-          
-          if (firstBrace !== -1 && lastBrace !== -1) {
-            cleanJson = text.substring(firstBrace, lastBrace + 1);
-          }
-          
-          const result = JSON.parse(cleanJson);
-          
           if (result.status === 'success' && result.database) {
             let count = 0;
             const db = result.database;
@@ -557,11 +565,18 @@
           syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span> พบข้อผิดพลาด`;
           syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-300 flex items-center gap-1.5';
         }
-      })
-      .catch(err => {
-        alert('เครือข่ายถูกบล็อก (CORS) บนอุปกรณ์นี้ กำลังพยายามเปิดลิงก์ตรงเพื่อดูข้อมูลค่ะ...');
-        window.open(fetchUrl, '_blank');
-      });
+      };
+
+      // กรณีโหลดสคริปต์ไม่ขึ้นเลย (เน็ตหลุด)
+      script.onerror = function() {
+        cleanup();
+        alert('เครือข่ายขัดข้อง ไม่สามารถโหลดข้อมูลจาก Google ได้ค่ะ');
+        syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span> พบข้อผิดพลาด`;
+        syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-300 flex items-center gap-1.5';
+      };
+
+      // สั่งให้เบราว์เซอร์เริ่มดึงข้อมูล
+      document.body.appendChild(script);
     }
 
     // นำเข้า / ส่งออก ลงเครื่องตรงๆ
