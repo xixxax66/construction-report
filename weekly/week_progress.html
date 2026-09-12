@@ -90,6 +90,9 @@
       <button onclick="openMonthlyPickerModal()" id="btn-pull-monthly" class="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow hidden">
         <i data-lucide="calendar-range" class="w-4 h-4"></i> ดึงสะสมจากรายงานประจำเดือน
       </button>
+      <button onclick="openManualImportModal()" id="btn-manual-import" class="flex items-center gap-1 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow hidden">
+        <i data-lucide="download" class="w-4 h-4"></i> ดึงงานจากเดือนก่อน (Manual)
+      </button>
       <button onclick="pullDataFromPreviousWeek()" id="btn-pull-prev" class="flex items-center gap-1 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow hidden">
         <i data-lucide="history" class="w-4 h-4"></i> ดึงงานสัปดาห์ก่อน
       </button>
@@ -121,7 +124,7 @@
     </div>
   </div>
 
-  <!-- Modal สำหรับเลือกเดือนที่ต้องการดึงยอดสะสม -->
+  <!-- Modal สำหรับเลือกเดือนที่ต้องการดึงยอดสะสมประจำเดือน -->
   <div id="monthly_picker_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
     <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-slate-200 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
@@ -137,6 +140,35 @@
       <div class="flex gap-2 pt-2 border-t">
         <button onclick="closeMonthlyPickerModal()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-sm cursor-pointer">ยกเลิก</button>
         <button onclick="confirmPullMonthlyProgress()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">ยืนยันดึงข้อมูล</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal สำหรับเลือกดึงข้อมูลแบบ Manual (สัปดาห์แรกของเดือน) -->
+  <div id="manual_import_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+          <i data-lucide="download" class="w-5 h-5 text-amber-600"></i> ดึงผลงานจากสัปดาห์ก่อนหน้า (Manual)
+        </h3>
+        <button onclick="closeManualImportModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-6 h-6"></i></button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-1">เลือกเดือนต้นทาง:</label>
+          <select id="import_source_month" onchange="updateImportWeekOptions()" class="w-full border-2 border-slate-300 rounded-xl p-2.5 font-bold text-slate-800 bg-slate-50 outline-none cursor-pointer"></select>
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-1">เลือกสัปดาห์ต้นทาง:</label>
+          <select id="import_source_week" class="w-full border-2 border-slate-300 rounded-xl p-2.5 font-bold text-slate-800 bg-slate-50 outline-none cursor-pointer"></select>
+        </div>
+        <p class="text-xs text-slate-500">* ระบบจะนำยอดผลงานสะสม (Accumulated) สิ้นสุดของสัปดาห์ที่เลือกมาใส่เป็นช่อง "ถึงสัปดาห์ก่อน" (Previous) ของสัปดาห์นี้ให้โดยอัตโนมัติ</p>
+      </div>
+
+      <div class="flex gap-2 pt-2 border-t">
+        <button onclick="closeManualImportModal()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-sm cursor-pointer">ยกเลิก</button>
+        <button onclick="confirmManualImportData()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">ยืนยันดึงข้อมูล</button>
       </div>
     </div>
   </div>
@@ -251,18 +283,17 @@
     
     let totalContractWeeks = 20;
     let currentProjectID = 'DEFAULT_PROJ';
+    const urlParams = new URLSearchParams(window.location.search);
     let currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
     let prevWeekTotalWeight = 0;
     let isDataInvalid = false;
     
-    const urlParams = new URLSearchParams(window.location.search);
     const currentWeekIndex = parseInt(urlParams.get('week')) || 1; 
     
     let actualContractWeek = currentWeekIndex; 
     let reportSeq = currentWeekIndex;          
     let plannedProgressFromRef = null;        
     
-    // 💡 ปรับปรุง: Storage Key ให้ผูกกับ Project ID และ Month รอบรายงาน
     let STORAGE_KEY = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
     
     document.getElementById('link-report').href = `week_report.html?week=${currentWeekIndex}&month=${currentReportMonth}`;
@@ -336,8 +367,10 @@
       }
     }
 
+    // จัดการแสดงปุ่มดึงข้อมูล
     if (currentWeekIndex === 1) {
       document.getElementById('btn-pull-monthly').classList.remove('hidden');
+      document.getElementById('btn-manual-import').classList.remove('hidden');
     }
     if (currentWeekIndex > 1) {
       document.getElementById('btn-pull-prev').classList.remove('hidden');
@@ -346,12 +379,9 @@
     function openMonthlyPickerModal() {
       const sel = document.getElementById('sel_monthly_history');
       sel.innerHTML = '';
-
       let historyList = [];
       const rawHistory = localStorage.getItem(`CONSTRUCTION_MONTHLY_HISTORY_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_MONTHLY_HISTORY_DB');
-      if (rawHistory) {
-        try { historyList = JSON.parse(rawHistory); } catch(e){}
-      }
+      if (rawHistory) { try { historyList = JSON.parse(rawHistory); } catch(e){} }
 
       if (historyList.length === 0) {
         sel.innerHTML = `<option value="">ไม่พบประวัติรายงานประจำเดือนของโครงการนี้</option>`;
@@ -360,45 +390,137 @@
           sel.innerHTML += `<option value="${item.actualPercent}">${item.monthYear} (ผลงานสะสม: ${item.actualPercent}%)</option>`;
         });
       }
-
       document.getElementById('monthly_picker_modal').classList.remove('hidden');
       lucide.createIcons();
     }
 
-    function closeMonthlyPickerModal() {
-      document.getElementById('monthly_picker_modal').classList.add('hidden');
-    }
+    function closeMonthlyPickerModal() { document.getElementById('monthly_picker_modal').classList.add('hidden'); }
 
     function confirmPullMonthlyProgress() {
       const sel = document.getElementById('sel_monthly_history');
       const val = parseFloat(sel.value);
-      if (isNaN(val) || val <= 0) {
-        alert("กรุณาเลือกเดือนที่มีข้อมูลผลงานสะสมค่ะ");
-        return;
-      }
-
+      if (isNaN(val) || val <= 0) return alert("กรุณาเลือกเดือนที่มีข้อมูลผลงานสะสมค่ะ");
       closeMonthlyPickerModal();
 
       currentTasks.forEach(t => {
         const allocatedPrev = val * (t.proportion / 100);
         t.prev = allocatedPrev.toFixed(2);
       });
-
       renderTables();
-      alert(`ดึงยอดผลงานสะสม ${val}% จากรายงานประจำเดือนมาเป็นฐานตั้งต้นในสัปดาห์ที่ ${actualContractWeek} เรียบร้อยแล้วค่ะ!`);
+      alert(`ดึงยอดผลงานสะสม ${val}% จากรายงานประจำเดือนมาเป็นฐานตั้งต้นเรียบร้อยแล้วค่ะ!`);
     }
 
-    async function pullProgressFromCloud() {
-      try {
-        const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
-        if (centralUrl) {
-          const res = await fetch(`${centralUrl}?action=get_week_progress&weekIndex=${currentWeekIndex}&projectID=${currentProjectID}&month=${currentReportMonth}`);
-          const result = await res.json();
-          if (result.status === 'success' && result.data) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(result.data));
-          }
+    // 🛠️ ฟังก์ชันเปิด Modal สำหรับดึงข้อมูลแบบ Manual เลือกเดือนและสัปดาห์ต้นทาง
+    function openManualImportModal() {
+      const monthSel = document.getElementById('import_source_month');
+      monthSel.innerHTML = '';
+
+      let foundMonths = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_`)) {
+          const parts = key.split('_');
+          const m = parts[parts.length - 1];
+          if (m && !foundMonths.includes(m)) foundMonths.push(m);
         }
-      } catch (e) {}
+      }
+
+      if (foundMonths.length === 0) {
+        monthSel.innerHTML = `<option value="">ไม่พบประวัติข้อมูลสัปดาห์ในระบบ</option>`;
+      } else {
+        foundMonths.forEach(m => {
+          if (m !== currentReportMonth) {
+            monthSel.innerHTML += `<option value="${m}">เดือน: ${m}</option>`;
+          }
+        });
+      }
+
+      updateImportWeekOptions();
+      document.getElementById('manual_import_modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeManualImportModal() {
+      document.getElementById('manual_import_modal').classList.add('hidden');
+    }
+
+    function updateImportWeekOptions() {
+      const monthSel = document.getElementById('import_source_month');
+      const weekSel = document.getElementById('import_source_week');
+      weekSel.innerHTML = '';
+
+      const srcMonth = monthSel.value;
+      if (!srcMonth) {
+        weekSel.innerHTML = `<option value="">-- กรุณาเลือกเดือนก่อน --</option>`;
+        return;
+      }
+
+      const refKey = `CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${srcMonth}`;
+      const rawRef = localStorage.getItem(refKey);
+      if (rawRef) {
+        try {
+          const weeks = JSON.parse(rawRef);
+          weeks.forEach(w => {
+            weekSel.innerHTML += `<option value="${w.weekIndex}">สัปดาห์ที่ ${w.weekIndex} (สัปดาห์สัญญาที่ ${w.week})</option>`;
+          });
+        } catch(e){}
+      }
+      if (weekSel.options.length === 0) {
+        weekSel.innerHTML = `<option value="1">สัปดาห์ที่ 1</option><option value="2">สัปดาห์ที่ 2</option><option value="3">สัปดาห์ที่ 3</option><option value="4">สัปดาห์ที่ 4</option><option value="5">สัปดาห์ที่ 5</option>`;
+      }
+    }
+
+    function confirmManualImportData() {
+      const srcMonth = document.getElementById('import_source_month').value;
+      const srcWeekIndex = document.getElementById('import_source_week').value;
+
+      if (!srcMonth || !srcWeekIndex) {
+        return alert("กรุณาเลือกเดือนและสัปดาห์ต้นทางให้ครบถ้วนค่ะ");
+      }
+
+      const progKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${srcMonth}_${srcWeekIndex}`;
+      const progRaw = localStorage.getItem(progKey);
+
+      if (!progRaw) {
+        return alert(`ไม่พบบันทึกข้อมูลผลงานของเดือน ${srcMonth} (สัปดาห์ที่ ${srcWeekIndex}) กรุณาตรวจสอบว่าเดือนดังกล่าวได้บันทึกข้อมูลไว้แล้วหรือยัง`);
+      }
+
+      if (!confirm(`ต้องการดึงข้อมูลผลงานสะสมจาก เดือน ${srcMonth} (สัปดาห์ที่ ${srcWeekIndex}) มาเป็นยอดตั้งต้น "ถึงสัปดาห์ก่อน" ในสัปดาห์นี้ใช่หรือไม่?`)) {
+        return;
+      }
+
+      try {
+        const sourceData = JSON.parse(progRaw);
+        if (sourceData.tasks && Array.isArray(sourceData.tasks)) {
+          currentTasks = currentTasks.map((t, idx) => {
+            const st = sourceData.tasks[idx];
+            let sourceAccum = 0;
+            if (st) {
+              const p = parseFloat(st.prev) || 0;
+              const c = parseFloat(st.curr) || 0;
+              sourceAccum = p + c;
+            } else if (sourceData.tasks.length > idx) {
+              const p = parseFloat(sourceData.tasks[idx].prev) || 0;
+              const c = parseFloat(sourceData.tasks[idx].curr) || 0;
+              sourceAccum = p + c;
+            }
+
+            return {
+              name: t.name || (st ? st.name : ""),
+              cost: t.cost || (st ? st.cost : 0),
+              proportion: t.proportion || (st ? st.proportion : 0),
+              prev: sourceAccum > 0 ? sourceAccum.toFixed(2) : "",
+              curr: ""
+            };
+          });
+        }
+        renderTables();
+        closeManualImportModal();
+        alert(`ดึงข้อมูลผลงานสะสมจากเดือน ${srcMonth} (สัปดาห์ ${srcWeekIndex}) เรียบร้อยแล้วค่ะ!`);
+      } catch (err) {
+        console.error(err);
+        alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
+      }
     }
 
     function pullDataFromPreviousWeek() {
@@ -406,13 +528,9 @@
       
       const prevStorageKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex - 1}`;
       const prevRaw = localStorage.getItem(prevStorageKey);
-      if (!prevRaw) {
-        return alert(`ไม่พบข้อมูลบันทึกของสัปดาห์ก่อนหน้า กรุณาบันทึกข้อมูลก่อนหน้านี้ก่อนนะคะ`);
-      }
+      if (!prevRaw) return alert(`ไม่พบข้อมูลบันทึกของสัปดาห์ก่อนหน้า กรุณาบันทึกข้อมูลก่อนหน้านี้ก่อนนะคะ`);
 
-      if (!confirm(`ต้องการดึง "รายการงานทั้งหมด" และ "ผลงานสะสม" จากสัปดาห์ก่อนหน้ามาใช้งานในสัปดาห์ที่ ${actualContractWeek} หรือไม่?`)) {
-        return;
-      }
+      if (!confirm(`ต้องการดึง "รายการงานทั้งหมด" และ "ผลงานสะสม" จากสัปดาห์ก่อนหน้ามาใช้งานในสัปดาห์ที่ ${actualContractWeek} หรือไม่?`)) return;
 
       try {
         const prevData = JSON.parse(prevRaw);
@@ -421,7 +539,6 @@
             const pVal = parseFloat(pt.prev) || 0;
             const cVal = parseFloat(pt.curr) || 0;
             const accumPrev = pVal + cVal;
-
             return {
               name: pt.name || "",
               cost: pt.cost || 0,
@@ -439,9 +556,7 @@
     }
 
     function resetCurrentWeekForm() {
-      if (!confirm("ต้องการล้างข้อมูลตัวเลขช่อง 'ในสัปดาห์' ทั้งหมดของสัปดาห์นี้ใช่หรือไม่?")) {
-        return;
-      }
+      if (!confirm("ต้องการล้างข้อมูลตัวเลขช่อง 'ในสัปดาห์' ทั้งหมดของสัปดาห์นี้ใช่หรือไม่?")) return;
       currentTasks.forEach((t, i) => {
         t.curr = "";
         const currEl = document.getElementById(`in_curr_${i}`);
@@ -456,9 +571,7 @@
       const weekTbody = document.getElementById('input-week-tbody');
       const costTbody = document.getElementById('input-cost-tbody');
       
-      mainTbody.innerHTML = ''; 
-      weekTbody.innerHTML = ''; 
-      costTbody.innerHTML = '';
+      mainTbody.innerHTML = ''; weekTbody.innerHTML = ''; costTbody.innerHTML = '';
 
       currentTasks.forEach((t, i) => {
         mainTbody.innerHTML += `
@@ -639,18 +752,13 @@
     }
 
     function handleProblemCheck(type) {
-      if (type === 'none') {
-        document.getElementById('chk_has_problem').checked = false;
-      }
-      if (type === 'has') {
-        document.getElementById('chk_no_problem').checked = false;
-      }
+      if (type === 'none') document.getElementById('chk_has_problem').checked = false;
+      if (type === 'has') document.getElementById('chk_no_problem').checked = false;
     }
 
     function getFormData() {
       saveCurrentStateToMemory();
       const totalWeight = parseFloat(document.getElementById('sum-total-weight').textContent) || 0;
-      
       const prob1 = document.getElementById('prob_line_1') ? document.getElementById('prob_line_1').value : "";
       const prob2 = document.getElementById('prob_line_2') ? document.getElementById('prob_line_2').value : "";
       
@@ -668,10 +776,7 @@
     }
 
     async function saveProgressData() {
-      if (isDataInvalid) {
-        alert("⚠️ ไม่สามารถบันทึกข้อมูลได้ เนื่องจากมีรายการที่ผลงานสะสมเกิน 100% กรุณาตรวจสอบตัวเลขตามแถบเตือนสีแดงด้านบนก่อนนะคะ");
-        return;
-      }
+      if (isDataInvalid) return alert("⚠️ ไม่สามารถบันทึกข้อมูลได้ เนื่องจากมีรายการที่ผลงานสะสมเกิน 100% กรุณาตรวจสอบตัวเลขตามแถบเตือนสีแดงด้านบนก่อนนะคะ");
 
       const btn = document.getElementById('btn-save');
       btn.disabled = true;
@@ -690,9 +795,7 @@
         const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
         if (centralUrl) {
           await fetch(centralUrl, {
-            method: 'POST',
-            mode: 'cors',
-            redirect: 'follow',
+            method: 'POST', mode: 'cors', redirect: 'follow',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action: 'save_week_progress', ...payload })
           });
@@ -700,7 +803,7 @@
         alert(`บันทึกผลการดำเนินงานสัปดาห์ที่ ${actualContractWeek} (รอบเดือน: ${currentReportMonth}) เรียบร้อยแล้วค่ะ`);
       } catch (err) {
         console.error(err);
-        alert(`บันทึกข้อมูลลงเครื่องสำเร็จ (แยกตามรอบเดือนเรียบร้อย)`);
+        alert(`บันทึกข้อมูลลงเครื่องสำเร็จเรียบร้อย`);
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล`;
@@ -711,15 +814,12 @@
     window.addEventListener('DOMContentLoaded', async () => {
       loadProjectContractData();
       loadActualWeekData();
-      await pullProgressFromCloud();
 
       const cached = localStorage.getItem(STORAGE_KEY);
       if (cached) {
         try {
           const data = JSON.parse(cached);
-          if (data.tasks && data.tasks.length > 0) {
-            currentTasks = data.tasks;
-          }
+          if (data.tasks && data.tasks.length > 0) currentTasks = data.tasks;
           if (data.hasProblem !== undefined) {
             document.getElementById('chk_has_problem').checked = data.hasProblem;
             if (data.hasProblem) document.getElementById('chk_no_problem').checked = false;
@@ -728,9 +828,7 @@
             if(document.getElementById('prob_line_1')) document.getElementById('prob_line_1').value = data.problems[0] || '';
             if(document.getElementById('prob_line_2')) document.getElementById('prob_line_2').value = data.problems[1] || '';
           }
-        } catch (e) {
-          console.error("Error parsing cached data:", e);
-        }
+        } catch (e) {}
       } else {
         if (currentWeekIndex > 1) {
           const prevStorageKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex - 1}`;
