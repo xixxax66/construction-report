@@ -25,34 +25,6 @@
 </head>
 <body class="p-3 sm:p-6 min-h-screen">
 
-  <div id="folder_picker_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
-    <div class="bg-white rounded-2xl p-5 max-w-2xl w-full mx-4 shadow-2xl border border-slate-200 flex flex-col h-[80vh]">
-      <div class="flex items-center justify-between border-b pb-3 mb-3 shrink-0">
-        <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
-          <i data-lucide="hard-drive" class="w-6 h-6 text-blue-600"></i> เลือกพื้นที่จัดเก็บ Google Drive
-        </h3>
-        <button onclick="closeFolderPicker()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-6 h-6"></i></button>
-      </div>
-
-      <div class="flex items-center justify-between bg-slate-100 p-2.5 rounded-lg mb-3 shrink-0 border border-slate-200">
-        <div class="flex items-center gap-2 overflow-hidden">
-          <button onclick="navigateBack()" id="btn_picker_back" class="p-1.5 hover:bg-slate-200 rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition">
-            <i data-lucide="arrow-left" class="w-5 h-5 text-slate-700"></i>
-          </button>
-          <div class="flex items-center gap-2">
-            <i data-lucide="folder-open" class="w-5 h-5 text-amber-500 fill-amber-100"></i>
-            <span class="font-bold text-slate-800 truncate" id="current_folder_name">ไดรฟ์ของฉัน</span>
-          </div>
-        </div>
-        <button onclick="confirmFolderSelection()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md whitespace-nowrap cursor-pointer transition">
-          เลือกโฟลเดอร์นี้
-        </button>
-      </div>
-
-      <div id="folder_list_grid" class="flex-1 overflow-y-auto pr-2 space-y-1.5"></div>
-    </div>
-  </div>
-
   <div class="max-w-6xl mx-auto bg-slate-200/80 p-4 sm:p-6 rounded-xl shadow-lg border border-slate-300 space-y-4">
     
     <!-- แถบเลือกโครงการ (Project Selector) -->
@@ -176,21 +148,6 @@
                 <td class="th-green whitespace-nowrap font-medium">ที่อยู่ของผู้รับจ้าง</td>
                 <td colspan="5" class="p-1 bg-white"><input type="text" id="contractorAddress" class="cell-input" value="31/1 หมู่ 5 ตำบลกุดแข้ อำเภอเมืองมุกดาหาร จังหวัดมุกดาหาร"></td>
               </tr>
-              
-              <tr>
-                <td class="th-green whitespace-nowrap font-medium">พื้นที่จัดเก็บ Drive</td>
-                <td colspan="5" class="p-1 bg-blue-50">
-                  <div class="flex items-center gap-2 px-1">
-                    <div class="flex-1 overflow-hidden relative">
-                      <input type="text" id="driveFolderId" class="cell-input font-bold text-slate-600 bg-transparent w-full text-xs" placeholder="[ค่าเริ่มต้น] จัดเก็บในไดรฟ์หลัก (Root)">
-                      <div id="lbl_selected_folder" class="absolute inset-0 bg-transparent flex items-center text-blue-700 font-bold px-2 pointer-events-none"></div>
-                    </div>
-                    <button type="button" onclick="openFolderPicker('root')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded shadow text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0">
-                      <i data-lucide="folder-search" class="w-4 h-4"></i> ค้นหาใน Drive
-                    </button>
-                  </div>
-                </td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -276,90 +233,6 @@
     
     const thaiMonthsArr = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
     const PROJECT_LIST_KEY = 'CONSTRUCTION_ALL_PROJECTS_LIST';
-
-    let folderHistory = [];
-    let currentPickerFolderId = "root";
-    let currentPickerFolderName = "ไดรฟ์ของฉัน";
-
-    async function openFolderPicker(folderId = "root") {
-      const modal = document.getElementById('folder_picker_modal');
-      const grid = document.getElementById('folder_list_grid');
-      const btnBack = document.getElementById('btn_picker_back');
-      const folderNameEl = document.getElementById('current_folder_name');
-
-      modal.classList.remove('hidden');
-      grid.innerHTML = '<div class="flex flex-col items-center justify-center py-10 w-full text-slate-500"><i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-3 text-blue-500"></i><p>กำลังค้นหาโฟลเดอร์...</p></div>';
-      lucide.createIcons();
-
-      btnBack.disabled = folderHistory.length === 0;
-
-      try {
-        const response = await fetch(`${currentGasUrl}?action=get_drive_folders&parentId=${folderId}`);
-        const result = await response.json();
-
-        if (result.status === 'success') {
-          currentPickerFolderId = result.parentId;
-          currentPickerFolderName = result.parentName;
-          folderNameEl.textContent = currentPickerFolderName;
-
-          grid.innerHTML = '';
-          if (result.folders && result.folders.length > 0) {
-            result.folders.forEach(f => {
-              grid.innerHTML += `
-                <div class="flex items-center justify-between p-3 border border-slate-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer group transition-colors rounded-lg bg-white shadow-sm" onclick="navigateToFolder('${f.id}', '${f.name}')">
-                  <div class="flex items-center gap-3 overflow-hidden">
-                    <i data-lucide="folder" class="w-6 h-6 text-amber-500 fill-amber-200 shrink-0"></i>
-                    <span class="text-slate-700 font-medium truncate">${f.name}</span>
-                  </div>
-                  <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-blue-500 shrink-0"></i>
-                </div>
-              `;
-            });
-            lucide.createIcons();
-          } else {
-            grid.innerHTML = '<div class="flex flex-col items-center justify-center py-10 w-full text-slate-400"><i data-lucide="folder-open" class="w-12 h-12 mb-2"></i><p>โฟลเดอร์ว่างเปล่า</p></div>';
-            lucide.createIcons();
-          }
-        } else {
-          grid.innerHTML = `<div class="text-center text-rose-500 py-6">ข้อผิดพลาด: ${result.message}</div>`;
-        }
-      } catch (err) {
-        grid.innerHTML = '<div class="text-center text-rose-500 py-6">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (โปรดตรวจสอบ URL)</div>';
-      }
-    }
-
-    function navigateToFolder(id, name) {
-      folderHistory.push({ id: currentPickerFolderId, name: currentPickerFolderName });
-      openFolderPicker(id);
-    }
-
-    function navigateBack() {
-      if (folderHistory.length > 0) {
-        const prev = folderHistory.pop();
-        openFolderPicker(prev.id);
-      }
-    }
-
-    function confirmFolderSelection() {
-      const inputEl = document.getElementById('driveFolderId');
-      const labelEl = document.getElementById('lbl_selected_folder');
-      
-      if (currentPickerFolderId === 'root') {
-        inputEl.value = '';
-        labelEl.textContent = '';
-      } else {
-        inputEl.value = currentPickerFolderId;
-        labelEl.textContent = `📁 ${currentPickerFolderName}`;
-      }
-      
-      alert(`เลือกบันทึกที่โฟลเดอร์: ${currentPickerFolderName} เรียบร้อยแล้ว`);
-      closeFolderPicker();
-    }
-
-    function closeFolderPicker() {
-      document.getElementById('folder_picker_modal').classList.add('hidden');
-      folderHistory = [];
-    }
 
     function formatCurrencyInput(el) {
       let val = el.value.replace(/,/g, '');
@@ -496,7 +369,6 @@
         designerName: document.getElementById('designerName').value,
         contractorName: document.getElementById('contractorName').value,
         contractorAddress: document.getElementById('contractorAddress').value,
-        driveFolderId: document.getElementById('driveFolderId').value,
         committeeCount: commCount, committees: committees,
         inspectorCount: inspCount, inspectors: inspectors,
         orderNo: document.getElementById('orderNo').value,
@@ -514,15 +386,10 @@
         if (key === 'committeeCount') { document.getElementById('committeeCount').value = value; renderCommitteeFields(data.committees); }
         else if (key === 'inspectorCount') { document.getElementById('inspectorCount').value = value; renderInspectorFields(data.inspectors); }
         else if (key === 'installments' && Array.isArray(value)) renderInstallmentTable(value);
-        else if (key === 'driveFolderId') {
-            document.getElementById('driveFolderId').value = value;
-            if(value) document.getElementById('lbl_selected_folder').textContent = `📁 เลือกลงโฟลเดอร์แล้ว`;
-        }
         else { const el = document.getElementById(key); if (el) el.value = value; }
       }
     }
 
-    // --- ระบบจัดการเลือกโครงการ (Project Selector) ---
     function loadProjectListDropdown(selectedId = '') {
       const select = document.getElementById('project_selector');
       if (!select) return;
@@ -650,11 +517,9 @@
       const btn = document.getElementById('btn-load');
       btn.disabled = true; btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังโหลด...`;
       lucide.createIcons();
-      
-      const folderId = document.getElementById('driveFolderId').value || "";
 
       try {
-        const response = await fetch(`${currentGasUrl}?action=get_basic_info&folderId=${folderId}`);
+        const response = await fetch(`${currentGasUrl}?action=get_basic_info`);
         const res = await response.json();
         if (res && res.data && Object.keys(res.data).length > 0) { 
           setFormData(res.data); 
