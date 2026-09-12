@@ -483,10 +483,9 @@
       }
     }
 
-        // 1. สำรองข้อมูลขึ้น Cloud (Push)
+        // 1. สำรองข้อมูลขึ้น Cloud (Push) - อัปเดตแก้บล็อก CORS และแสดง Error ละเอียด
     async function saveProjectToCloudAndLocal() {
       const btn = document.getElementById('btn-cloud-backup');
-      // เปลี่ยนจาก 'root' เป็น Folder ID ของคุณอรรถวัต
       const folderId = document.getElementById('driveFolderId').value || localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || '11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd';
       const fileNameInput = document.getElementById('backupFileName').value.trim();
       const fileDesc = document.getElementById('backupFileDesc').value.trim();
@@ -512,6 +511,8 @@
       try {
         const response = await fetch(getActiveUrl(), {
           method: 'POST',
+          mode: 'cors',
+          redirect: 'follow',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
@@ -524,11 +525,11 @@
           updateProjectUI();
           alert('สำรองข้อมูลขึ้น Google Drive เรียบร้อยแล้วค่ะ!');
         } else {
-          throw new Error(result.message || 'เกิดข้อผิดพลาด');
+          throw new Error(result.message || 'เซิร์ฟเวอร์ปฏิเสธการบันทึก');
         }
       } catch (err) {
         addLogRecord(finalFileName, fileDesc, { localOnly: true });
-        alert('บันทึกสำรองข้อมูลลงในเครื่อง (Local Storage) เรียบร้อยแล้วค่ะ (อาจจะไม่ได้เชื่อมต่ออินเทอร์เน็ต)');
+        alert(`ไม่สามารถเชื่อมต่อ Cloud ได้ค่ะ สาเหตุ:\n${err.message}\n\n(ระบบได้บันทึกข้อมูลสำรองลงในเครื่องแทนชั่วคราวแล้ว)`);
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> สำรองขึ้น Cloud (พร้อมเก็บประวัติ)`;
