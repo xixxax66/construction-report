@@ -384,9 +384,13 @@
       }
     }
 
+   // 🔍 โหลดเฉพาะประวัติ Log ส่วนกลางจากโฟลเดอร์ปัจจุบันมาแสดงผลให้ตรงกันทุกเครื่อง
     async function loadLogsOnly() {
       try {
-        const logResult = await requestJSONP('get_backup_logs', { folderId: DEFAULT_FOLDER_ID });
+        const driveFolderInput = document.getElementById('driveFolderId');
+        const folderId = (driveFolderInput ? driveFolderInput.value : '') || localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || DEFAULT_FOLDER_ID;
+        
+        const logResult = await requestJSONP('get_backup_logs', { folderId: folderId });
         if (logResult && logResult.status === 'success' && logResult.data) {
           localStorage.setItem(LOG_KEY, JSON.stringify(logResult.data));
           renderLogs();
