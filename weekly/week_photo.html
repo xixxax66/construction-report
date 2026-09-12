@@ -92,10 +92,9 @@
   </style>
 </head>
 <body class="p-2 sm:p-6 min-h-screen flex justify-center">
-  <!-- Input สำหรับอัปโหลดรูปต้นฉบับเข้าคลัง Drive หลายรูปพร้อมกัน -->
   <input type="file" id="global_batch_upload_input" accept="image/*" multiple class="hidden" onchange="handleBatchUploadToDrive(event)">
 
-  <!-- Modal เลือกรูปจากคลังใน Drive มาใส่กรอบรายงาน -->
+  <!-- Modal เลือกรูปจากคลังใน Drive -->
   <div id="drive_picker_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
     <div class="bg-white rounded-2xl p-5 max-w-2xl w-full mx-4 shadow-2xl border border-slate-200 space-y-4">
       <div class="flex items-center justify-between border-b pb-2">
@@ -155,7 +154,7 @@
     </div>
   </div>
 
-  <!-- Modal กำลังประมวลผล / อัปโหลด -->
+  <!-- Modal สถานะการทำงาน -->
   <div id="upload_modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
     <div class="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl text-center space-y-4">
       <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto animate-pulse"><i data-lucide="cloud-upload" class="w-8 h-8"></i></div>
@@ -165,11 +164,8 @@
   </div>
 
   <div class="max-w-7xl w-full grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-    
-    <!-- ฝั่งซ้าย: หน้ากระดาษ A4 -->
     <div class="xl:col-span-8 flex flex-col items-center overflow-x-auto w-full gap-6" id="pages_container"></div>
 
-    <!-- ฝั่งขวา: แผงควบคุม -->
     <div class="xl:col-span-4 space-y-4 no-print sticky top-6">
       <div class="grid grid-cols-2 gap-3">
         <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3 px-3 font-bold text-sm shadow flex items-center justify-center gap-1.5 cursor-pointer">
@@ -180,18 +176,17 @@
         </a>
       </div>
 
-      <!-- แผงจัดการคลังรูปภาพและช่องรายงาน -->
       <div class="bg-white rounded-xl border border-slate-300 p-4 shadow space-y-3">
         <h4 class="font-bold text-sm text-slate-800 border-b pb-2 flex items-center gap-2">
           <i data-lucide="image" class="w-4 h-4 text-indigo-600"></i> จัดการคลังรูปภาพและรายงาน
         </h4>
         
         <button onclick="document.getElementById('global_batch_upload_input').click()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm shadow flex items-center justify-center gap-1.5 cursor-pointer">
-          <i data-lucide="upload-cloud" class="w-4 h-4"></i> 📤 อัปโหลดรูปต้นฉบับเข้า Drive (คลังกลาง)
+          <i data-lucide="upload-cloud" class="w-4 h-4"></i> 📤 อัปโหลดรูปต้นฉบับเข้า Drive
         </button>
 
         <div class="flex items-center justify-between pt-2 border-t">
-          <span class="text-xs text-slate-500 font-medium">ช่องรูปในหน้านี้: <span id="txt_photo_count" class="font-bold text-blue-600">2</span> รูป (<span id="txt_page_count">1</span> หน้า)</span>
+          <span class="text-xs text-slate-500 font-medium">ช่องรูป: <span id="txt_photo_count" class="font-bold text-blue-600">2</span> รูป (<span id="txt_page_count">1</span> หน้า)</span>
           <button onclick="addPhotoSlot()" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1">
              <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มช่องรูป
           </button>
@@ -221,29 +216,11 @@
     let weekSeq = currentWeekIndex;
     let weekNum = currentWeekIndex;
     let weekYear = "2569";
-    let commsList = [
-      "นางสาวถนอมนวล วะทวีก้านตรงฯ",
-      "จ่าเอกธีรพงษ์ ดรชานนท์",
-      "นางสาวปนัดดา ภูอาษา",
-      "นายวีระศักดิ์ ทับวิชร",
-      "นายอรรถวัต อดทน"
-    ];
+    let commsList = ["นางสาวถนอมนวล วะทวีก้านตรงฯ", "จ่าเอกธีรพงษ์ ดรชานนท์", "นางสาวปนัดดา ภูอาษา", "นายวีระศักดิ์ ทับวิชร", "นายอรรถวัต อดทน"];
 
-    let photosList = [
-      { src: "", desc: "" },
-      { src: "", desc: "" }
-    ];
-    
+    let photosList = [{ src: "", desc: "" }, { src: "", desc: "" }];
     let currentEditingIdx = 0;
-    
-    let cropState = {
-      isDragging: false,
-      startX: 0, startY: 0,
-      translateX: 0, translateY: 0,
-      scale: 1,
-      rotation: 0,
-      imgWidth: 0, imgHeight: 0
-    };
+    let cropState = { isDragging: false, startX: 0, startY: 0, translateX: 0, translateY: 0, scale: 1, rotation: 0, imgWidth: 0, imgHeight: 0 };
 
     function toThaiNumber(numStr) {
       if (numStr === null || numStr === undefined) return '';
@@ -253,54 +230,34 @@
 
     function thaiDateText(dateStr) {
       if (!dateStr) return '';
-      const thaiMonths = {
-        "January": "มกราคม", "February": "กุมภาพันธ์", "March": "มีนาคม", "April": "เมษายน",
-        "May": "พฤษภาคม", "June": "มิถุนายน", "July": "กรกฎาคม", "August": "สิงหาคม",
-        "September": "กันยายน", "October": "ตุลาคม", "November": "พฤศจิกายน", "December": "ธันวาคม",
-        "มกราคม": "มกราคม", "กุมภาพันธ์": "กุมภาพันธ์", "มีนาคม": "มีนาคม", "เมษายน": "เมษายน",
-        "พฤษภาคม": "พฤษภาคม", "มิถุนายน": "มิถุนายน", "กรกฎาคม": "กรกฎาคม", "สิงหาคม": "สิงหาคม",
-        "กันยายน": "กันยายน", "ตุลาคม": "ตุลาคม", "พฤศจิกายน": "พฤศจิกายน", "ธันวาคม": "ธันวาคม"
-      };
-      
+      const thaiMonths = { "January": "มกราคม", "February": "กุมภาพันธ์", "March": "มีนาคม", "April": "เมษายน", "May": "พฤษภาคม", "June": "มิถุนายน", "July": "กรกฎาคม", "August": "สิงหาคม", "September": "กันยายน", "October": "ตุลาคม", "November": "พฤศจิกายน", "December": "ธันวาคม", "มกราคม": "มกราคม", "กุมภาพันธ์": "กุมภาพันธ์", "มีนาคม": "มีนาคม", "เมษายน": "เมษายน", "พฤษภาคม": "พฤษภาคม", "มิถุนายน": "มิถุนายน", "กรกฎาคม": "กรกฎาคม", "สิงหาคม": "สิงหาคม", "กันยายน": "กันยายน", "ตุลาคม": "ตุลาคม", "พฤศจิกายน": "พฤศจิกายน", "ธันวาคม": "ธันวาคม" };
       let cleanStr = dateStr.toString().trim();
       for (const [enM, thM] of Object.entries(thaiMonths)) {
-        if (cleanStr.toLowerCase().includes(enM.toLowerCase())) {
-          cleanStr = cleanStr.replace(new RegExp(enM, 'gi'), thM);
-        }
+        if (cleanStr.toLowerCase().includes(enM.toLowerCase())) cleanStr = cleanStr.replace(new RegExp(enM, 'gi'), thM);
       }
       return toThaiNumber(cleanStr);
     }
 
     function chunkArray(array, size) {
       const chunked = [];
-      for (let i = 0; i < array.length; i += size) {
-        chunked.push(array.slice(i, i + size));
-      }
+      for (let i = 0; i < array.length; i += size) chunked.push(array.slice(i, i + size));
       return chunked;
     }
 
     function renderAllPages() {
       const container = document.getElementById('pages_container');
       container.innerHTML = '';
-      
       document.getElementById('txt_photo_count').textContent = photosList.length;
 
       const chunks = chunkArray(photosList, 4);
       if (chunks.length === 0) chunks.push([]);
-      
       document.getElementById('txt_page_count').textContent = chunks.length;
 
       let commHtml = '';
       commsList.forEach((name, idx) => {
         if (!name) return;
         const isPresident = (idx === 0);
-        commHtml += `
-          <div class="${isPresident ? 'col-span-2 flex justify-center' : ''}">
-            <div>
-              <p>(ลงชื่อ).................................................... ${isPresident ? 'ประธานกรรมการฯ' : 'กรรมการฯ'}</p>
-              <p class="mt-0.5">(${name})</p>
-            </div>
-          </div>`;
+        commHtml += `<div class="${isPresident ? 'col-span-2 flex justify-center' : ''}"><div><p>(ลงชื่อ).................................................... ${isPresident ? 'ประธานกรรมการฯ' : 'กรรมการฯ'}</p><p class="mt-0.5">(${name})</p></div></div>`;
       });
 
       chunks.forEach((chunk, pageIndex) => {
@@ -329,32 +286,26 @@
             </div>`;
         });
 
-        const pageHtml = `
+        container.innerHTML += `
           <div class="sheet-doc">
             <div>
               <div class="text-center mb-1">
                 <h2 class="doc-title">ภาพถ่ายสภาพการปฏิบัติงาน</h2>
                 <p class="font-bold text-slate-800 text-[16pt] leading-tight">${toThaiNumber(projectTitle)}</p>
-                <p class="text-[15pt]">รายงานครั้งที่ <span class="font-bold">${toThaiNumber(weekSeq)}</span> สัปดาห์ที่ <span class="font-bold">${toThaiNumber(weekNum)}/${toThaiNumber(weekYear)}</span> (ระหว่างวันที่ <span>${thaiDateText(startDate)}</span> ถึงวันที่ <span>${thaiDateText(endDate)}</span>)</p>
-                ${chunks.length > 1 ? `<p class="text-[12pt] text-slate-500 mt-1">แผ่นที่ ${toThaiNumber(pageIndex + 1)} / ${toThaiNumber(chunks.length)}</p>` : ''}
+                <p class="text-[15pt]">รายงานครั้งที่ <span class="font-bold">${toThaiNumber(weekSeq)}</span> สัปดาห์ที่ <span class="font-bold">${toThaiNumber(weekNum)}/${toThaiNumber(weekYear)}</span></p>
               </div>
               <div class="${gridClass}">${gridHtml}</div>
             </div>
             <div>
               <div class="mt-2 flex justify-end pr-8 text-center">
-                <div class="space-y-0.5">
-                  <p>(ลงชื่อ)........................................................... <span>${inspPos}</span></p>
-                  <p>(<span>${inspName}</span>)</p>
-                </div>
+                <div class="space-y-0.5"><p>(ลงชื่อ)........................................................... <span>${inspPos}</span></p><p>(<span>${inspName}</span>)</p></div>
               </div>
               <div class="mt-2 pt-1 border-t border-slate-300">
                 <p class="text-[15pt] font-semibold mb-0.5">- ทราบ / ผลการตรวจสภาพงาน</p>
-                <p class="text-[11pt] text-slate-400 mb-1">.........................................................................................................................................................................</p>
                 <div class="grid grid-cols-2 gap-y-2 gap-x-6 text-center">${commHtml}</div>
               </div>
             </div>
           </div>`;
-        container.innerHTML += pageHtml;
       });
       lucide.createIcons();
     }
@@ -367,18 +318,9 @@
     }
 
     function savePhotosToLocalSafe() {
-      try {
-        localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ 
-          weekIndex: currentWeekIndex, 
-          reportMonth: currentReportMonth, 
-          photos: photosList 
-        }));
-      } catch (err) {
-        console.warn("Storage warning:", err);
-      }
+      try { localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList })); } catch (err) {}
     }
 
-    // 📤 ขั้นตอนที่ 1: อัปโหลดรูปต้นฉบับขนาดเต็มเข้า Drive ทันที
     async function handleBatchUploadToDrive(e) {
       const files = e.target.files;
       if (!files || files.length === 0) return;
@@ -395,10 +337,10 @@
       }
 
       document.getElementById('upload_modal_title').textContent = "กำลังอัปโหลดรูปต้นฉบับเข้า Drive...";
-      document.getElementById('upload_modal_desc').textContent = `กำลังอัปโหลดจำนวน ${files.length} รูป...`;
+      document.getElementById('upload_modal_desc').textContent = `กำลังอัปโหลด ${files.length} รูป...`;
       document.getElementById('upload_modal').classList.remove('hidden');
 
-      let uploadedCount = 0;
+      let count = 0;
       for (let i = 0; i < files.length; i++) {
         const file = files.item(i);
         await new Promise((resolve) => {
@@ -406,23 +348,13 @@
           reader.onload = async function(evt) {
             try {
               const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
-              const payload = {
-                action: 'upload_original_photo',
-                contractNo: contractNo,
-                folderId: imageFolderId,
-                fileName: `Orig_${Date.now()}_${file.name}`,
-                imageB64: evt.target.result
-              };
-              const res = await fetch(centralUrl, {
-                method: 'POST',
-                mode: 'cors',
-                redirect: 'follow',
+              await fetch(centralUrl, {
+                method: 'POST', mode: 'cors', redirect: 'follow',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ action: 'upload_original_photo', contractNo: contractNo, folderId: imageFolderId, fileName: `Orig_${Date.now()}_${file.name}`, imageB64: evt.target.result })
               });
-              await res.json();
-              uploadedCount++;
-            } catch(err) { console.error(err); }
+              count++;
+            } catch(err) {}
             resolve();
           };
           reader.readAsDataURL(file);
@@ -431,16 +363,15 @@
 
       document.getElementById('upload_modal').classList.add('hidden');
       e.target.value = '';
-      alert(`อัปโหลดรูปต้นฉบับเข้าคลังใน Google Drive สำเร็จ ${uploadedCount} รูปแล้วค่ะ!`);
+      alert(`อัปโหลดรูปต้นฉบับสำเร็จ ${count} รูปแล้วค่ะ!`);
     }
 
-    // 📂 ขั้นตอนที่ 2: เปิดหน้าต่างเลือกรูปจากคลังใน Drive มาใส่ช่องรายงาน
     async function openDrivePicker(idx) {
       currentEditingIdx = idx;
       const modal = document.getElementById('drive_picker_modal');
       const grid = document.getElementById('drive_photo_grid');
       modal.classList.remove('hidden');
-      grid.innerHTML = '<p class="col-span-3 text-center text-slate-500 py-6">กำลังดึงรูปภาพจากคลังใน Google Drive...</p>';
+      grid.innerHTML = '<p class="col-span-3 text-center text-slate-500 py-6">กำลังโหลดคลังรูปภาพ...</p>';
 
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       let imageFolderId = "11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd";
@@ -461,38 +392,34 @@
         if (result.status === 'success' && result.photos && result.photos.length > 0) {
           grid.innerHTML = '';
           result.photos.forEach(p => {
+            const previewUrl = p.thumbnailUrl || p.url;
             grid.innerHTML += `
               <div class="border rounded-xl p-2 cursor-pointer hover:border-blue-500 hover:shadow-md bg-white flex flex-col items-center transition" onclick="selectDrivePhotoForCrop('${p.url}')">
                 <div class="w-full aspect-4/3 bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center">
-                  <img src="${p.url}" class="w-full h-full object-cover" crossorigin="anonymous">
+                  <img src="${previewUrl}" class="w-full h-full object-cover" crossorigin="anonymous">
                 </div>
                 <span class="text-[11px] text-slate-700 font-medium truncate w-full text-center mt-1.5">${p.name}</span>
               </div>`;
           });
         } else {
-          grid.innerHTML = '<p class="col-span-3 text-center text-slate-500 py-6">ยังไม่พบรูปภาพในคลัง Drive ของสัญญานี้<br><span class="text-xs text-indigo-600">กรุณากดปุ่ม "อัปโหลดรูปต้นฉบับเข้า Drive" ด้านขวาก่อนค่ะ</span></p>';
+          grid.innerHTML = '<p class="col-span-3 text-center text-slate-500 py-6">ไม่พบรูปในคลัง Drive ของสัญญานี้<br><span class="text-xs text-indigo-600">กรุณากดอัปโหลดรูปต้นฉบับก่อนค่ะ</span></p>';
         }
       } catch (err) {
-        grid.innerHTML = '<p class="col-span-3 text-center text-rose-500 py-6">ไม่สามารถโหลดรูปจาก Google Drive ได้</p>';
+        grid.innerHTML = '<p class="col-span-3 text-center text-rose-500 py-6">ไม่สามารถโหลดรูปได้</p>';
       }
     }
 
-    function closeDrivePicker() {
-      document.getElementById('drive_picker_modal').classList.add('hidden');
-    }
+    function closeDrivePicker() { document.getElementById('drive_picker_modal').classList.add('hidden'); }
 
-    // ✂️ ขั้นตอนที่ 3: เลือกรูปจากคลังแล้วเปิด Cropper ตัดสัดส่วน 4:3
     function selectDrivePhotoForCrop(url) {
       closeDrivePicker();
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = function() {
         const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
+        canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
         canvas.getContext('2d').drawImage(img, 0, 0);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        loadEditorWithImage(dataUrl);
+        loadEditorWithImage(canvas.toDataURL('image/jpeg', 0.9));
       };
       img.src = url;
     }
@@ -500,107 +427,41 @@
     function loadEditorWithImage(sourceImage) {
       const modal = document.getElementById('image_editor_modal');
       const cropperImg = document.getElementById('cropper_image');
-
       cropperImg.src = sourceImage;
       cropperImg.onload = function() {
-        cropState.imgWidth = cropperImg.naturalWidth;
-        cropState.imgHeight = cropperImg.naturalHeight;
-        cropState.scale = 1;
-        cropState.translateX = 0;
-        cropState.translateY = 0;
-        cropState.rotation = 0;
-
-        document.getElementById('zoom_slider').value = 1;
-        document.getElementById('zoom_val').textContent = '100%';
+        cropState.imgWidth = cropperImg.naturalWidth; cropState.imgHeight = cropperImg.naturalHeight;
+        cropState.scale = 1; cropState.translateX = 0; cropState.translateY = 0; cropState.rotation = 0;
+        document.getElementById('zoom_slider').value = 1; document.getElementById('zoom_val').textContent = '100%';
         updateCropperTransform();
         modal.classList.remove('hidden');
       };
     }
 
-    function closeImageEditor() {
-      document.getElementById('image_editor_modal').classList.add('hidden');
-    }
+    function closeImageEditor() { document.getElementById('image_editor_modal').classList.add('hidden'); }
 
-    function startCropDrag(e) {
-      cropState.isDragging = true;
-      cropState.startX = e.clientX - cropState.translateX;
-      cropState.startY = e.clientY - cropState.translateY;
-    }
-    function onCropMove(e) {
-      if (!cropState.isDragging) return;
-      cropState.translateX = e.clientX - cropState.startX;
-      cropState.translateY = e.clientY - cropState.startY;
-      updateCropperTransform();
-    }
+    function startCropDrag(e) { cropState.isDragging = true; cropState.startX = e.clientX - cropState.translateX; cropState.startY = e.clientY - cropState.translateY; }
+    function onCropMove(e) { if (!cropState.isDragging) return; cropState.translateX = e.clientX - cropState.startX; cropState.translateY = e.clientY - cropState.startY; updateCropperTransform(); }
     function endCropDrag() { cropState.isDragging = false; }
-
-    function startCropTouch(e) {
-      if (e.touches.length === 1) {
-        cropState.isDragging = true;
-        cropState.startX = e.touches[0].clientX - cropState.translateX;
-        cropState.startY = e.touches[0].clientY - cropState.translateY;
-      }
-    }
-    function onCropTouchMove(e) {
-      if (!cropState.isDragging || e.touches.length !== 1) return;
-      cropState.translateX = e.touches[0].clientX - cropState.startX;
-      cropState.translateY = e.touches[0].clientY - cropState.startY;
-      updateCropperTransform();
-    }
-
-    function onZoomChange(val) {
-      cropState.scale = parseFloat(val);
-      document.getElementById('zoom_val').textContent = Math.round(cropState.scale * 100) + '%';
-      updateCropperTransform();
-    }
-
-    function rotateCropImage(deg) {
-      cropState.rotation = (cropState.rotation + deg) % 360;
-      updateCropperTransform();
-    }
-
-    function resetCropTransform() {
-      cropState.scale = 1;
-      cropState.translateX = 0;
-      cropState.translateY = 0;
-      cropState.rotation = 0;
-      document.getElementById('zoom_slider').value = 1;
-      document.getElementById('zoom_val').textContent = '100%';
-      updateCropperTransform();
-    }
-
-    function updateCropperTransform() {
-      const img = document.getElementById('cropper_image');
-      if (img) {
-        img.style.transform = `translate(calc(-50% + ${cropState.translateX}px), calc(-50% + ${cropState.translateY}px)) scale(${cropState.scale}) rotate(${cropState.rotation}deg)`;
-        img.style.top = '50%';
-        img.style.left = '50%';
-      }
-    }
+    function startCropTouch(e) { if (e.touches.length === 1) { cropState.isDragging = true; cropState.startX = e.touches[0].clientX - cropState.translateX; cropState.startY = e.touches[0].clientY - cropState.translateY; } }
+    function onCropTouchMove(e) { if (!cropState.isDragging || e.touches.length !== 1) return; cropState.translateX = e.touches[0].clientX - cropState.startX; cropState.translateY = e.touches[0].clientY - cropState.startY; updateCropperTransform(); }
+    function onZoomChange(val) { cropState.scale = parseFloat(val); document.getElementById('zoom_val').textContent = Math.round(cropState.scale * 100) + '%'; updateCropperTransform(); }
+    function rotateCropImage(deg) { cropState.rotation = (cropState.rotation + deg) % 360; updateCropperTransform(); }
+    function resetCropTransform() { cropState.scale = 1; cropState.translateX = 0; cropState.translateY = 0; cropState.rotation = 0; document.getElementById('zoom_slider').value = 1; document.getElementById('zoom_val').textContent = '100%'; updateCropperTransform(); }
+    function updateCropperTransform() { const img = document.getElementById('cropper_image'); if (img) { img.style.transform = `translate(calc(-50% + ${cropState.translateX}px), calc(-50% + ${cropState.translateY}px)) scale(${cropState.scale}) rotate(${cropState.rotation}deg)`; img.style.top = '50%'; img.style.left = '50%'; } }
 
     function confirmCroppedImage() {
       const item = photosList[currentEditingIdx];
       const img = document.getElementById('cropper_image');
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      canvas.width = 800;
-      canvas.height = 600;
-
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+      canvas.width = 800; canvas.height = 600;
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.save();
       ctx.translate(canvas.width / 2 + cropState.translateX, canvas.height / 2 + cropState.translateY);
       ctx.rotate((cropState.rotation * Math.PI) / 180);
       ctx.scale(cropState.scale, cropState.scale);
-
-      const hRatio = canvas.width / img.naturalWidth;
-      const vRatio = canvas.height / img.naturalHeight;
-      const ratio = Math.max(hRatio, vRatio);
-      
-      const w = img.naturalWidth * ratio;
-      const h = img.naturalHeight * ratio;
-      ctx.drawImage(img, -w / 2, -h / 2, w, h);
+      const ratio = Math.max(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight);
+      ctx.drawImage(img, -img.naturalWidth * ratio / 2, -img.naturalHeight * ratio / 2, img.naturalWidth * ratio, img.naturalHeight * ratio);
       ctx.restore();
 
       item.src = canvas.toDataURL('image/jpeg', 0.85);
@@ -609,23 +470,9 @@
       savePhotosToLocalSafe();
     }
 
-    function addPhotoSlot() {
-      photosList.push({ src: "", desc: "" });
-      renderAllPages();
-      savePhotosToLocalSafe();
-    }
-
-    function removePhotoSlot(idx) {
-      if (photosList.length <= 1) return alert("ต้องมีช่องรูปภาพอย่างน้อย 1 ช่องค่ะ");
-      photosList.splice(idx, 1);
-      renderAllPages();
-      savePhotosToLocalSafe();
-    }
-
-    function saveReportMetadataOnly() {
-      savePhotosToLocalSafe();
-      alert("บันทึกข้อมูลรายงานหน้านี้ในเครื่องเรียบร้อยแล้วค่ะ!");
-    }
+    function addPhotoSlot() { photosList.push({ src: "", desc: "" }); renderAllPages(); savePhotosToLocalSafe(); }
+    function removePhotoSlot(idx) { if (photosList.length <= 1) return alert("ต้องมีช่องรูปอย่างน้อย 1 ช่องค่ะ"); photosList.splice(idx, 1); renderAllPages(); savePhotosToLocalSafe(); }
+    function saveReportMetadataOnly() { savePhotosToLocalSafe(); alert("บันทึกข้อมูลรายงานเรียบร้อยแล้วค่ะ!"); }
 
     function loadProjectAndPhotoData() {
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
@@ -638,40 +485,12 @@
             PHOTO_STORAGE_KEY = `WEEK_PHOTO_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
           }
           if (projectData.projectName) projectTitle = projectData.projectName;
-          if (projectData.inspectors && projectData.inspectors[0] && projectData.inspectors[0].name) {
-            inspName = projectData.inspectors[0].name;
-            inspPos = projectData.inspectors[0].pos;
-          }
-          if (projectData.committees && projectData.committees.length > 0) {
-            commsList = projectData.committees;
-          }
+          if (projectData.inspectors && projectData.inspectors[0] && projectData.inspectors[0].name) { inspName = projectData.inspectors[0].name; inspPos = projectData.inspectors[0].pos; }
+          if (projectData.committees && projectData.committees.length > 0) commsList = projectData.committees;
         } catch(e){}
       }
-
-      const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`) || 
-                           localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || 
-                           localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
-      if (weeklyRefRaw) {
-        try {
-          const weeks = JSON.parse(weeklyRefRaw);
-          const curWeek = weeks.find(w => parseInt(w.weekIndex) === currentWeekIndex);
-          if (curWeek) {
-            startDate = curWeek.startDate || '-';
-            endDate = curWeek.endDate || '-';
-            weekSeq = curWeek.seq || currentWeekIndex;
-            weekNum = curWeek.week || currentWeekIndex;
-            weekYear = curWeek.year || "2569";
-          }
-        } catch(e){}
-      }
-
       const cached = localStorage.getItem(PHOTO_STORAGE_KEY) || localStorage.getItem(`WEEK_PHOTO_DATA_${currentWeekIndex}`);
-      if (cached) {
-        try {
-          const data = JSON.parse(cached);
-          if (data.photos) photosList = data.photos;
-        } catch(e) {}
-      }
+      if (cached) { try { const data = JSON.parse(cached); if (data.photos) photosList = data.photos; } catch(e) {} }
       renderAllPages();
     }
 
