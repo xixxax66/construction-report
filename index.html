@@ -507,42 +507,46 @@
       }
     }
 
-    // 2. ระบบดึงข้อมูลจาก Cloud สำหรับ iPad (แก้ไขบัคการตัดคำ JSON)
-    // ระบบดึงข้อมูลจาก Cloud ทะลุบล็อก CORS ด้วยเทคนิค JSONP
+    // 2.ระบบดึงข้อมูลจาก Cloud สำหรับ iPad (ตรวจสอบ URL และข้อผิดพลาดอัตโนมัติ)
     function forcePullForIpad() {
-      const url = getActiveUrl();
+      // 1. ดึง URL และทำความสะอาด (ตัดพารามิเตอร์ที่อาจก๊อปปี้มาติดออกให้หมด)
+      let url = getActiveUrl();
+      if (url.includes('?')) {
+        url = url.split('?')[0];
+      }
+
+      const fetchUrl = `${url}?action=get_latest_project_database&_t=${Date.now()}`;
+
       const syncBadge = document.getElementById('sync-status');
       syncBadge.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังดึงข้อมูล...`;
       syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 flex items-center gap-1.5';
       lucide.createIcons();
 
-      // สร้างชื่อฟังก์ชันสุ่มเพื่อรับข้อมูล
-      const callbackName = 'gas_callback_' + Math.round(100000 * Math.random());
-      const fetchUrl = `${url}?action=get_latest_project_database&callback=${callbackName}&_t=${Date.now()}`;
-
-      // สร้างแท็ก script เพื่อโหลดข้อมูลข้ามโดเมน (ทะลุ CORS)
-      const script = document.createElement('script');
-      script.src = fetchUrl;
-
-      // ตั้งเวลาเผื่อเน็ตหลุด (15 วินาที)
-      const timeoutId = setTimeout(() => {
-        cleanup();
-        alert('หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ (Timeout) กรุณาลองใหม่อีกครั้งค่ะ');
-        syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span> พบข้อผิดพลาด`;
-        syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-300 flex items-center gap-1.5';
-      }, 15000);
-
-      // ฟังก์ชันเคลียร์ขยะหลังโหลดเสร็จ
-      function cleanup() {
-        if (window[callbackName]) delete window[callbackName];
-        if (script.parentNode) script.parentNode.removeChild(script);
-        clearTimeout(timeoutId);
-      }
-
-      // เมื่อเซิร์ฟเวอร์ส่งข้อมูลกลับมา จะทำงานในบล็อกนี้
-      window[callbackName] = function(result) {
-        cleanup(); 
+      fetch(fetchUrl, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json, text/plain' }
+      })
+      .then(response => response.text())
+      .then(text => {
         try {
+          let cleanText = text.trim();
+
+          // ดักจับกรณี Google ส่งหน้าเว็บ Error หรือหน้า Login กลับมาแทนข้อมูล
+          if (cleanText.startsWith('<')) {
+            throw new Error("Google ปฏิเสธการเข้าถึง หรือลิงก์ URL ไม่ถูกต้อง (ระบบได้รับหน้าเว็บ HTML แทนข้อมูล)");
+          }
+
+          // ค้นหาและสกัดเฉพาะข้อมูล JSON อย่างปลอดภัย
+          if (cleanText.startsWith('gas_callback_') || cleanText.startsWith('test(')) {
+             const firstBrace = cleanText.indexOf('{');
+             const lastBrace = cleanText.lastIndexOf('}');
+             if (firstBrace !== -1 && lastBrace !== -1) {
+                 cleanText = cleanText.substring(firstBrace, lastBrace + 1);
+             }
+          }
+
+          const result = JSON.parse(cleanText);
+
           if (result.status === 'success' && result.database) {
             let count = 0;
             const db = result.database;
@@ -553,30 +557,24 @@
             });
             const syncTime = new Date().toLocaleString('th-TH');
             localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
-            alert(`ดึงข้อมูลลงเครื่องสำเร็จค่ะ! อัปเดต ${count} รายการ`);
+            alert(`ดึงข้อมูลลงไอแพดสำเร็จค่ะ! อัปเดต ${count} รายการ`);
             location.reload();
           } else {
-            alert('ไม่พบไฟล์ฐานข้อมูลบน Cloud ค่ะ');
+            alert('ไม่พบไฟล์ฐานข้อมูลบน Cloud ค่ะ (หรือไฟล์อาจถูกลบไปแล้ว)');
             syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span> พร้อมใช้งาน`;
             syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300 flex items-center gap-1.5';
           }
         } catch(e) {
-          alert('รูปแบบข้อมูลผิดพลาดจากเซิร์ฟเวอร์ค่ะ: ' + e.message);
+          console.error(e);
+          alert(`เกิดข้อผิดพลาดในการอ่านข้อมูลค่ะ:\n${e.message}`);
           syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span> พบข้อผิดพลาด`;
           syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-300 flex items-center gap-1.5';
         }
-      };
-
-      // กรณีโหลดสคริปต์ไม่ขึ้นเลย (เน็ตหลุด)
-      script.onerror = function() {
-        cleanup();
-        alert('เครือข่ายขัดข้อง ไม่สามารถโหลดข้อมูลจาก Google ได้ค่ะ');
-        syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span> พบข้อผิดพลาด`;
-        syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-300 flex items-center gap-1.5';
-      };
-
-      // สั่งให้เบราว์เซอร์เริ่มดึงข้อมูล
-      document.body.appendChild(script);
+      })
+      .catch(err => {
+        alert('เครือข่ายถูกบล็อก (CORS) หรือเน็ตหลุดค่ะ กำลังพยายามเปิดลิงก์ตรงเพื่อดูข้อมูล...');
+        window.open(fetchUrl, '_blank');
+      });
     }
 
     // นำเข้า / ส่งออก ลงเครื่องตรงๆ
