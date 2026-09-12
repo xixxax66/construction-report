@@ -3,242 +3,610 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบบริหารและรายงานผลโครงการก่อสร้าง</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="assets/gas-sync.js"></script>
-
+  <title>ระบบรายงานผลการปฏิบัติงานและควบคุมงานก่อสร้าง</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="assets/gas-sync.js"></script>
   <style>
-    body {
-      font-family: 'Sarabun', sans-serif;
-      background-color: #f1f5f9;
+    body { font-family: 'Sarabun', sans-serif; background-color: #cbd5e1; }
+    .btn-3d { 
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6); 
+      transition: all 0.15s ease-in-out; 
+    }
+    .btn-3d:active { 
+      transform: translateY(2px); 
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2); 
+    }
+    .cell-input { 
+      width: 100%; 
+      border: 1px solid #cbd5e1; 
+      outline: none; 
+      font-family: inherit; 
+      font-size: 14px; 
+      padding: 7px 12px; 
+      border-radius: 8px; 
+      color: #1e293b; 
+      background-color: #f8fafc; 
+    }
+    .cell-input:focus { 
+      background-color: #fff; 
+      border-color: #3b82f6; 
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.2); 
+    }
+    .log-table th, .log-table td { 
+      border: 1px solid #e2e8f0; 
+      padding: 8px 12px; 
+      font-size: 13px; 
+    }
+    .log-table th { 
+      background-color: #f1f5f9; 
+      font-weight: 600; 
+      text-align: left; 
+      color: #475569; 
     }
   </style>
 </head>
-<body class="min-h-screen text-slate-800 flex flex-col justify-between">
+<body class="p-3 sm:p-6 min-h-screen flex items-center justify-center">
 
-  <!-- แถบด้านบน -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap justify-between items-center gap-3">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md">
-          <i data-lucide="hard-hat" class="w-6 h-6"></i>
+  <!-- Modal หน้าต่าง Google Drive File Explorer -->
+  <div id="folder_picker_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl p-5 max-w-2xl w-full mx-4 shadow-2xl border border-slate-200 flex flex-col h-[80vh]">
+      <div class="flex items-center justify-between border-b pb-3 mb-3 shrink-0">
+        <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+          <i data-lucide="hard-drive" class="w-6 h-6 text-blue-600"></i> เลือกพื้นที่จัดเก็บ Google Drive
+        </h3>
+        <button onclick="closeFolderPicker()" class="text-slate-400 hover:text-slate-600 cursor-pointer p-1">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+      <div class="flex items-center justify-between bg-slate-100 p-2.5 rounded-xl mb-3 shrink-0 border border-slate-200">
+        <div class="flex items-center gap-2 overflow-hidden">
+          <button onclick="navigateBack()" id="btn_picker_back" class="p-1.5 hover:bg-slate-200 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer">
+            <i data-lucide="arrow-left" class="w-5 h-5 text-slate-700"></i>
+          </button>
+          <div class="flex items-center gap-2">
+            <i data-lucide="folder-open" class="w-5 h-5 text-amber-500 fill-amber-100"></i>
+            <span class="font-bold text-slate-800 truncate" id="current_folder_name">ไดรฟ์ของฉัน</span>
+          </div>
+        </div>
+        <button onclick="confirmFolderSelection()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md whitespace-nowrap cursor-pointer transition">
+          เลือกโฟลเดอร์นี้
+        </button>
+      </div>
+      <div id="folder_list_grid" class="flex-1 overflow-y-auto pr-2 space-y-2"></div>
+    </div>
+  </div>
+
+  <div class="max-w-5xl w-full bg-slate-100 p-5 sm:p-8 rounded-3xl shadow-2xl border border-slate-300 space-y-6">
+    
+    <!-- ส่วนหัวระบบ & สถานะ Cloud Sync -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-300 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md shrink-0">
+          <i data-lucide="hard-hat" class="w-7 h-7"></i>
         </div>
         <div>
-          <h1 class="text-lg font-bold leading-tight">ระบบบริหารและรายงานผลโครงการก่อสร้าง</h1>
-          <p class="text-xs text-slate-500" id="lbl_org_header">องค์การบริหารส่วนตำบลโพนงาม</p>
+          <h1 class="text-xl sm:text-2xl font-bold text-slate-800 leading-tight">ระบบรายงานผลการปฏิบัติงานและควบคุมงานก่อสร้าง</h1>
+          <p class="text-xs sm:text-sm text-slate-500" id="org-subtitle">องค์การบริหารส่วนตำบลโพนงาม อำเภอโกสุมพิสัย จังหวัดมหาสารคาม</p>
         </div>
       </div>
 
-      <!-- แถบสถานะ Cloud Sync -->
+      <!-- แผงสถานะและปุ่มกด Sync ด่วน -->
       <div class="flex items-center gap-2">
-        <span id="sync_status_badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
-          <span class="w-2 h-2 rounded-full bg-slate-400"></span> กำลังตรวจสอบ Cloud...
+        <span id="sync-status" class="text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-slate-400"></span> พร้อมใช้งาน
         </span>
-        <button onclick="pullDataFromCloud(false)" title="ดึงข้อมูลล่าสุดจาก Cloud" class="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg border border-blue-200 transition">
-          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        <button onclick="pullDataFromCloud(false)" title="ดึงข้อมูลล่าสุดจาก Cloud (Pull)" class="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl border border-blue-200 shadow-sm transition">
+          <i data-lucide="cloud-download" class="w-4 h-4"></i>
         </button>
-        <button onclick="pushDataToCloud(false)" title="สำรองข้อมูลขึ้น Cloud ทันที" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-200 transition">
+        <button onclick="pushDataToCloud(false)" title="สำรองข้อมูลขึ้น Cloud ทันที (Push)" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 shadow-sm transition">
           <i data-lucide="cloud-upload" class="w-4 h-4"></i>
         </button>
       </div>
     </div>
-  </header>
 
-  <!-- เนื้อหาหลัก -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full space-y-6">
-
-    <!-- การ์ดข้อมูลโครงการที่เลือกปัจจุบัน -->
-    <div class="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+    <!-- การ์ดสรุปข้อมูลโครงการปัจจุบัน -->
+    <div class="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-2xl p-5 sm:p-6 text-white shadow-lg relative overflow-hidden">
       <div class="relative z-10 flex flex-wrap justify-between items-center gap-4">
-        <div class="space-y-1">
-          <span class="inline-block px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-semibold backdrop-blur-sm" id="lbl_badge_contract">สัญญาเลขที่ E๒/๒๕๖๙</span>
-          <h2 class="text-xl sm:text-2xl font-bold" id="lbl_project_title">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก</h2>
-          <p class="text-sm text-blue-100" id="lbl_contractor_info">ผู้รับจ้าง: ห้างหุ้นส่วนจำกัด โพธิ์ชัยแอสโซซิเอส</p>
+        <div class="space-y-1.5">
+          <span class="inline-block px-3 py-0.5 rounded-full bg-white/20 text-xs font-semibold backdrop-blur-sm" id="lbl_contract_no">
+            สัญญาเลขที่ -
+          </span>
+          <h2 class="text-lg sm:text-2xl font-bold leading-snug" id="lbl_project_name">
+            ยังไม่ได้กำหนดชื่อโครงการ
+          </h2>
+          <p class="text-xs sm:text-sm text-blue-100" id="lbl_contractor_name">
+            ผู้รับจ้าง: -
+          </p>
         </div>
-        <div class="flex items-center gap-2">
-          <a href="basic_info.html" class="px-4 py-2 bg-white text-blue-800 hover:bg-blue-50 font-bold rounded-xl text-sm shadow transition flex items-center gap-1.5">
-            <i data-lucide="edit-3" class="w-4 h-4"></i> แก้ไขข้อมูลสัญญา
+        <div>
+          <a href="Cons_Reference.html" class="px-4 py-2.5 bg-white text-blue-800 hover:bg-blue-50 font-bold rounded-xl text-xs sm:text-sm shadow-md transition flex items-center gap-2">
+            <i data-lucide="edit-3" class="w-4 h-4"></i> ข้อมูลโครงการ
           </a>
         </div>
       </div>
     </div>
 
-    <!-- เมนูเอกสารหลัก -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-      <!-- บล็อก 1: รายงานประจำสัปดาห์ -->
-      <a href="Weekly_Reference.html" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition group flex flex-col justify-between">
-        <div class="space-y-3">
-          <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
-            <i data-lucide="calendar" class="w-6 h-6"></i>
-          </div>
-          <h3 class="text-lg font-bold text-slate-800">รายงานผลประจำสัปดาห์</h3>
-          <p class="text-sm text-slate-500">บันทึกความคืบหน้า รายละเอียดผลงานรายวัน และรูปภาพหน้างานแต่ละสัปดาห์</p>
+    <!-- เมนูหลัก 4 ส่วนสำคัญ -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <a href="Cons_Reference.html" class="btn-3d bg-white hover:bg-emerald-50 p-5 rounded-2xl shadow border border-slate-300 flex flex-col items-center text-center group transition">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-100 group-hover:bg-emerald-600 text-emerald-600 group-hover:text-white flex items-center justify-center transition mb-3 shadow-inner">
+          <i data-lucide="file-spreadsheet" class="w-7 h-7"></i>
         </div>
-        <span class="mt-4 inline-flex items-center gap-1 text-sm font-bold text-blue-600">เปิดเอกสาร <i data-lucide="arrow-right" class="w-4 h-4"></i></span>
+        <h2 class="font-bold text-slate-800 group-hover:text-emerald-700 text-base mb-1">1. ข้อมูลเบื้องต้นโครงการ</h2>
+        <p class="text-xs text-slate-500">จัดการสัญญาจ้าง, คณะกรรมการ และผู้ควบคุมงาน</p>
       </a>
 
-      <!-- บล็อก 2: รายงานประจำเดือน -->
-      <a href="Monthly_Reference.html" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition group flex flex-col justify-between">
-        <div class="space-y-3">
-          <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
-            <i data-lucide="file-check-2" class="w-6 h-6"></i>
-          </div>
-          <h3 class="text-lg font-bold text-slate-800">รายงานผลประจำเดือน</h3>
-          <p class="text-sm text-slate-500">สรุปผลงานสะสม เปอร์เซ็นต์ความก้าวหน้ารายหมวด และเอกสารตรวจรับประจำเดือน</p>
+      <a href="Weekly_Reference.html" class="btn-3d bg-white hover:bg-amber-50 p-5 rounded-2xl shadow border border-slate-300 flex flex-col items-center text-center group transition">
+        <div class="w-14 h-14 rounded-2xl bg-amber-100 group-hover:bg-amber-600 text-amber-600 group-hover:text-white flex items-center justify-center transition mb-3 shadow-inner">
+          <i data-lucide="calendar-days" class="w-7 h-7"></i>
         </div>
-        <span class="mt-4 inline-flex items-center gap-1 text-sm font-bold text-blue-600">เปิดเอกสาร <i data-lucide="arrow-right" class="w-4 h-4"></i></span>
+        <h2 class="font-bold text-slate-800 group-hover:text-amber-700 text-base mb-1">2. รายงานผลรายสัปดาห์</h2>
+        <p class="text-xs text-slate-500">บันทึกผลงาน, สภาพการปฏิบัติงาน และภาพถ่ายรายสัปดาห์</p>
       </a>
 
-      <!-- บล็อก 3: เอกสารหนังสือเร่งรัดงาน -->
-      <a href="contractor_warning.html" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition group flex flex-col justify-between">
-        <div class="space-y-3">
-          <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
-            <i data-lucide="alert-triangle" class="w-6 h-6"></i>
-          </div>
-          <h3 class="text-lg font-bold text-slate-800">หนังสือแจ้งเตือนเร่งรัดเข้าทำงาน</h3>
-          <p class="text-sm text-slate-500">ออกหนังสือราชการแจ้งเตือนผู้รับจ้างกรณีงานล่าช้ากว่าแผน จัดรูปแบบตามสารบรรณ</p>
+      <a href="Monthly_Reference.html" class="btn-3d bg-white hover:bg-blue-50 p-5 rounded-2xl shadow border border-slate-300 flex flex-col items-center text-center group transition">
+        <div class="w-14 h-14 rounded-2xl bg-blue-100 group-hover:bg-blue-600 text-blue-600 group-hover:text-white flex items-center justify-center transition mb-3 shadow-inner">
+          <i data-lucide="file-text" class="w-7 h-7"></i>
         </div>
-        <span class="mt-4 inline-flex items-center gap-1 text-sm font-bold text-blue-600">เปิดเอกสาร <i data-lucide="arrow-right" class="w-4 h-4"></i></span>
+        <h2 class="font-bold text-slate-800 group-hover:text-blue-700 text-base mb-1">3. รายงานผลประจำเดือน</h2>
+        <p class="text-xs text-slate-500">สรุปผลงานประจำเดือน, ตรวจรับงวดงาน และวัสดุ</p>
+      </a>
+
+      <a href="contractor_warning.html" class="btn-3d bg-white hover:bg-rose-50 p-5 rounded-2xl shadow border border-slate-300 flex flex-col items-center text-center group transition">
+        <div class="w-14 h-14 rounded-2xl bg-rose-100 group-hover:bg-rose-600 text-rose-600 group-hover:text-white flex items-center justify-center transition mb-3 shadow-inner">
+          <i data-lucide="alert-triangle" class="w-7 h-7"></i>
+        </div>
+        <h2 class="font-bold text-slate-800 group-hover:text-rose-700 text-base mb-1">4. หนังสือแจ้งเร่งรัดงาน</h2>
+        <p class="text-xs text-slate-500">ออกหนังสือแจ้งเตือนเร่งรัดเข้าทำงานของผู้รับจ้าง</p>
       </a>
     </div>
 
-    <!-- แผงควบคุมระบบ Cloud และประวัติการสำรอง -->
-    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-        <div class="flex items-center gap-2">
-          <i data-lucide="cloud-cog" class="w-5 h-5 text-blue-600"></i>
-          <h3 class="font-bold text-base text-slate-800">การจัดการ Cloud และการซิงค์ข้อมูล (Notebook ↔ iPad)</h3>
+    <!-- แผงการสำรองข้อมูลและกำหนดรายละเอียดไฟล์ -->
+    <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-300 space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
+        <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+          <i data-lucide="database-backup" class="w-6 h-6 text-blue-600"></i> การสำรองและจัดการฐานข้อมูล
+        </h3>
+        <span class="text-xs text-slate-500">ซิงค์ล่าสุดเมื่อ: <strong id="lbl_last_sync_time" class="text-slate-700 font-semibold">-</strong></span>
+      </div>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <div class="space-y-1.5 sm:col-span-2">
+          <label class="text-sm font-semibold text-slate-700 flex items-center gap-1">
+            <i data-lucide="folder" class="w-4 h-4"></i> พื้นที่จัดเก็บ (Google Drive)
+          </label>
+          <div class="flex items-center gap-2">
+            <div class="flex-1 overflow-hidden relative">
+              <input type="text" id="driveFolderId" class="cell-input text-xs text-transparent" placeholder="[ค่าเริ่มต้น] จัดเก็บในไดรฟ์หลัก (Root)">
+              <div id="lbl_selected_folder" class="absolute inset-0 bg-transparent flex items-center text-blue-700 font-bold px-3 pointer-events-none">
+                📁 ค่าเริ่มต้น: ไดรฟ์หลัก
+              </div>
+            </div>
+            <button type="button" onclick="openFolderPicker('root')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0 transition">
+              <i data-lucide="folder-search" class="w-4 h-4"></i> เลือกโฟลเดอร์
+            </button>
+          </div>
         </div>
-        <button onclick="toggleConfigPanel()" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1">
-          <i data-lucide="settings" class="w-3.5 h-3.5"></i> ตั้งค่า URL Apps Script
+        
+        <div class="space-y-1.5">
+          <label class="text-sm font-semibold text-slate-700 flex items-center gap-1">
+            <i data-lucide="file-json" class="w-4 h-4"></i> ชื่อไฟล์สำรองข้อมูล
+          </label>
+          <input type="text" id="backupFileName" class="cell-input" placeholder="เช่น Backup_งวดที่1_2569">
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-sm font-semibold text-slate-700 flex items-center gap-1">
+            <i data-lucide="align-left" class="w-4 h-4"></i> รายละเอียดเพิ่มเติม
+          </label>
+          <input type="text" id="backupFileDesc" class="cell-input" placeholder="เช่น ก่อนเริ่มก่อสร้างถนน">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+        <button onclick="saveProjectToCloudAndLocal()" id="btn-cloud-backup" class="btn-3d bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer">
+          <i data-lucide="cloud-upload" class="w-4 h-4"></i> สำรองข้อมูลขึ้น Cloud
+        </button>
+
+        <button onclick="downloadProjectJSON()" class="btn-3d bg-slate-600 hover:bg-slate-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer">
+          <i data-lucide="download" class="w-4 h-4"></i> บันทึกไฟล์ลงเครื่อง
+        </button>
+
+        <label class="btn-3d bg-amber-600 hover:bg-amber-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer">
+          <i data-lucide="upload" class="w-4 h-4"></i> นำเข้าไฟล์กู้คืน
+          <input type="file" id="import-file-input" accept=".json" onchange="importProjectJSON(event)" class="hidden">
+        </label>
+
+        <button onclick="clearCurrentProjectData()" class="btn-3d bg-rose-600 hover:bg-rose-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer">
+          <i data-lucide="trash-2" class="w-4 h-4"></i> ล้างข้อมูลปัจจุบัน
         </button>
       </div>
+    </div>
 
-      <!-- แผงตั้งค่า URL (ซ่อนไว้เป็นค่าเริ่มต้น) -->
-      <div id="panel_config" class="hidden p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Google Apps Script Web App URL (/exec):</label>
-          <input type="text" id="input_gas_url" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 font-mono" placeholder="https://script.google.com/macros/s/.../exec">
-        </div>
-        <div class="flex justify-end gap-2">
-          <button onclick="saveGasConfig()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold">บันทึกการตั้งค่า</button>
-        </div>
+    <!-- ตารางประวัติการสำรองข้อมูล (Log) -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-300 space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i data-lucide="history" class="w-5 h-5 text-slate-600"></i> ประวัติการสำรองข้อมูลโครงการ
+        </h3>
+        <button onclick="clearLogs()" class="text-xs text-rose-500 hover:text-rose-700 font-semibold cursor-pointer">
+          ล้างประวัติ
+        </button>
       </div>
-
-      <div class="flex flex-wrap items-center justify-between gap-4 text-sm">
-        <div>
-          <span class="text-slate-500">ซิงค์ล่าสุดเมื่อ: </span>
-          <span id="lbl_last_sync" class="font-semibold text-slate-700">-</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <button onclick="pullDataFromCloud(false)" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition">
-            <i data-lucide="download" class="w-4 h-4"></i> ดึงข้อมูลจาก Cloud
-          </button>
-          <button onclick="pushDataToCloud(false)" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow transition">
-            <i data-lucide="upload-cloud" class="w-4 h-4"></i> อัปโหลดขึ้น Cloud เดี๋ยวนี้
-          </button>
-        </div>
-      </div>
-
-      <!-- ประวัติการสำรองข้อมูลล่าสุด -->
-      <div class="pt-2">
-        <h4 class="text-xs font-bold text-slate-500 mb-2">ประวัติการสำรองข้อมูลบนอุปกรณ์:</h4>
-        <div class="max-h-36 overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-100 text-xs" id="history_list">
-          <div class="p-2.5 text-center text-slate-400">ยังไม่มีประวัติการสำรองข้อมูล</div>
-        </div>
+      
+      <div class="overflow-x-auto max-h-64 rounded-lg border border-slate-200">
+        <table class="w-full log-table text-left border-collapse">
+          <thead class="sticky top-0 shadow-sm z-10">
+            <tr>
+              <th class="w-1/4">วัน-เวลา</th>
+              <th class="w-1/3">ชื่อไฟล์</th>
+              <th class="w-1/4">รายละเอียด</th>
+              <th class="w-1/6 text-center">สถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="log_tbody" class="bg-white divide-y divide-slate-200"></tbody>
+        </table>
       </div>
     </div>
 
-  </main>
-
-  <footer class="text-center py-4 text-xs text-slate-400 border-t border-slate-200 mt-6">
-    ระบบรายงานผลโครงการก่อสร้าง &bull; กองช่าง องค์การบริหารส่วนตำบลโพนงาม
-  </footer>
+  </div>
 
   <script>
     lucide.createIcons();
 
-    // 1. อ่านข้อมูลโครงการมาแสดงบนหน้าแรก
-    function loadProjectOverview() {
+    const STORAGE_KEY_GAS_URL = 'CONSTRUCTION_GAS_URL';
+    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
+    const LOG_KEY = 'BACKUP_HISTORY_LOG';
+
+    function getGasEndpoint() {
+      return localStorage.getItem(STORAGE_KEY_GAS_URL) || DEFAULT_GAS_URL;
+    }
+
+    const ALL_SYSTEM_KEYS = [
+      'LOCAL_BASIC_INFO', 'CONSTRUCTION_WEEKLY_REF_DB', 'MONTHLY_REPORT_INFO_DATA',
+      'MONTHLY_INSPECTION_DATES_DB', 'MONTHLY_MATERIAL_REPORT_DB', 'MONTHLY_PROBLEM_SUMMARY_DB',
+      'LOCAL_START_DATE_RECORD', 'LOCAL_EXPEDITE_RECORD', 'LOCAL_DELIVERY_RECORD', 'PROJECT_FULL_BACKUP_SNAPSHOT'
+    ];
+
+    let folderHistory = [];
+    let currentPickerFolderId = "root";
+    let currentPickerFolderName = "ไดรฟ์ของฉัน";
+
+    function updateProjectUI() {
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
           const data = JSON.parse(basicRaw);
-          if (data.organizationName) document.getElementById('lbl_org_header').textContent = data.organizationName;
-          if (data.projectName) document.getElementById('lbl_project_title').textContent = data.projectName;
-          if (data.contractNo) document.getElementById('lbl_badge_contract').textContent = `สัญญาเลขที่ ${data.contractNo}`;
-          if (data.contractorName) document.getElementById('lbl_contractor_info').textContent = `ผู้รับจ้าง: ${data.contractorName}`;
-        } catch(e) {}
+          if (data.organizationName) {
+            document.getElementById('org-subtitle').textContent = data.organizationName;
+          }
+          if (data.projectName) {
+            document.getElementById('lbl_project_name').textContent = data.projectName;
+          }
+          if (data.contractNo) {
+            document.getElementById('lbl_contract_no').textContent = `สัญญาเลขที่ ${data.contractNo}`;
+          }
+          if (data.contractorName) {
+            document.getElementById('lbl_contractor_name').textContent = `ผู้รับจ้าง: ${data.contractorName}`;
+          }
+          if (data.driveFolderId) {
+            document.getElementById('driveFolderId').value = data.driveFolderId;
+            document.getElementById('lbl_selected_folder').textContent = `📁 โฟลเดอร์: ${data.driveFolderId.substring(0, 10)}...`;
+          }
+        } catch (e) {}
       }
 
-      // แสดงเวลาซิงค์ล่าสุด
       const lastSync = localStorage.getItem('LAST_CLOUD_SYNC_TIME');
-      if (lastSync) document.getElementById('lbl_last_sync').textContent = lastSync;
-
-      renderBackupHistory();
+      if (lastSync) {
+        document.getElementById('lbl_last_sync_time').textContent = lastSync;
+      }
     }
 
-    // 2. แสดงประวัติการสำรอง
-    function renderBackupHistory() {
-      const historyRaw = localStorage.getItem('PROJECT_BACKUP_HISTORY');
-      const listEl = document.getElementById('history_list');
-      if (!historyRaw || !listEl) return;
+    async function openFolderPicker(folderId = "root") {
+      const modal = document.getElementById('folder_picker_modal');
+      const grid = document.getElementById('folder_list_grid');
+      const btnBack = document.getElementById('btn_picker_back');
+      const folderNameEl = document.getElementById('current_folder_name');
+
+      modal.classList.remove('hidden');
+      grid.innerHTML = '<div class="flex flex-col items-center justify-center py-10 w-full text-slate-500"><i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-3 text-blue-500"></i><p>กำลังค้นหาโฟลเดอร์...</p></div>';
+      lucide.createIcons();
+      btnBack.disabled = folderHistory.length === 0;
 
       try {
-        const list = JSON.parse(historyRaw);
-        if (list.length === 0) return;
+        const response = await fetch(`${getGasEndpoint()}?action=get_drive_folders&parentId=${encodeURIComponent(folderId)}`);
+        const result = await response.json();
 
-        listEl.innerHTML = '';
-        list.forEach(item => {
-          listEl.innerHTML += `
-            <div class="p-2.5 flex justify-between items-center hover:bg-slate-50">
-              <span class="text-slate-700 font-medium">${item.date}</span>
-              <span class="text-slate-400">${item.source}</span>
-            </div>
-          `;
-        });
-      } catch(e) {}
-    }
+        if (result.status === 'success') {
+          currentPickerFolderId = result.parentId;
+          currentPickerFolderName = result.parentName;
+          folderNameEl.textContent = currentPickerFolderName;
 
-    // 3. จัดการแผงตั้งค่า URL
-    function toggleConfigPanel() {
-      const p = document.getElementById('panel_config');
-      p.classList.toggle('hidden');
-      document.getElementById('input_gas_url').value = GAS_SYNC_CONFIG.getGasUrl();
-    }
-
-    function saveGasConfig() {
-      const url = document.getElementById('input_gas_url').value.trim();
-      if (url) {
-        localStorage.setItem('CONSTRUCTION_GAS_URL', url);
-        alert('บันทึก Web App URL เรียบร้อยแล้วค่ะ');
-        toggleConfigPanel();
+          grid.innerHTML = '';
+          if (result.folders && result.folders.length > 0) {
+            result.folders.forEach(f => {
+              grid.innerHTML += `
+                <div class="flex items-center justify-between p-3 border border-slate-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer group transition-colors rounded-lg bg-white shadow-sm" onclick="navigateToFolder('${f.id}', '${f.name}')">
+                  <div class="flex items-center gap-3 overflow-hidden">
+                    <i data-lucide="folder" class="w-6 h-6 text-amber-500 fill-amber-200 shrink-0"></i>
+                    <span class="text-slate-700 font-medium truncate">${f.name}</span>
+                  </div>
+                  <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-blue-500 shrink-0"></i>
+                </div>
+              `;
+            });
+            lucide.createIcons();
+          } else {
+            grid.innerHTML = '<div class="flex flex-col items-center justify-center py-10 w-full text-slate-400"><i data-lucide="folder-open" class="w-12 h-12 mb-2"></i><p>โฟลเดอร์ว่างเปล่า</p></div>';
+            lucide.createIcons();
+          }
+        } else {
+          grid.innerHTML = `<div class="text-center text-rose-500 py-6">ข้อผิดพลาด: ${result.message}</div>`;
+        }
+      } catch (err) {
+        grid.innerHTML = '<div class="text-center text-rose-500 py-6">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (โปรดตรวจสอบ Web App URL)</div>';
       }
     }
 
-    // 4. Auto Fetch ทันทีเมื่อเปิดหน้าเว็บ (Silent Pull)
-    window.addEventListener('DOMContentLoaded', async () => {
-      loadProjectOverview();
+    function navigateToFolder(id, name) {
+      folderHistory.push({ id: currentPickerFolderId, name: currentPickerFolderName });
+      openFolderPicker(id);
+    }
 
-      const badge = document.getElementById('sync_status_badge');
+    function navigateBack() {
+      if (folderHistory.length > 0) {
+        const prev = folderHistory.pop();
+        openFolderPicker(prev.id);
+      }
+    }
+
+    function confirmFolderSelection() {
+      const inputEl = document.getElementById('driveFolderId');
+      const labelEl = document.getElementById('lbl_selected_folder');
       
-      if (typeof pullDataFromCloud === 'function') {
-        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span> กำลังดึงข้อมูลล่าสุดจาก Cloud...`;
-        badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200';
+      if (currentPickerFolderId === 'root') {
+        inputEl.value = '';
+        labelEl.textContent = '📁 ค่าเริ่มต้น: ไดรฟ์หลัก';
+        localStorage.removeItem('SELECTED_DRIVE_FOLDER_ID');
+      } else {
+        inputEl.value = currentPickerFolderId;
+        labelEl.textContent = `📁 ${currentPickerFolderName}`;
+        localStorage.setItem('SELECTED_DRIVE_FOLDER_ID', currentPickerFolderId);
+      }
+      
+      let basicData = JSON.parse(localStorage.getItem('LOCAL_BASIC_INFO') || '{}');
+      basicData.driveFolderId = inputEl.value;
+      localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(basicData));
+
+      closeFolderPicker();
+    }
+
+    function closeFolderPicker() {
+      document.getElementById('folder_picker_modal').classList.add('hidden');
+      folderHistory = [];
+    }
+
+    function exportAllProjectData() {
+      const projectDatabase = {};
+      
+      ALL_SYSTEM_KEYS.forEach(key => {
+        const val = localStorage.getItem(key);
+        if (val) { 
+          try { projectDatabase[key] = JSON.parse(val); } 
+          catch (e) { projectDatabase[key] = val; } 
+        }
+      });
+      
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k.startsWith('WEEK_PROGRESS_DATA_') || k.startsWith('WEEK_REPORT_INSTALLMENTS_') || 
+            k.startsWith('WEEK_REPORT_ACCEPTED_') || k.startsWith('WEEK_LOG_DATA_') || 
+            k.startsWith('LATEST_PROGRESS_SUMMARY_') || k.startsWith('MONTHLY_')) {
+          const val = localStorage.getItem(k);
+          if (val) { 
+            try { projectDatabase[k] = JSON.parse(val); } 
+            catch (e) { projectDatabase[k] = val; } 
+          }
+        }
+        
+        if (k.startsWith('WEEK_PHOTO_DATA_')) {
+          const val = localStorage.getItem(k);
+          if (val) { 
+            try { 
+              let photoData = JSON.parse(val);
+              if (photoData.photos && Array.isArray(photoData.photos)) {
+                photoData.photos.forEach(p => { p.rawSrc = ""; });
+              }
+              projectDatabase[k] = photoData; 
+            } catch (e) { 
+              projectDatabase[k] = val; 
+            } 
+          }
+        }
+      }
+      return projectDatabase;
+    }
+
+    function addLogRecord(fileName, desc, statusObj) {
+      let logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      const timestamp = new Date().toLocaleString('th-TH');
+      logs.unshift({ time: timestamp, fileName: fileName, desc: desc, status: statusObj });
+      if (logs.length > 50) logs.pop();
+      localStorage.setItem(LOG_KEY, JSON.stringify(logs));
+      renderLogs();
+    }
+
+    function renderLogs() {
+      const tbody = document.getElementById('log_tbody');
+      tbody.innerHTML = '';
+      const logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      
+      if (logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-slate-400">ยังไม่มีประวัติการสำรองข้อมูล</td></tr>`;
+        return;
+      }
+
+      logs.forEach(log => {
+        let statusHtml = '';
+        if (log.status.success) {
+          statusHtml = `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold whitespace-nowrap">✔️ สำเร็จ (Cloud)</span>`;
+        } else if (log.status.localOnly) {
+          statusHtml = `<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold whitespace-nowrap">⚠️ เครื่อง (Local)</span>`;
+        } else {
+          statusHtml = `<span class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-xs font-bold whitespace-nowrap">❌ ล้มเหลว</span>`;
+        }
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="text-slate-600 whitespace-nowrap">${log.time}</td>
+            <td class="font-medium text-slate-800 break-words">${log.fileName || '-'}</td>
+            <td class="text-slate-500 text-xs break-words">${log.desc || '-'}</td>
+            <td class="text-center">${statusHtml}</td>
+          </tr>`;
+      });
+    }
+
+    function clearLogs() {
+      if (confirm('คุณแน่ใจหรือไม่ว่าต้องการล้างประวัติการสำรองข้อมูลทั้งหมด?')) {
+        localStorage.removeItem(LOG_KEY);
+        renderLogs();
+      }
+    }
+
+    async function saveProjectToCloudAndLocal() {
+      const btn = document.getElementById('btn-cloud-backup');
+      const folderId = document.getElementById('driveFolderId').value || localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || 'root';
+      const fileNameInput = document.getElementById('backupFileName').value.trim();
+      const fileDesc = document.getElementById('backupFileDesc').value.trim();
+      
+      const timestampForName = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      const finalFileName = fileNameInput || `Project_Backup_${timestampForName}`;
+
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังสำรอง...`;
+      lucide.createIcons();
+
+      const backupData = exportAllProjectData();
+      localStorage.setItem('PROJECT_FULL_BACKUP_SNAPSHOT', JSON.stringify(backupData));
+
+      const payload = {
+        action: 'save_full_project_database',
+        fileName: finalFileName,
+        folderId: folderId,
+        timestamp: new Date().toLocaleString('th-TH'),
+        database: backupData
+      };
+
+      try {
+        const response = await fetch(getGasEndpoint(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          const syncTime = new Date().toLocaleString('th-TH');
+          localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
+          addLogRecord(finalFileName, fileDesc, { success: true });
+          updateProjectUI();
+          alert('สำรองข้อมูลขึ้น Google Drive เรียบร้อยแล้วค่ะ!');
+        } else {
+          throw new Error(result.message || 'เกิดข้อผิดพลาด');
+        }
+      } catch (err) {
+        addLogRecord(finalFileName, fileDesc, { localOnly: true });
+        alert('บันทึกสำรองข้อมูลลงในเครื่อง (Local Storage) เรียบร้อยแล้วค่ะ (อาจจะไม่ได้เชื่อมต่ออินเทอร์เน็ต)');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> สำรองข้อมูลขึ้น Cloud`;
+        lucide.createIcons();
+      }
+    }
+
+    function downloadProjectJSON() {
+      const fileNameInput = document.getElementById('backupFileName').value.trim();
+      const fileDesc = document.getElementById('backupFileDesc').value.trim();
+      const timestampForName = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      const finalFileName = fileNameInput || `Project_Database_${timestampForName}`;
+
+      const data = exportAllProjectData();
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `${finalFileName}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+
+      addLogRecord(`${finalFileName}.json`, fileDesc || 'บันทึกลงคอมพิวเตอร์', { localOnly: true });
+    }
+
+    function importProjectJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          for (const [key, value] of Object.entries(importedData)) {
+            const valueToStore = typeof value === 'object' ? JSON.stringify(value) : value;
+            localStorage.setItem(key, valueToStore);
+          }
+          alert('นำเข้าฐานข้อมูลโครงการสำเร็จ! ระบบได้โหลดข้อมูลเข้าสู่เครื่องเรียบร้อยแล้วค่ะ');
+          location.reload();
+        } catch (err) {
+          alert('ไฟล์ฐานข้อมูลไม่ถูกต้อง หรือรูปแบบไฟล์เสียหายค่ะ');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function clearCurrentProjectData() {
+      if (confirm('คำเตือน: คุณต้องการล้างข้อมูลโครงการปัจจุบันทั้งหมดใช่ไหมคะ? (แนะนำให้สำรองข้อมูลเก็บไว้ก่อน)')) {
+        ALL_SYSTEM_KEYS.forEach(key => localStorage.removeItem(key));
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k.startsWith('WEEK_') || k.startsWith('LATEST_') || k.startsWith('MONTHLY_')) {
+            keysToRemove.push(k);
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        
+        alert('ล้างข้อมูลปัจจุบันเรียบร้อยแล้วค่ะ');
+        location.reload();
+      }
+    }
+
+    // รวม Lifecycle เริ่มต้นและระบบ Auto-Fetch เข้าด้วยกัน
+    window.addEventListener('DOMContentLoaded', async () => {
+      updateProjectUI();
+      renderLogs();
+
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, '0');
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const yyyy = today.getFullYear() + 543;
+      document.getElementById('backupFileName').value = `Backup_${dd}_${mm}_${yyyy}`;
+
+      const syncStatusEl = document.getElementById('sync-status');
+      if (syncStatusEl && typeof pullDataFromCloud === 'function') {
+        syncStatusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span> กำลังตรวจสอบ Cloud...`;
+        syncStatusEl.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 flex items-center gap-1.5';
 
         const res = await pullDataFromCloud(true);
         if (res && res.success) {
-          badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> ซิงค์ตรงกับ Cloud แล้ว`;
-          badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
-          loadProjectOverview(); // รีเฟรชข้อมูลที่แสดงบนหน้าจอ
+          syncStatusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> ซิงค์ตรงกับ Cloud แล้ว`;
+          syncStatusEl.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5';
+          updateProjectUI();
+          renderLogs();
         } else {
-          badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span> พร้อมใช้งาน (ข้อมูลในเครื่อง)`;
-          badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300';
+          syncStatusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span> พร้อมใช้งาน (ในเครื่อง)`;
+          syncStatusEl.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300 flex items-center gap-1.5';
         }
       }
     });
