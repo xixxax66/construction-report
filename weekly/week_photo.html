@@ -199,7 +199,12 @@
     lucide.createIcons();
     const urlParams = new URLSearchParams(window.location.search);
     const currentWeekIndex = parseInt(urlParams.get('week')) || 1;
-    const PHOTO_STORAGE_KEY = `WEEK_PHOTO_DATA_${currentWeekIndex}`;
+    
+    let currentProjectID = 'DEFAULT_PROJ';
+    let currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
+    
+    // 💡 ปรับปรุง: Storage Key ให้ผูกกับ Project ID และ Month รอบรายงาน
+    let PHOTO_STORAGE_KEY = `WEEK_PHOTO_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
 
     // ตัวแปรส่วนกลางสำหรับวาดหน้ากระดาษ
     let projectTitle = "โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก";
@@ -274,7 +279,6 @@
       
       document.getElementById('txt_photo_count').textContent = photosList.length;
 
-      // จัดแบ่งกระดาษ 1 หน้า มีสูงสุด 4 รูป
       const chunks = chunkArray(photosList, 4);
       if (chunks.length === 0) {
          chunks.push([]);
@@ -365,7 +369,7 @@
       } else {
         el.parentElement.classList.remove('empty-desc');
       }
-      localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, photos: photosList }));
+      localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
     }
 
     function openImageEditor(idx) {
@@ -395,7 +399,8 @@
       grid.innerHTML = '<p class="col-span-3 text-center text-slate-500 py-6">กำลังดึงรูปภาพจาก Google Drive...</p>';
 
       try {
-        const res = await fetch(`${CENTRAL_GAS_URL}?action=get_drive_photos`);
+        const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
+        const res = await fetch(`${centralUrl}?action=get_drive_photos`);
         const result = await res.json();
         
         if (result.status === 'success' && result.photos.length > 0) {
@@ -410,7 +415,7 @@
               </div>`;
           });
         } else {
-          grid.innerHTML = '<p class="col-span-3 text-center text-slate-500 py-6">ไม่พบรูปภาพใน Google Drive โฟลเดอร์นี้</p>';
+          grid.innerHTML = '<p class="col-span-3 text-center text-slate-500 py-6">ไม่พบรูปภาพใน Google Drive</p>';
         }
       } catch (err) {
         grid.innerHTML = '<p class="col-span-3 text-center text-rose-500 py-6">ไม่สามารถโหลดรูปจาก Google Drive ได้</p>';
@@ -593,56 +598,67 @@
       item.src = canvas.toDataURL('image/jpeg', 0.85);
       renderAllPages();
       closeImageEditor();
-      localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, photos: photosList }));
+      localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
     }
 
     function addPhotoSlot() {
       photosList.push({ src: "", desc: "", rawSrc: "", zoom: 1, posX: 0, posY: 0, rotate: 0 });
       renderAllPages();
-      localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, photos: photosList }));
+      localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
     }
 
     function removePhotoSlot(idx) {
       if (photosList.length <= 1) return alert("ต้องมีรูปภาพอย่างน้อย 1 ช่องค่ะ");
       photosList.splice(idx, 1);
       renderAllPages();
-      localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, photos: photosList }));
+      localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
     }
 
     async function savePhotoRecord() {
-      // 1. ค้นหา Folder ID ที่เคยตั้งค่าไว้จากข้อมูลโปรเจกต์
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
-      let driveFolderId = "";
+      let imageFolderId = "";
       if (basicRaw) {
         try {
-          driveFolderId = JSON.parse(basicRaw).driveFolderId || "";
+          const pData = JSON.parse(basicRaw);
+          imageFolderId = pData.imageFolderId || pData.driveFolderId || "";
         } catch(e) {}
       }
 
       document.getElementById('upload_modal').classList.remove('hidden');
       try {
-        // 2. ส่งข้อมูลรูปภาพไปพร้อมกับ Folder ID ให้ Google Drive นำไปจัดเก็บ
-        const res = await syncDataToCloud('save_week_photos', { 
-          weekIndex: currentWeekIndex, 
-          folderId: driveFolderId,
-          photos: photosList 
+        const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
+        const payload = {
+          action: 'save_week_photos',
+          projectID: currentProjectID,
+          reportMonth: currentReportMonth,
+          weekIndex: currentWeekIndex,
+          folderId: imageFolderId,
+          photos: photosList
+        };
+
+        const res = await fetch(centralUrl, {
+          method: 'POST',
+          mode: 'cors',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
         });
+        const resJson = await res.json();
         
-        // 3. หลังจากอัปโหลดเสร็จ ให้แปลงรูปภาพเป็นลิงก์ URL แทน Base64 เพื่อลดปัญหาแอปอืดตอน Backup
-        if (res.status === 'success' && res.photos) {
-          res.photos.forEach((p, i) => {
+        if (resJson.status === 'success' && resJson.photos) {
+          resJson.photos.forEach((p, i) => {
             if (photosList[i]) {
               photosList[i].src = p.src;
-              photosList[i].rawSrc = ""; // เคลียร์ภาพดิบที่มีขนาดใหญ่ทิ้ง
+              photosList[i].rawSrc = "";
             }
           });
         }
         
-        localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, photos: photosList }));
+        localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
         renderAllPages();
         alert("อัปโหลดภาพขึ้น Google Drive เข้าสู่โฟลเดอร์ของโครงการเรียบร้อยแล้วค่ะ");
       } catch (e) {
-        alert("บันทึกรูปภาพลงในเครื่องแล้วค่ะ (หากต้องการส่งขึ้น Cloud รบกวนตรวจสอบสัญญาณอินเทอร์เน็ต)");
+        alert("บันทึกรูปภาพลงในเครื่องเรียบร้อยแล้วค่ะ");
       } finally {
         document.getElementById('upload_modal').classList.add('hidden');
       }
@@ -652,6 +668,11 @@
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         let projectData = JSON.parse(basicRaw);
+        if (projectData.contractNo) {
+          currentProjectID = `PROJ_${projectData.contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
+          PHOTO_STORAGE_KEY = `WEEK_PHOTO_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
+        }
         if (projectData.projectName) projectTitle = projectData.projectName;
         if (projectData.inspectors && projectData.inspectors[0] && projectData.inspectors[0].name) {
           inspName = projectData.inspectors[0].name;
@@ -662,7 +683,9 @@
         }
       }
 
-      const weeklyRefRaw = localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+      const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`) || 
+                           localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || 
+                           localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
       if (weeklyRefRaw) {
         const weeks = JSON.parse(weeklyRefRaw);
         const curWeek = weeks.find(w => parseInt(w.weekIndex) === currentWeekIndex);
@@ -675,7 +698,7 @@
         }
       }
 
-      const cached = localStorage.getItem(PHOTO_STORAGE_KEY);
+      const cached = localStorage.getItem(PHOTO_STORAGE_KEY) || localStorage.getItem(`WEEK_PHOTO_DATA_${currentWeekIndex}`);
       if (cached) {
         const data = JSON.parse(cached);
         if (data.photos) photosList = data.photos;
