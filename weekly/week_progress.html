@@ -77,6 +77,9 @@
   </style>
 </head>
 <body class="p-2 sm:p-4 min-h-screen flex flex-col items-center">
+  <!-- Hidden file input สำหรับเลือกไฟล์สำรองจากเครื่อง -->
+  <input type="file" id="backup_file_input" accept=".json" class="hidden" onchange="handleBackupFileSelected(event)">
+
   <div class="max-w-[1200px] w-full mb-3 flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl shadow border border-slate-300 no-print">
     <div class="flex items-center gap-2">
       <a href="../Weekly_Reference.html" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1 text-sm font-bold">
@@ -92,6 +95,9 @@
       </button>
       <button onclick="openManualImportModal()" id="btn-manual-import" class="flex items-center gap-1 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow hidden">
         <i data-lucide="download" class="w-4 h-4"></i> ดึงงานจากเดือนก่อน (Manual)
+      </button>
+      <button onclick="document.getElementById('backup_file_input').click()" class="flex items-center gap-1 bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow">
+        <i data-lucide="file-code" class="w-4 h-4"></i> โหลดไฟล์สำรอง (.json)
       </button>
       <button onclick="pullDataFromPreviousWeek()" id="btn-pull-prev" class="flex items-center gap-1 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow hidden">
         <i data-lucide="history" class="w-4 h-4"></i> ดึงงานสัปดาห์ก่อน
@@ -111,7 +117,7 @@
     </div>
   </div>
 
-  <!-- แถบตรวจจับข้อผิดพลาดของตัวเลข (Validation Warning Banner) -->
+  <!-- แถบตรวจจับข้อผิดพลาดของตัวเลข -->
   <div id="validation_alert_banner" class="max-w-[1200px] w-full mb-3 hidden no-print">
     <div class="bg-rose-50 border-2 border-rose-400 rounded-xl p-3.5 text-sm text-rose-900 flex items-start gap-3 shadow-md">
       <div class="p-1 bg-rose-200 text-rose-800 rounded-lg shrink-0">
@@ -367,13 +373,48 @@
       }
     }
 
-    // จัดการแสดงปุ่มดึงข้อมูล
     if (currentWeekIndex === 1) {
       document.getElementById('btn-pull-monthly').classList.remove('hidden');
       document.getElementById('btn-manual-import').classList.remove('hidden');
     }
     if (currentWeekIndex > 1) {
       document.getElementById('btn-pull-prev').classList.remove('hidden');
+    }
+
+    // 📂 ฟังก์ชันโหลดไฟล์สำรอง (.json) เข้ามาใช้งาน
+    function handleBackupFileSelected(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const backupData = JSON.parse(evt.target.result);
+          // รองรับทั้งโครงสร้างที่เป็นข้อมูล progress เดี่ยวๆ หรือไฟล์ backup ฐานข้อมูลโปรเจกต์
+          const tasksData = backupData.tasks || backupData.database?.tasks || backupData;
+
+          if (Array.isArray(tasksData) && tasksData.length > 0) {
+            if (confirm(`นำเข้าข้อมูลสำรองจากไฟล์ "${file.name}" เรียบร้อย ต้องการแทนที่ข้อมูลในตารางปัจจุบันเลยหรือไม่?`)) {
+              currentTasks = tasksData.map(t => ({
+                name: t.name || "",
+                cost: parseFloat(t.cost) || 0,
+                proportion: parseFloat(t.proportion) || 0,
+                prev: t.prev || "",
+                curr: t.curr || ""
+              }));
+              renderTables();
+              alert("โหลดข้อมูลจากไฟล์สำรองสำเร็จ!");
+            }
+          } else {
+            alert("ไม่พบรูปแบบข้อมูลรายการงานที่ถูกต้องในไฟล์สำรองนี้");
+          }
+        } catch (err) {
+          console.error(err);
+          alert("เกิดข้อผิดพลาดในการอ่านไฟล์สำรอง (รูปแบบ JSON ไม่ถูกต้อง)");
+        }
+        e.target.value = '';
+      };
+      reader.readAsText(file);
     }
 
     function openMonthlyPickerModal() {
@@ -410,7 +451,6 @@
       alert(`ดึงยอดผลงานสะสม ${val}% จากรายงานประจำเดือนมาเป็นฐานตั้งต้นเรียบร้อยแล้วค่ะ!`);
     }
 
-    // 🛠️ ฟังก์ชันเปิด Modal สำหรับดึงข้อมูลแบบ Manual เลือกเดือนและสัปดาห์ต้นทาง
     function openManualImportModal() {
       const monthSel = document.getElementById('import_source_month');
       monthSel.innerHTML = '';
@@ -474,20 +514,14 @@
       const srcMonth = document.getElementById('import_source_month').value;
       const srcWeekIndex = document.getElementById('import_source_week').value;
 
-      if (!srcMonth || !srcWeekIndex) {
-        return alert("กรุณาเลือกเดือนและสัปดาห์ต้นทางให้ครบถ้วนค่ะ");
-      }
+      if (!srcMonth || !srcWeekIndex) return alert("กรุณาเลือกเดือนและสัปดาห์ต้นทางให้ครบถ้วนค่ะ");
 
       const progKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${srcMonth}_${srcWeekIndex}`;
       const progRaw = localStorage.getItem(progKey);
 
-      if (!progRaw) {
-        return alert(`ไม่พบบันทึกข้อมูลผลงานของเดือน ${srcMonth} (สัปดาห์ที่ ${srcWeekIndex}) กรุณาตรวจสอบว่าเดือนดังกล่าวได้บันทึกข้อมูลไว้แล้วหรือยัง`);
-      }
+      if (!progRaw) return alert(`ไม่พบบันทึกข้อมูลผลงานของเดือน ${srcMonth} (สัปดาห์ที่ ${srcWeekIndex})`);
 
-      if (!confirm(`ต้องการดึงข้อมูลผลงานสะสมจาก เดือน ${srcMonth} (สัปดาห์ที่ ${srcWeekIndex}) มาเป็นยอดตั้งต้น "ถึงสัปดาห์ก่อน" ในสัปดาห์นี้ใช่หรือไม่?`)) {
-        return;
-      }
+      if (!confirm(`ต้องการดึงข้อมูลผลงานสะสมจาก เดือน ${srcMonth} (สัปดาห์ที่ ${srcWeekIndex}) มาเป็นยอดตั้งต้นในสัปดาห์นี้ใช่หรือไม่?`)) return;
 
       try {
         const sourceData = JSON.parse(progRaw);
@@ -496,15 +530,8 @@
             const st = sourceData.tasks[idx];
             let sourceAccum = 0;
             if (st) {
-              const p = parseFloat(st.prev) || 0;
-              const c = parseFloat(st.curr) || 0;
-              sourceAccum = p + c;
-            } else if (sourceData.tasks.length > idx) {
-              const p = parseFloat(sourceData.tasks[idx].prev) || 0;
-              const c = parseFloat(sourceData.tasks[idx].curr) || 0;
-              sourceAccum = p + c;
+              sourceAccum = (parseFloat(st.prev) || 0) + (parseFloat(st.curr) || 0);
             }
-
             return {
               name: t.name || (st ? st.name : ""),
               cost: t.cost || (st ? st.cost : 0),
@@ -516,9 +543,8 @@
         }
         renderTables();
         closeManualImportModal();
-        alert(`ดึงข้อมูลผลงานสะสมจากเดือน ${srcMonth} (สัปดาห์ ${srcWeekIndex}) เรียบร้อยแล้วค่ะ!`);
+        alert(`ดึงข้อมูลผลงานสะสมเรียบร้อยแล้วค่ะ!`);
       } catch (err) {
-        console.error(err);
         alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
       }
     }
@@ -528,17 +554,15 @@
       
       const prevStorageKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex - 1}`;
       const prevRaw = localStorage.getItem(prevStorageKey);
-      if (!prevRaw) return alert(`ไม่พบข้อมูลบันทึกของสัปดาห์ก่อนหน้า กรุณาบันทึกข้อมูลก่อนหน้านี้ก่อนนะคะ`);
+      if (!prevRaw) return alert(`ไม่พบข้อมูลบันทึกของสัปดาห์ก่อนหน้า`);
 
-      if (!confirm(`ต้องการดึง "รายการงานทั้งหมด" และ "ผลงานสะสม" จากสัปดาห์ก่อนหน้ามาใช้งานในสัปดาห์ที่ ${actualContractWeek} หรือไม่?`)) return;
+      if (!confirm(`ต้องการดึงรายการงานและผลงานสะสมจากสัปดาห์ก่อนหน้ามาใช้งานหรือไม่?`)) return;
 
       try {
         const prevData = JSON.parse(prevRaw);
         if (prevData.tasks && Array.isArray(prevData.tasks)) {
           currentTasks = prevData.tasks.map(pt => {
-            const pVal = parseFloat(pt.prev) || 0;
-            const cVal = parseFloat(pt.curr) || 0;
-            const accumPrev = pVal + cVal;
+            const accumPrev = (parseFloat(pt.prev) || 0) + (parseFloat(pt.curr) || 0);
             return {
               name: pt.name || "",
               cost: pt.cost || 0,
@@ -549,21 +573,21 @@
           });
         }
         renderTables();
-        alert(`ดึงรายการงานและผลงานสะสมเรียบร้อยแล้วค่ะ`);
+        alert(`ดึงข้อมูลเรียบร้อยแล้วค่ะ`);
       } catch (e) {
-        alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
+        alert("เกิดข้อผิดพลาด");
       }
     }
 
     function resetCurrentWeekForm() {
-      if (!confirm("ต้องการล้างข้อมูลตัวเลขช่อง 'ในสัปดาห์' ทั้งหมดของสัปดาห์นี้ใช่หรือไม่?")) return;
+      if (!confirm("ต้องการล้างข้อมูลตัวเลขช่อง 'ในสัปดาห์' ทั้งหมดใช่หรือไม่?")) return;
       currentTasks.forEach((t, i) => {
         t.curr = "";
         const currEl = document.getElementById(`in_curr_${i}`);
         if (currEl) currEl.value = "";
       });
       calculateAll();
-      alert("ล้างข้อมูลช่อง 'ในสัปดาห์' เรียบร้อยแล้วค่ะ");
+      alert("ล้างข้อมูลเรียบร้อยแล้วค่ะ");
     }
 
     function renderTables() {
@@ -697,11 +721,10 @@
       }
 
       if (currentWeekIndex > 1 && prevWeekTotalWeight > 0 && sumTotalWeight < prevWeekTotalWeight) {
-        errorMessages.push(`ผลงานรวมสัปดาห์นี้ (${sumTotalWeight.toFixed(2)}%) น้อยกว่าผลงานสัปดาห์ที่แล้ว (${prevWeekTotalWeight.toFixed(2)}%) ซึ่งทำให้กราฟผลงานถอยหลัง`);
+        errorMessages.push(`ผลงานรวมสัปดาห์นี้ (${sumTotalWeight.toFixed(2)}%) น้อยกว่าผลงานสัปดาห์ที่แล้ว (${prevWeekTotalWeight.toFixed(2)}%)`);
       }
 
       renderValidationBanner(errorMessages);
-
       document.getElementById('sum-total-weight').textContent = sumTotalWeight > 0 ? sumTotalWeight.toFixed(2) : '-';
       updateSCurveAnalysis(sumTotalWeight);
     }
@@ -721,17 +744,10 @@
     }
 
     function updateSCurveAnalysis(actualProgress) {
-      let plannedProgress = 0;
-      if (plannedProgressFromRef !== null && !isNaN(plannedProgressFromRef)) {
-        plannedProgress = plannedProgressFromRef;
-      } else {
-        plannedProgress = (actualContractWeek / totalContractWeeks) * 100;
-      }
-      
+      let plannedProgress = plannedProgressFromRef !== null && !isNaN(plannedProgressFromRef) ? plannedProgressFromRef : (actualContractWeek / totalContractWeeks) * 100;
       if (plannedProgress > 100) plannedProgress = 100;
 
       document.getElementById('lbl_planned_progress').textContent = plannedProgress.toFixed(2);
-
       const diff = actualProgress - plannedProgress;
       const banner = document.getElementById('scurve_alert_banner');
       const badge = document.getElementById('lbl_status_badge');
@@ -776,7 +792,7 @@
     }
 
     async function saveProgressData() {
-      if (isDataInvalid) return alert("⚠️ ไม่สามารถบันทึกข้อมูลได้ เนื่องจากมีรายการที่ผลงานสะสมเกิน 100% กรุณาตรวจสอบตัวเลขตามแถบเตือนสีแดงด้านบนก่อนนะคะ");
+      if (isDataInvalid) return alert("⚠️ ไม่สามารถบันทึกข้อมูลได้ เนื่องจากมีรายการที่ผลงานสะสมเกิน 100%");
 
       const btn = document.getElementById('btn-save');
       btn.disabled = true;
@@ -787,11 +803,6 @@
         const payload = getFormData();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
         
-        localStorage.setItem(`LATEST_PROGRESS_SUMMARY_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`, JSON.stringify({
-          totalWeight: payload.totalWeightPercent,
-          status: payload.totalWeightPercent >= 100 ? 'แล้วเสร็จ' : (payload.totalWeightPercent > 0 ? 'ปฏิบัติงาน' : 'ยังไม่ทำงาน')
-        }));
-
         const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
         if (centralUrl) {
           await fetch(centralUrl, {
@@ -800,9 +811,8 @@
             body: JSON.stringify({ action: 'save_week_progress', ...payload })
           });
         }
-        alert(`บันทึกผลการดำเนินงานสัปดาห์ที่ ${actualContractWeek} (รอบเดือน: ${currentReportMonth}) เรียบร้อยแล้วค่ะ`);
+        alert(`บันทึกผลการดำเนินงานเรียบร้อยแล้วค่ะ`);
       } catch (err) {
-        console.error(err);
         alert(`บันทึกข้อมูลลงเครื่องสำเร็จเรียบร้อย`);
       } finally {
         btn.disabled = false;
@@ -838,9 +848,7 @@
               const prevData = JSON.parse(prevRaw);
               if (prevData.tasks && Array.isArray(prevData.tasks)) {
                 currentTasks = prevData.tasks.map(pt => {
-                  const pVal = parseFloat(pt.prev) || 0;
-                  const cVal = parseFloat(pt.curr) || 0;
-                  const accumPrev = pVal + cVal;
+                  const accumPrev = (parseFloat(pt.prev) || 0) + (parseFloat(pt.curr) || 0);
                   return {
                     name: pt.name || "",
                     cost: pt.cost || 0,
