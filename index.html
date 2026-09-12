@@ -22,7 +22,7 @@
 </head>
 <body class="p-3 sm:p-6 min-h-screen flex items-center justify-center">
 
-  <!-- Modal หน้าต่าง Google Drive File Explorer -->
+  <!-- Modal หน้าต่างเลือกโฟลเดอร์ Google Drive -->
   <div id="folder_picker_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
     <div class="bg-white rounded-2xl p-5 max-w-2xl w-full mx-4 shadow-2xl border border-slate-200 flex flex-col h-[80vh]">
       <div class="flex items-center justify-between border-b pb-3 mb-3 shrink-0">
@@ -40,7 +40,7 @@
           </button>
           <div class="flex items-center gap-2">
             <i data-lucide="folder-open" class="w-5 h-5 text-amber-500 fill-amber-100"></i>
-            <span class="font-bold text-slate-800 truncate" id="current_folder_name">ไดรฟ์ของฉัน</span>
+            <span class="font-bold text-slate-800 truncate" id="current_folder_name">โฟลเดอร์เริ่มต้นระบบ</span>
           </div>
         </div>
         <button onclick="confirmFolderSelection()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md whitespace-nowrap cursor-pointer transition">
@@ -65,15 +65,14 @@
         </div>
       </div>
 
-      <!-- แผงสถานะและปุ่มกด Sync ด่วน -->
       <div class="flex items-center gap-2">
         <span id="sync-status" class="text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300 flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-slate-400"></span> พร้อมใช้งาน
         </span>
-        <button onclick="forcePullForIpad()" title="ดึงข้อมูลล่าสุดจาก Cloud" class="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl border border-blue-200 shadow-sm transition">
+        <button onclick="forcePullForIpad()" title="ดึงข้อมูลล่าสุดจาก Cloud" class="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl border border-blue-200 shadow-sm transition cursor-pointer">
           <i data-lucide="cloud-download" class="w-4 h-4"></i>
         </button>
-        <button onclick="saveProjectToCloudAndLocal()" title="สำรองข้อมูลขึ้น Cloud ทันที" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 shadow-sm transition">
+        <button onclick="saveProjectToCloudAndLocal()" title="สำรองข้อมูลขึ้น Cloud ทันที" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 shadow-sm transition cursor-pointer">
           <i data-lucide="cloud-upload" class="w-4 h-4"></i>
         </button>
       </div>
@@ -95,7 +94,7 @@
       </div>
     </div>
 
-    <!-- เมนูหลัก 4 ส่วนสำคัญ -->
+    <!-- เมนูหลัก 4 ส่วน -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <a href="Cons_Reference.html" class="btn-3d bg-white hover:bg-emerald-50 p-5 rounded-2xl shadow border border-slate-300 flex flex-col items-center text-center group transition">
         <div class="w-14 h-14 rounded-2xl bg-emerald-100 group-hover:bg-emerald-600 text-emerald-600 group-hover:text-white flex items-center justify-center transition mb-3 shadow-inner">
@@ -130,7 +129,7 @@
       </a>
     </div>
 
-    <!-- แผงการสำรองข้อมูลและกำหนดรายละเอียดไฟล์ -->
+    <!-- แผงการสำรองข้อมูลและจัดการฐานข้อมูล -->
     <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-300 space-y-5">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
         <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
@@ -144,7 +143,7 @@
         <label class="text-xs font-bold text-slate-700">ลิงก์ Google Apps Script URL (จำเป็นสำหรับการซิงค์):</label>
         <div class="flex gap-2">
           <input type="text" id="input_gas_url" class="cell-input text-xs font-mono" placeholder="https://script.google.com/macros/s/.../exec">
-          <button onclick="saveCustomGasUrl()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition">บันทึก</button>
+          <button onclick="saveCustomGasUrl()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer">บันทึก</button>
         </div>
       </div>
       
@@ -155,7 +154,7 @@
           </label>
           <div class="flex items-center gap-2">
             <div class="flex-1 overflow-hidden relative">
-              <input type="text" id="driveFolderId" class="cell-input text-xs text-transparent" placeholder="[ค่าเริ่มต้น] จัดเก็บในไดรฟ์หลัก (Root)">
+              <input type="text" id="driveFolderId" class="cell-input text-xs text-transparent" placeholder="โฟลเดอร์เริ่มต้นระบบ">
               <div id="lbl_selected_folder" class="absolute inset-0 bg-transparent flex items-center text-blue-700 font-bold px-3 pointer-events-none">
                 📁 โฟลเดอร์เริ่มต้นระบบ
               </div>
@@ -201,11 +200,11 @@
       </div>
     </div>
 
-    <!-- ตารางประวัติการสำรองข้อมูล (Log) -->
+    <!-- ตารางประวัติการสำรองข้อมูล (Log & Restore) -->
     <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-300 space-y-4">
       <div class="flex items-center justify-between border-b pb-2">
         <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-          <i data-lucide="history" class="w-5 h-5 text-slate-600"></i> ประวัติการสำรองข้อมูลโครงการ
+          <i data-lucide="history" class="w-5 h-5 text-slate-600"></i> ประวัติการสำรองข้อมูลโครงการ (สามารถกดกู้คืนได้)
         </h3>
         <button onclick="clearLogs()" class="text-xs text-rose-500 hover:text-rose-700 font-semibold cursor-pointer">ล้างประวัติ</button>
       </div>
@@ -217,7 +216,7 @@
               <th class="w-1/4">วัน-เวลา</th>
               <th class="w-1/3">ชื่อไฟล์</th>
               <th class="w-1/4">รายละเอียด</th>
-              <th class="w-1/6 text-center">สถานะ</th>
+              <th class="w-1/6 text-center">สถานะ / กู้คืน</th>
             </tr>
           </thead>
           <tbody id="log_tbody" class="bg-white divide-y divide-slate-200"></tbody>
@@ -230,10 +229,9 @@
   <script>
     lucide.createIcons();
 
-    // 1. ตัวแปรและตั้งค่าเบื้องต้น
     const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
     const LOG_KEY = 'BACKUP_HISTORY_LOG';
-    const DEFAULT_FOLDER_ID = '11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd'; // โฟลเดอร์เริ่มต้นระบบ
+    const DEFAULT_FOLDER_ID = '11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd';
     
     let folderHistory = [];
     let currentPickerFolderId = DEFAULT_FOLDER_ID;
@@ -242,7 +240,7 @@
     const ALL_SYSTEM_KEYS = [
       'LOCAL_BASIC_INFO', 'CONSTRUCTION_WEEKLY_REF_DB', 'MONTHLY_REPORT_INFO_DATA',
       'MONTHLY_INSPECTION_DATES_DB', 'MONTHLY_MATERIAL_REPORT_DB', 'MONTHLY_PROBLEM_SUMMARY_DB',
-      'LOCAL_START_DATE_RECORD', 'LOCAL_EXPEDITE_RECORD', 'LOCAL_DELIVERY_RECORD', 'PROJECT_FULL_BACKUP_SNAPSHOT'
+      'LOCAL_START_DATE_RECORD', 'LOCAL_EXPEDITE_RECORD', 'LOCAL_DELIVERY_RECORD'
     ];
 
     function getActiveUrl() {
@@ -255,12 +253,11 @@
         localStorage.setItem('CONSTRUCTION_GAS_URL', val);
         alert('บันทึก URL ใหม่เรียบร้อยแล้วค่ะ');
       } else {
-        alert('รูปแบบ URL ไม่ถูกต้องค่ะ กรุณาตรวจสอบอีกครั้งนะคะ');
+        alert('รูปแบบ URL ไม่ถูกต้องค่ะ');
       }
     }
 
-    // 2. ฟังก์ชันหลักสำหรับเจาะระบบ CORS (JSONP Promise)
-    // ฟังก์ชันนี้จะจัดการการสร้าง <script> ทะลุบล็อกให้แบบอัตโนมัติ นำไปใช้ได้ทั้งดึงข้อมูล และหาโฟลเดอร์
+    // JSONP Promise สำหรับเจาะระบบ CORS 100% (ใช้งานร่วมกันทุกปุ่ม)
     function requestJSONP(action, params = {}) {
       return new Promise((resolve, reject) => {
         let url = getActiveUrl();
@@ -269,7 +266,6 @@
         const callbackName = 'gas_cb_' + Date.now() + Math.round(Math.random() * 1000);
         let fetchUrl = `${url}?action=${action}&callback=${callbackName}&_t=${Date.now()}`;
 
-        // นำพารามิเตอร์เสริมมาต่อท้าย
         for (const [key, value] of Object.entries(params)) {
           fetchUrl += `&${key}=${encodeURIComponent(value)}`;
         }
@@ -277,7 +273,6 @@
         const script = document.createElement('script');
         script.src = fetchUrl;
 
-        // เผื่อเวลาเน็ตหลุด (15 วินาที)
         const timeoutId = setTimeout(() => {
           cleanup();
           reject(new Error('หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ (Timeout)'));
@@ -296,14 +291,13 @@
 
         script.onerror = function() {
           cleanup();
-          reject(new Error('เครือข่ายขัดข้อง หรือถูกเบราว์เซอร์บล็อกการโหลดสคริปต์ค่ะ'));
+          reject(new Error('เครือข่ายขัดข้อง หรือถูกเบราว์เซอร์บล็อกสคริปต์ค่ะ'));
         };
 
         document.body.appendChild(script);
       });
     }
 
-    // 3. ระบบแสดงผลบนหน้าจอ (UI Updates)
     function updateProjectUI() {
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
@@ -340,7 +334,7 @@
       lucide.createIcons();
     }
 
-    // 4. ระบบการค้นหาโฟลเดอร์ Google Drive (ใช้ requestJSONP)
+    // ค้นหาโฟลเดอร์ Google Drive
     async function openFolderPicker(folderId = DEFAULT_FOLDER_ID) {
       const modal = document.getElementById('folder_picker_modal');
       const grid = document.getElementById('folder_list_grid');
@@ -353,9 +347,7 @@
       btnBack.disabled = folderHistory.length === 0;
 
       try {
-        // ดึงข้อมูลผ่าน JSONP 
         const result = await requestJSONP('get_drive_folders', { parentId: folderId });
-
         if (result && result.status === 'success') {
           currentPickerFolderId = result.parentId;
           currentPickerFolderName = result.parentName;
@@ -425,13 +417,11 @@
       folderHistory = [];
     }
 
-    // 5. ระบบการดึงข้อมูลจาก Cloud สำหรับ iPad (ใช้ requestJSONP)
+    // ดึงข้อมูลล่าสุดจาก Cloud (Pull)
     async function forcePullForIpad() {
       resetBadge('loading', 'กำลังดึงข้อมูล...');
-
       try {
         const result = await requestJSONP('get_latest_project_database');
-        
         if (result && result.status === 'success' && result.database) {
           let count = 0;
           const db = result.database;
@@ -454,7 +444,44 @@
       }
     }
 
-    // 6. การรวบรวมข้อมูลทั้งหมด (Export) 
+    // กู้คืนข้อมูลจากไฟล์เฉพาะเจาะจงใน Log
+    async function restoreFromCloud(fileName) {
+      if (!confirm(`คุณต้องการกู้คืนฐานข้อมูลจากไฟล์:\n"${fileName}"\nใช่หรือไม่คะ?\n\n⚠️ คำเตือน: ข้อมูลปัจจุบันในเครื่องจะถูกเขียนทับด้วยข้อมูลจากไฟล์นี้ทั้งหมดค่ะ`)) {
+        return;
+      }
+
+      resetBadge('loading', `กำลังกู้คืนไฟล์ ${fileName}...`);
+
+      try {
+        const result = await requestJSONP('get_specific_project_database', { targetFileName: fileName });
+        
+        if (result && result.status === 'success' && result.database) {
+          let count = 0;
+          const db = result.database;
+          
+          ALL_SYSTEM_KEYS.forEach(key => localStorage.removeItem(key));
+          
+          Object.keys(db).forEach(key => {
+            const val = typeof db[key] === 'object' ? JSON.stringify(db[key]) : String(db[key]);
+            localStorage.setItem(key, val);
+            count++;
+          });
+          
+          const syncTime = new Date().toLocaleString('th-TH');
+          localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
+          alert(`กู้คืนข้อมูลจากไฟล์ ${fileName} สำเร็จค่ะ! (นำเข้า ${count} รายการ)`);
+          location.reload();
+        } else {
+          alert(`ไม่พบไฟล์ "${fileName}" บน Google Drive ค่ะ`);
+          resetBadge('ready', 'พร้อมใช้งาน');
+        }
+      } catch (err) {
+        alert(`เกิดข้อผิดพลาดในการกู้คืนข้อมูลค่ะ:\n${err.message}`);
+        resetBadge('error', 'พบข้อผิดพลาด');
+      }
+    }
+
+    // รวบรวมข้อมูลทั้งหมด (Export)
     function exportAllProjectData() {
       const projectDatabase = {};
       
@@ -496,7 +523,7 @@
       return projectDatabase;
     }
 
-// 7. การสำรองข้อมูลขึ้น Cloud (Push) - แก้ไขปัญหา Storage Quota Exceeded
+    // สำรองข้อมูลขึ้น Cloud (Push) - แก้ไขปัญหา Quota เต็มเรียบร้อย
     async function saveProjectToCloudAndLocal() {
       const btn = document.getElementById('btn-cloud-backup');
       try {
@@ -518,7 +545,6 @@
         const timestampForName = new Date().toISOString().slice(0, 10).replace(/-/g, "");
         const finalFileName = fName || `Project_Backup_${timestampForName}`;
 
-        // รวบรวมข้อมูลเพื่อส่งขึ้น Cloud อย่างเดียว (ตัดการเซฟก้อน Snapshot ลงเครื่องทิ้งเพื่อประหยัดพื้นที่)
         const backupData = exportAllProjectData();
 
         const payload = {
@@ -542,7 +568,7 @@
         if (result && result.status === 'success') {
           const syncTime = new Date().toLocaleString('th-TH');
           localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
-          addLogRecord(finalFileName, fileDesc, { success: true });
+          addLogRecord(finalFileName + '.json', fileDesc, { success: true });
           updateProjectUI();
           alert('สำรองข้อมูลขึ้น Google Drive เรียบร้อยแล้วค่ะ!');
         } else {
@@ -551,7 +577,7 @@
 
       } catch (err) {
         alert(`ไม่สามารถเชื่อมต่อ Cloud ได้ค่ะ\nสาเหตุ: ${err.message}`);
-        addLogRecord('การสำรองข้อมูล (พบปัญหาเครือข่าย/พื้นที่เต็ม)', '', { localOnly: false });
+        addLogRecord('การสำรองข้อมูล (พบปัญหาเครือข่าย)', '', { localOnly: true });
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -560,8 +586,7 @@
         }
       }
     }
-    
-    // 8. นำเข้า / ส่งออก / จัดการ LocalStorage
+
     function downloadProjectJSON() {
       const fileNameInput = document.getElementById('backupFileName').value.trim();
       const fileDesc = document.getElementById('backupFileDesc').value.trim();
@@ -617,7 +642,7 @@
       }
     }
 
-    // 9. ประวัติการสำรองข้อมูล (Log)
+    // ประวัติการสำรองข้อมูล (Log & Restore UI)
     function addLogRecord(fileName, desc, statusObj) {
       let logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
       const timestamp = new Date().toLocaleString('th-TH');
@@ -639,22 +664,28 @@
 
       logs.forEach(log => {
         let statusHtml = '';
+        let restoreBtn = '';
+
         if (log.status.success) {
-          statusHtml = `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold whitespace-nowrap">✔️ สำเร็จ (Cloud)</span>`;
+          statusHtml = `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold whitespace-nowrap">✔️ สำเร็จ</span>`;
+          if (log.fileName) {
+            restoreBtn = `<button onclick="restoreFromCloud('${log.fileName}')" class="px-2.5 py-1 bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white rounded text-xs font-bold whitespace-nowrap transition shadow-sm flex items-center gap-1 cursor-pointer mt-1"><i data-lucide="cloud-download" class="w-3 h-3"></i> กู้คืน</button>`;
+          }
         } else if (log.status.localOnly) {
-          statusHtml = `<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold whitespace-nowrap">⚠️ เครื่อง (Local)</span>`;
+          statusHtml = `<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-bold whitespace-nowrap">⚠️ เครื่อง</span>`;
         } else {
           statusHtml = `<span class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-xs font-bold whitespace-nowrap">❌ ล้มเหลว</span>`;
         }
 
         tbody.innerHTML += `
-          <tr class="hover:bg-slate-50 transition">
-            <td class="text-slate-600 whitespace-nowrap">${log.time}</td>
-            <td class="font-medium text-slate-800 break-words">${log.fileName || '-'}</td>
-            <td class="text-slate-500 text-xs break-words">${log.desc || '-'}</td>
-            <td class="text-center">${statusHtml}</td>
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="text-slate-600 whitespace-nowrap text-xs py-2">${log.time}</td>
+            <td class="font-medium text-slate-800 break-words text-sm py-2">${log.fileName || '-'}</td>
+            <td class="text-slate-500 text-xs break-words py-2">${log.desc || '-'}</td>
+            <td class="text-center py-2 flex flex-col items-center justify-center gap-1">${statusHtml} ${restoreBtn}</td>
           </tr>`;
       });
+      lucide.createIcons();
     }
 
     function clearLogs() {
@@ -664,12 +695,10 @@
       }
     }
 
-    // 10. เริ่มต้นระบบเมื่อเปิดหน้าเว็บ
     window.addEventListener('DOMContentLoaded', () => {
       updateProjectUI();
       renderLogs();
 
-      // ตั้งค่าชื่อไฟล์เริ่มต้น
       const today = new Date();
       const dd = String(today.getDate()).padStart(2, '0');
       const mm = String(today.getMonth() + 1).padStart(2, '0');
