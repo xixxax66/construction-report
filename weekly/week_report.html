@@ -209,17 +209,32 @@
     }
 
     function parseThaiDateStr(str) {
-      if(!str) return null;
-      let arabicStr = thaiToArabic(str);
+      if (!str) return null;
+      let cleanStr = thaiToArabic(str.toString().trim());
       const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-      const parts = arabicStr.trim().split(/\s+/);
+      
+      // รองรับรูปแบบ DD Month YYYY (เช่น 20 มิถุนายน 2569)
+      for (let i = 0; i < thaiMonths.length; i++) {
+        if (cleanStr.includes(thaiMonths[i])) {
+          cleanStr = cleanStr.replace(thaiMonths[i], (i + 1).toString());
+          break;
+        }
+      }
+      
+      const parts = cleanStr.split(/[\s\-\/]+/);
       if (parts.length >= 3) {
         const d = parseInt(parts[0]);
-        const m = thaiMonths.indexOf(parts[1]);
-        const y = parseInt(parts[2]) - 543;
-        if(!isNaN(d) && m !== -1 && !isNaN(y)) return new Date(y, m, d);
+        const m = parseInt(parts[1]) - 1;
+        let y = parseInt(parts[2]);
+        if (y > 2400) y -= 543;
+        if (!isNaN(d) && !isNaN(m) && !isNaN(y)) {
+          return new Date(y, m, d);
+        }
       }
-      return null;
+      
+      // Fallback สำหรับ Date object หรือรูปแบบสากล
+      const parsed = new Date(str);
+      return !isNaN(parsed.getTime()) ? parsed : null;
     }
 
     function loadAllData(isManualAlert = false) {
@@ -382,7 +397,7 @@
       let totalPaidSum = 0;
       let hasNumericPaid = false;
 
-      let totalDaysNum = projectData && projectData.durationDays ? parseInt(projectData.durationDays) : 140;
+      let totalDaysNum = projectData && (projectData.durationDays || projectData.manualDays) ? parseInt(projectData.durationDays || projectData.manualDays) : 140;
       if (projectData && projectData.totalExtendedDays && parseInt(projectData.totalExtendedDays) > 0) {
         totalDaysNum = parseInt(projectData.totalExtendedDays);
       }
@@ -390,15 +405,19 @@
       let remainDays = totalDaysNum;
       let timePercent = 0;
 
-      if (projectData && projectData.startDate && currentWeekObj && currentWeekObj.endDate) {
-        const sDate = new Date(projectData.startDate);
-        const eDate = parseThaiDateStr(currentWeekObj.endDate);
+      const rawStartDate = projectData.startDateTh || projectData.startDate;
+      const rawEndDate = currentWeekObj && currentWeekObj.endDate ? currentWeekObj.endDate : (projectData.endDateTh || projectData.endDate);
+
+      if (rawStartDate && rawEndDate) {
+        const sDate = parseThaiDateStr(rawStartDate);
+        const eDate = parseThaiDateStr(rawEndDate);
         if (sDate && !isNaN(sDate.getTime()) && eDate && !isNaN(eDate.getTime())) {
           const diffTime = eDate.getTime() - sDate.getTime();
-          const passedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-          remainDays = totalDaysNum - passedDays;
+          const passedDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1);
+          remainDays = Math.max(0, totalDaysNum - passedDays);
           if (totalDaysNum > 0) {
             timePercent = (passedDays / totalDaysNum) * 100;
+            if (timePercent > 100) timePercent = 100;
           }
         }
       }
@@ -506,29 +525,69 @@
       let inspHTML = "";
       inspectors.forEach(insp => {
         if (insp.name) {
-          inspHTML += `<div class="space-y-1 text-center min-w-[220px] mb-2"><p>(ลงชื่อ)................................................. ${insp.pos || 'ผู้ควบคุมงาน'}</p><p class="signature-name font-medium mt-1">(${insp.name})</p></div>`;
+          inspHTML += `
+            <div class="flex flex-col items-end mb-2 pr-12">
+              <div class="text-center">
+                <p>(ลงชื่อ)........................................................... ${insp.pos || 'ผู้ควบคุมงาน'}</p>
+                <p class="font-medium mt-1">(${insp.name})</p>
+              </div>
+            </div>`;
         }
       });
       if (!inspHTML) {
-        inspHTML = `<div class="space-y-1 text-center min-w-[220px]"><p>(ลงชื่อ)................................................. ผู้ควบคุมงาน</p><p class="signature-name font-medium mt-1">(นายพัทธิยะ วงษาซ้าย)</p></div>`;
+        inspHTML = `
+          <div class="flex flex-col items-end mb-2 pr-12">
+            <div class="text-center">
+              <p>(ลงชื่อ)........................................................... ผู้ควบคุมงาน</p>
+              <p class="font-medium mt-1">(นายพัทธิยะ วงษาซ้าย)</p>
+            </div>
+          </div>`;
       }
       document.getElementById('inspectorSignatureArea').innerHTML = inspHTML;
 
-      const comms = data.committees || ["นางสาวถนอมนวล วะทวีก้านตรงฯ", "จ่าเอกธีรพงษ์ ดรชานนท์"];
+      const comms = data.committees || [];
       const commArea = document.getElementById('committeeSignatureArea');
       commArea.innerHTML = '';
       
+      if (comms.length === 0) {
+        commArea.innerHTML = `
+          <div class="col-span-2 mb-3 flex flex-col items-center">
+            <div class="text-center">
+              <p>(ลงชื่อ)........................................................... ประธานกรรมการฯ</p>
+              <p class="font-medium mt-1">(นางสาวถนอมนวล วะทวีก้านตรงฯ)</p>
+            </div>
+          </div>
+          <div class="mb-3 flex flex-col items-end pr-10">
+            <div class="text-center">
+              <p>(ลงชื่อ)........................................................... กรรมการฯ</p>
+              <p class="font-medium mt-1">(จ่าเอกธีรพงษ์ ดรชานนท์)</p>
+            </div>
+          </div>`;
+        return;
+      }
+
       comms.forEach((name, idx) => {
         if (!name) return;
         const roleLabel = (idx === 0) ? 'ประธานกรรมการฯ' : 'กรรมการฯ';
         
-        commArea.innerHTML += `
-          <div class="${idx === 0 ? 'col-span-2 mb-3' : 'mb-3'} flex flex-col items-center">
-            <div class="inline-block text-center">
-              <p>(ลงชื่อ).................................................... ${roleLabel}</p>
-              <p class="signature-name ${idx === 0 ? 'chairman-signature-name' : ''} font-medium mt-1">(${name})</p>
-            </div>
-          </div>`;
+        if (idx === 0) {
+          commArea.innerHTML += `
+            <div class="col-span-2 mb-3 flex flex-col items-center">
+              <div class="text-center">
+                <p>(ลงชื่อ)........................................................... ${roleLabel}</p>
+                <p class="font-medium mt-1">(${name})</p>
+              </div>
+            </div>`;
+        } else {
+          const alignClass = (idx % 2 !== 0) ? 'flex flex-col items-end pr-10' : 'flex flex-col items-start pl-10';
+          commArea.innerHTML += `
+            <div class="mb-3 ${alignClass}">
+              <div class="text-center">
+                <p>(ลงชื่อ)........................................................... ${roleLabel}</p>
+                <p class="font-medium mt-1">(${name})</p>
+              </div>
+            </div>`;
+        }
       });
     }
 
