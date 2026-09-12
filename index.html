@@ -596,23 +596,28 @@
       return projectDatabase;
     }
 
-async function saveProjectToCloudAndLocal() {
-      const btn = document.getElementById('btn-cloud-backup');
+    async function saveProjectToCloudAndLocal() {
+      // ดักจับปุ่มทั้ง 2 จุดเพื่อแสดงสถานะหมุนโหลด
+      const btnTop = document.querySelector('button[title="สำรองข้อมูลขึ้น Cloud ทันที"]');
+      const btnBottom = document.getElementById('btn-cloud-backup');
+      
       try {
-        if (btn) {
-          btn.disabled = true;
-          btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังเตรียมข้อมูล...`;
-          lucide.createIcons();
-        }
+        if (btnBottom) { btnBottom.disabled = true; btnBottom.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังเตรียมข้อมูล...`; }
+        if (btnTop) { btnTop.disabled = true; btnTop.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>`; }
+        lucide.createIcons();
 
         const driveFolderInput = document.getElementById('driveFolderId');
         const folderId = (driveFolderInput ? driveFolderInput.value : '') || localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || DEFAULT_FOLDER_ID;
         
+        // ดึงชื่อไฟล์ที่พิมพ์จากหน้าจอ
+        const fileNameInput = document.getElementById('backupFileName');
+        const fName = fileNameInput ? fileNameInput.value.trim() : '';
         const fileDescInput = document.getElementById('backupFileDesc');
         const fileDesc = fileDescInput ? fileDescInput.value.trim() : '';
 
         const backupData = exportAllProjectData();
 
+        // ตรวจสอบและบังคับดึง Project ID ให้ตรงกับโครงการที่เลือกอยู่ปัจจุบัน
         const basicInfoRaw = localStorage.getItem('LOCAL_BASIC_INFO');
         let currentProjId = "DEFAULT";
         let currentContractNo = "DEFAULT";
@@ -631,6 +636,11 @@ async function saveProjectToCloudAndLocal() {
         backupData.projectID = currentProjId;
         backupData.contractNo = currentContractNo;
 
+        // กำหนดชื่อไฟล์: ถ้ามีพิมพ์ให้ใช้ตามที่พิมพ์เป๊ะๆ ถ้าไม่มีให้สร้างอัตโนมัติตามเลขสัญญา
+        const timestampForName = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+        const cleanContract = String(currentContractNo).replace(/[/\\?%*:|"<>]/g, '_');
+        const finalFileName = fName || `Backup_${cleanContract}_${timestampForName}`;
+
         const currentLogs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
 
         const payload = {
@@ -638,18 +648,18 @@ async function saveProjectToCloudAndLocal() {
           folderId: folderId,
           projectID: currentProjId,
           contractNo: currentContractNo,
+          fileName: finalFileName, // ส่งชื่อไฟล์ที่ต้องการไปให้เซิร์ฟเวอร์
           timestamp: new Date().toLocaleString('th-TH'),
           database: backupData,
           logs: currentLogs
         };
 
-        if (btn) btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังอัปโหลด...`;
+        if (btnBottom) btnBottom.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังอัปโหลด...`;
 
-        // เพิ่ม mode และ redirect: 'follow' เพื่อให้วิ่งตามการ Redirect ของ Google ได้อย่างสมบูรณ์
         const response = await fetch(getActiveUrl(), {
           method: 'POST',
           mode: 'cors',
-          redirect: 'follow',
+          redirect: 'follow', // แก้ไขปุ่มกดด้านบนไม่ทำงาน
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
@@ -660,11 +670,12 @@ async function saveProjectToCloudAndLocal() {
           const syncTime = new Date().toLocaleString('th-TH');
           localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
           
-          const actualFileName = result.savedFileName || `Project_${currentProjId}_Database.json`;
+          // ใช้ชื่อไฟล์จริงที่เซิร์ฟเวอร์สร้างสำเร็จ บันทึกลง Log (รับรองกดกู้คืนได้ชัวร์ 100%)
+          const actualFileName = result.savedFileName; 
           addLogRecord(actualFileName, fileDesc, { success: true });
 
           updateProjectUI();
-          alert('สำรองข้อมูลและซิงค์ประวัติ Log ขึ้น Google Drive เรียบร้อยแล้วค่ะ!');
+          alert(`สำรองข้อมูลและบันทึกไฟล์ "${actualFileName}" เรียบร้อยแล้วค่ะ!`);
         } else {
           throw new Error(result ? result.message : 'เซิร์ฟเวอร์ปฏิเสธการตอบกลับ');
         }
@@ -672,11 +683,9 @@ async function saveProjectToCloudAndLocal() {
       } catch (err) {
         alert(`ไม่สามารถเชื่อมต่อ Cloud ได้ค่ะ\nสาเหตุ: ${err.message}`);
       } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> สำรองขึ้น Cloud (พร้อมเก็บประวัติ)`;
-          lucide.createIcons();
-        }
+        if (btnBottom) { btnBottom.disabled = false; btnBottom.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> สำรองขึ้น Cloud (พร้อมเก็บประวัติ)`; }
+        if (btnTop) { btnTop.disabled = false; btnTop.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i>`; }
+        lucide.createIcons();
       }
     }
     
