@@ -490,6 +490,27 @@
 
       renderLogs();
     });
+    
+  window.addEventListener('DOMContentLoaded', async () => {
+  // ตรวจสอบการเชื่อมต่อและดึงข้อมูลอัตโนมัติเมื่อเปิดแอป
+  const syncStatusEl = document.getElementById('sync-status');
+  if (syncStatusEl) {
+    syncStatusEl.textContent = 'กำลังตรวจสอบ Cloud...';
+    syncStatusEl.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 animate-pulse';
+  }
+
+  // เรียกดึงข้อมูลจาก Cloud แบบเงียบๆ (Silent Pull)
+  if (typeof pullDataFromCloud === 'function') {
+    const synced = await pullDataFromCloud(true);
+    if (synced && syncStatusEl) {
+      syncStatusEl.textContent = 'ซิงค์ข้อมูลตรงกันแล้ว';
+      syncStatusEl.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800';
+    } else if (syncStatusEl) {
+      syncStatusEl.textContent = 'พร้อมใช้งาน (ออฟไลน์/แคช)';
+      syncStatusEl.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700';
+    }
+  }
+});  
   </script>
 </body>
 </html>
