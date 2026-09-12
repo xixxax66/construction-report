@@ -1,6 +1,6 @@
 /**
  * assets/gas-sync.js
- * ระบบเชื่อมต่อและซิงค์ข้อมูลอัตโนมัติผ่าน Google Apps Script (Auto-Sync Cloud)
+ * ระบบเชื่อมต่อและซิงค์ข้อมูลอัตโนมัติผ่าน Google Apps Script (รองรับ iPadOS / iOS 100%)
  */
 
 const GAS_SYNC_CONFIG = {
@@ -19,15 +19,28 @@ async function pullDataFromCloud(silent = false) {
   const gasUrl = GAS_SYNC_CONFIG.getGasUrl();
 
   try {
-    // ใส่ timestamp ป้องกัน Browser แคชข้อมูลเก่า
-    const res = await fetch(`${gasUrl}?action=get_latest_project_database&_t=${Date.now()}`);
+    const fetchUrl = `${gasUrl}?action=get_latest_project_database&_t=${Date.now()}`;
+    
+    // ตั้งค่า redirect: 'follow' และ mode: 'cors' ให้ผ่านระบบความปลอดภัยของ iPad
+    const res = await fetch(fetchUrl, {
+      method: 'GET',
+      mode: 'cors',
+      redirect: 'follow',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
     const result = await res.json();
 
     if (result.status === 'success' && result.database) {
       let count = 0;
       const db = result.database;
 
-      // เขียนทับทุก Key ลงใน LocalStorage
       Object.keys(db).forEach(key => {
         const val = db[key];
         const valToStore = typeof val === 'object' ? JSON.stringify(val) : String(val);
@@ -44,7 +57,7 @@ async function pullDataFromCloud(silent = false) {
       }
       return { success: true, count, lastUpdated: result.lastUpdated };
     } else if (result.status === 'empty') {
-      if (!silent) alert('ยังไม่มีไฟล์ข้อมูลสำรองบน Google Drive ค่ะ กรุณากดสำรองข้อมูลจากเครื่องแรกก่อนนะคะ');
+      if (!silent) alert('ยังไม่มีไฟล์ข้อมูลสำรองบน Google Drive ค่ะ กรุณากดสำรองข้อมูลจากโน้ตบุ๊กก่อนนะคะ');
       return { success: false, empty: true };
     }
   } catch (err) {
@@ -61,7 +74,6 @@ async function pushDataToCloud(silent = false) {
   const gasUrl = GAS_SYNC_CONFIG.getGasUrl();
   const folderId = localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || 'root';
 
-  // รวบรวมข้อมูลทั้งหมดใน localStorage
   const projectDatabase = {};
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
@@ -83,18 +95,21 @@ async function pushDataToCloud(silent = false) {
   };
 
   try {
+    // สำหรับ iPad ต้องส่ง Content-Type เป็น text/plain เพื่อเลี่ยง CORS Preflight (OPTIONS)
     const res = await fetch(gasUrl, {
       method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
     });
+
     const result = await res.json();
 
     if (result.status === 'success') {
       const syncTime = new Date().toLocaleString('th-TH');
       localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
 
-      // บันทึก Log ลงประวัติ
       saveBackupHistoryRecord(syncTime);
 
       if (!silent) alert(`สำรองข้อมูลและส่งขึ้น Cloud เรียบร้อยแล้วค่ะ!\nเวลา: ${syncTime}`);
