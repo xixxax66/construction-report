@@ -77,7 +77,6 @@
   </style>
 </head>
 <body class="p-2 sm:p-4 min-h-screen flex flex-col items-center">
-  <!-- Hidden file input สำหรับเลือกไฟล์สำรองจากเครื่อง -->
   <input type="file" id="backup_file_input" accept=".json" class="hidden" onchange="handleBackupFileSelected(event)">
 
   <div class="max-w-[1200px] w-full mb-3 flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl shadow border border-slate-300 no-print">
@@ -117,7 +116,6 @@
     </div>
   </div>
 
-  <!-- แถบตรวจจับข้อผิดพลาดของตัวเลข -->
   <div id="validation_alert_banner" class="max-w-[1200px] w-full mb-3 hidden no-print">
     <div class="bg-rose-50 border-2 border-rose-400 rounded-xl p-3.5 text-sm text-rose-900 flex items-start gap-3 shadow-md">
       <div class="p-1 bg-rose-200 text-rose-800 rounded-lg shrink-0">
@@ -130,7 +128,7 @@
     </div>
   </div>
 
-  <!-- Modal สำหรับเลือกเดือนที่ต้องการดึงยอดสะสมประจำเดือน -->
+  <!-- Modal เลือกเดือนที่ต้องการดึงยอดสะสมประจำเดือน -->
   <div id="monthly_picker_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
     <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-slate-200 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
@@ -150,7 +148,7 @@
     </div>
   </div>
 
-  <!-- Modal สำหรับเลือกดึงข้อมูลแบบ Manual (สัปดาห์แรกของเดือน) -->
+  <!-- Modal สำหรับเลือกดึงข้อมูลแบบ Manual (ปรับปรุงใหม่ให้ค้นหาเดือนและสัปดาห์ได้อย่างแม่นยำ) -->
   <div id="manual_import_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
     <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-slate-200 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
@@ -381,7 +379,6 @@
       document.getElementById('btn-pull-prev').classList.remove('hidden');
     }
 
-    // 📂 ฟังก์ชันโหลดไฟล์สำรอง (.json) เข้ามาใช้งาน
     function handleBackupFileSelected(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -390,7 +387,6 @@
       reader.onload = function(evt) {
         try {
           const backupData = JSON.parse(evt.target.result);
-          // รองรับทั้งโครงสร้างที่เป็นข้อมูล progress เดี่ยวๆ หรือไฟล์ backup ฐานข้อมูลโปรเจกต์
           const tasksData = backupData.tasks || backupData.database?.tasks || backupData;
 
           if (Array.isArray(tasksData) && tasksData.length > 0) {
@@ -409,7 +405,6 @@
             alert("ไม่พบรูปแบบข้อมูลรายการงานที่ถูกต้องในไฟล์สำรองนี้");
           }
         } catch (err) {
-          console.error(err);
           alert("เกิดข้อผิดพลาดในการอ่านไฟล์สำรอง (รูปแบบ JSON ไม่ถูกต้อง)");
         }
         e.target.value = '';
@@ -451,6 +446,7 @@
       alert(`ดึงยอดผลงานสะสม ${val}% จากรายงานประจำเดือนมาเป็นฐานตั้งต้นเรียบร้อยแล้วค่ะ!`);
     }
 
+    // 🛠️ ปรับปรุงระบบค้นหาเดือนต้นทางแบบอัจฉริยะ (กวาดหาจาก WEEK_PROGRESS_DATA และ WEEKLY_REF ทั้งหมด)
     function openManualImportModal() {
       const monthSel = document.getElementById('import_source_month');
       monthSel.innerHTML = '';
@@ -458,20 +454,58 @@
       let foundMonths = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.includes(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_`)) {
+        if (key && (key.includes(`WEEK_PROGRESS_DATA_${currentProjectID}_`) || key.includes(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_`))) {
+          // ดึงชื่อเดือนออกจากคีย์ (รูปแบบ: PREFIX_PROJECT_MONTH_WEEK)
           const parts = key.split('_');
-          const m = parts[parts.length - 1];
-          if (m && !foundMonths.includes(m)) foundMonths.push(m);
+          // หาเดือนที่เป็นรูปแบบ เช่น SEP_2569 หรือ สรุปเดือนต่างๆ ท้ายๆ
+          if (parts.length >= 4) {
+            const possibleMonth = parts[parts.length - 2]; 
+            const possibleMonthFull = parts.slice(parts.length - 2).join('_');
+            
+            // เช็กคีย์แบบ WEEK_PROGRESS_DATA_PROJ_xxx_MONTH_WEEK
+            if (key.includes(`WEEK_PROGRESS_DATA_${currentProjectID}_`)) {
+              const subParts = key.replace(`WEEK_PROGRESS_DATA_${currentProjectID}_`, '').split('_');
+              if (subParts.length >= 2) {
+                const mName = subParts.slice(0, subParts.length - 1).join('_');
+                if (mName && mName !== currentReportMonth && !foundMonths.includes(mName)) {
+                  foundMonths.push(mName);
+                }
+              }
+            }
+            // เช็กคีย์แบบ CONSTRUCTION_WEEKLY_REF_DB_PROJ_xxx_MONTH
+            if (key.includes(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_`)) {
+              const mName = key.replace(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_`, '');
+              if (mName && mName !== currentReportMonth && !foundMonths.includes(mName)) {
+                foundMonths.push(mName);
+              }
+            }
+          }
+        }
+      }
+
+      // Fallback เผื่อไม่เจอในรูปแบบคีย์ข้างต้น ให้ค้นหาคีย์ทั้งหมดที่มีข้อมูล progress อยู่
+      if (foundMonths.length === 0) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(`WEEK_PROGRESS_DATA_`)) {
+            const cleanKey = key.replace(`WEEK_PROGRESS_DATA_`, '');
+            const lastUnderscore = cleanKey.lastIndexOf('_');
+            if (lastUnderscore !== -1) {
+              const rest = cleanKey.substring(0, lastUnderscore);
+              const mName = rest.replace(`${currentProjectID}_`, '');
+              if (mName && mName !== currentReportMonth && !foundMonths.includes(mName)) {
+                foundMonths.push(mName);
+              }
+            }
+          }
         }
       }
 
       if (foundMonths.length === 0) {
-        monthSel.innerHTML = `<option value="">ไม่พบประวัติข้อมูลสัปดาห์ในระบบ</option>`;
+        monthSel.innerHTML = `<option value="">ไม่พบประวัติข้อมูลเดือนอื่นในระบบ</option>`;
       } else {
         foundMonths.forEach(m => {
-          if (m !== currentReportMonth) {
-            monthSel.innerHTML += `<option value="${m}">เดือน: ${m}</option>`;
-          }
+          monthSel.innerHTML += `<option value="${m}">เดือน: ${m}</option>`;
         });
       }
 
@@ -495,17 +529,26 @@
         return;
       }
 
-      const refKey = `CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${srcMonth}`;
-      const rawRef = localStorage.getItem(refKey);
-      if (rawRef) {
-        try {
-          const weeks = JSON.parse(rawRef);
-          weeks.forEach(w => {
-            weekSel.innerHTML += `<option value="${w.weekIndex}">สัปดาห์ที่ ${w.weekIndex} (สัปดาห์สัญญาที่ ${w.week})</option>`;
-          });
-        } catch(e){}
+      // ค้นหาสัปดาห์ที่มีข้อมูลบันทึกจริงในเดือนนั้นๆ
+      let availableWeeks = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(`WEEK_PROGRESS_DATA_${currentProjectID}_${srcMonth}_`)) {
+          const wIdx = key.replace(`WEEK_PROGRESS_DATA_${currentProjectID}_${srcMonth}_`, '');
+          if (wIdx && !availableWeeks.includes(parseInt(wIdx))) {
+            availableWeeks.push(parseInt(wIdx));
+          }
+        }
       }
-      if (weekSel.options.length === 0) {
+
+      availableWeeks.sort((a, b) => a - b);
+
+      if (availableWeeks.length > 0) {
+        availableWeeks.forEach(w => {
+          weekSel.innerHTML += `<option value="${w}">สัปดาห์ที่ ${w}</option>`;
+        });
+      } else {
+        // Fallback หากหาไม่เจอ ให้แสดงสัปดาห์ 1-5 เป็นค่ามาตรฐาน
         weekSel.innerHTML = `<option value="1">สัปดาห์ที่ 1</option><option value="2">สัปดาห์ที่ 2</option><option value="3">สัปดาห์ที่ 3</option><option value="4">สัปดาห์ที่ 4</option><option value="5">สัปดาห์ที่ 5</option>`;
       }
     }
