@@ -9,31 +9,31 @@ const GAS_SYNC_CONFIG = {
   
   getGasUrl() {
     return localStorage.getItem('CONSTRUCTION_GAS_URL') || this.defaultUrl;
-  },
-  getFolderId() {
-    return localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || 'root';
   }
 };
 
 /**
  * ดึงฐานข้อมูลล่าสุดจาก Cloud ลงมาทับ localStorage ในเครื่อง (Pull)
- * @param {boolean} silent โหมดเงียบ (ไม่แสดง alert)
  */
 async function pullDataFromCloud(silent = false) {
   const gasUrl = GAS_SYNC_CONFIG.getGasUrl();
-  const folderId = GAS_SYNC_CONFIG.getFolderId();
 
   try {
-    const res = await fetch(`${gasUrl}?action=get_latest_project_database&folderId=${encodeURIComponent(folderId)}`);
+    // ใส่ timestamp ป้องกัน Browser แคชข้อมูลเก่า
+    const res = await fetch(`${gasUrl}?action=get_latest_project_database&_t=${Date.now()}`);
     const result = await res.json();
 
     if (result.status === 'success' && result.database) {
       let count = 0;
-      for (const [key, value] of Object.entries(result.database)) {
-        const valToStore = typeof value === 'object' ? JSON.stringify(value) : value;
+      const db = result.database;
+
+      // เขียนทับทุก Key ลงใน LocalStorage
+      Object.keys(db).forEach(key => {
+        const val = db[key];
+        const valToStore = typeof val === 'object' ? JSON.stringify(val) : String(val);
         localStorage.setItem(key, valToStore);
         count++;
-      }
+      });
 
       const syncTime = new Date().toLocaleString('th-TH');
       localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
@@ -44,28 +44,28 @@ async function pullDataFromCloud(silent = false) {
       }
       return { success: true, count, lastUpdated: result.lastUpdated };
     } else if (result.status === 'empty') {
-      if (!silent) alert('ยังไม่มีไฟล์ข้อมูลสำรองบน Google Drive ค่ะ');
+      if (!silent) alert('ยังไม่มีไฟล์ข้อมูลสำรองบน Google Drive ค่ะ กรุณากดสำรองข้อมูลจากเครื่องแรกก่อนนะคะ');
       return { success: false, empty: true };
     }
   } catch (err) {
     console.warn('Auto-pull failed or offline:', err);
-    if (!silent) alert('ไม่สามารถเชื่อมต่อ Cloud ได้ โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ตหรือ URL Web App');
+    if (!silent) alert('ไม่สามารถเชื่อมต่อ Cloud ได้ โปรดตรวจสอบสัญญาณอินเทอร์เน็ต');
   }
   return { success: false };
 }
 
 /**
  * บันทึกและส่งข้อมูลในเครื่องทั้งหมดขึ้น Cloud (Push)
- * @param {boolean} silent โหมดเงียบ (ไม่แสดง alert)
  */
 async function pushDataToCloud(silent = false) {
   const gasUrl = GAS_SYNC_CONFIG.getGasUrl();
-  const folderId = GAS_SYNC_CONFIG.getFolderId();
+  const folderId = localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || 'root';
 
   // รวบรวมข้อมูลทั้งหมดใน localStorage
   const projectDatabase = {};
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
+    if (k === 'LAST_CLOUD_SYNC_TIME') continue;
     const val = localStorage.getItem(k);
     try {
       projectDatabase[k] = JSON.parse(val);
@@ -93,8 +93,8 @@ async function pushDataToCloud(silent = false) {
     if (result.status === 'success') {
       const syncTime = new Date().toLocaleString('th-TH');
       localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
-      
-      // บันทึกประวัติการสำรองข้อมูลลงประวัติย่อ
+
+      // บันทึก Log ลงประวัติ
       saveBackupHistoryRecord(syncTime);
 
       if (!silent) alert(`สำรองข้อมูลและส่งขึ้น Cloud เรียบร้อยแล้วค่ะ!\nเวลา: ${syncTime}`);
@@ -102,18 +102,17 @@ async function pushDataToCloud(silent = false) {
     }
   } catch (err) {
     console.error('Push data failed:', err);
-    if (!silent) alert('เกิดข้อผิดพลาดในการส่งข้อมูลขึ้น Cloud โปรดตรวจสอบสัญญาณอินเทอร์เน็ต');
+    if (!silent) alert('เกิดข้อผิดพลาดในการส่งข้อมูลขึ้น Cloud');
   }
   return { success: false };
 }
 
-// ฟังก์ชันเก็บประวัติการสำรองข้อมูล
 function saveBackupHistoryRecord(timeStr) {
   try {
     let history = JSON.parse(localStorage.getItem('PROJECT_BACKUP_HISTORY') || '[]');
     history.unshift({
       date: timeStr,
-      source: navigator.userAgent.includes('iPad') || navigator.userAgent.includes('Macintosh') ? 'iPad / Mac' : 'Notebook / PC'
+      source: /iPad|iPhone|Macintosh/.test(navigator.userAgent) ? 'iPad / Apple' : 'Notebook / PC'
     });
     if (history.length > 20) history.pop();
     localStorage.setItem('PROJECT_BACKUP_HISTORY', JSON.stringify(history));
