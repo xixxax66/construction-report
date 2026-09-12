@@ -507,7 +507,7 @@
       }
     }
 
-    // 2. ระบบดึงข้อมูลจาก Cloud สำหรับ iPad (Fallback Import)
+    // 2. ระบบดึงข้อมูลจาก Cloud สำหรับ iPad (แก้ไขบัคการตัดคำ JSON)
     function forcePullForIpad() {
       const url = getActiveUrl();
       const fetchUrl = `${url}?action=get_latest_project_database&_t=${Date.now()}`;
@@ -524,11 +524,17 @@
       .then(response => response.text())
       .then(text => {
         try {
-          if (text.startsWith('gas_callback_') || text.includes('(')) {
-            text = text.substring(text.indexOf('(') + 1, text.lastIndexOf(')'));
+          // ค้นหาตำแหน่งเริ่มต้น { และสิ้นสุด } เพื่อดึงข้อมูล JSON ที่แท้จริงออกมาอย่างปลอดภัย
+          let cleanJson = text;
+          const firstBrace = text.indexOf('{');
+          const lastBrace = text.lastIndexOf('}');
+          
+          if (firstBrace !== -1 && lastBrace !== -1) {
+            cleanJson = text.substring(firstBrace, lastBrace + 1);
           }
           
-          const result = JSON.parse(text);
+          const result = JSON.parse(cleanJson);
+          
           if (result.status === 'success' && result.database) {
             let count = 0;
             const db = result.database;
@@ -547,7 +553,7 @@
             syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300 flex items-center gap-1.5';
           }
         } catch(e) {
-          alert('รูปแบบข้อมูลจากเซิร์ฟเวอร์ผิดพลาดค่ะ');
+          alert('รูปแบบข้อมูลผิดพลาดจากเซิร์ฟเวอร์ค่ะ: ' + e.message);
           syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span> พบข้อผิดพลาด`;
           syncBadge.className = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-300 flex items-center gap-1.5';
         }
