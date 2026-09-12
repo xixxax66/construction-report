@@ -78,6 +78,16 @@
       </div>
     </div>
 
+    <!-- แถบเลือกโครงการบนหน้าหลัก (เชื่อมโยงกับ Cons_Reference) -->
+    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-300 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2 flex-1">
+        <i data-lucide="folder-kanban" class="w-5 h-5 text-emerald-600 shrink-0"></i>
+        <select id="index_project_selector" onchange="switchIndexProject(this.value)" class="w-full font-bold text-slate-800 bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none cursor-pointer text-sm">
+          <!-- เติมอัตโนมัติ -->
+        </select>
+      </div>
+    </div>
+
     <!-- การ์ดสรุปข้อมูลโครงการปัจจุบัน -->
     <div class="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-2xl p-5 sm:p-6 text-white shadow-lg relative overflow-hidden">
       <div class="relative z-10 flex flex-wrap justify-between items-center gap-4">
@@ -155,7 +165,7 @@
           <div class="flex items-center gap-2">
             <div class="flex-1 overflow-hidden relative">
               <input type="text" id="driveFolderId" class="cell-input text-xs text-transparent" placeholder="โฟลเดอร์เริ่มต้นระบบ">
-              <div id="lbl_selected_folder" class="absolute inset-0 bg-transparent flex items-center text-blue-700 font-bold px-3 pointer-events-none">
+              <div id="lbl_selected_folder" class="absolute inset-0 bg-transparent flex items-center text-blue-700 font-bold px-2 pointer-events-none">
                 📁 โฟลเดอร์เริ่มต้นระบบ
               </div>
             </div>
@@ -232,6 +242,7 @@
     const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
     const LOG_KEY = 'BACKUP_HISTORY_LOG';
     const DEFAULT_FOLDER_ID = '11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd';
+    const PROJECT_LIST_KEY = 'CONSTRUCTION_ALL_PROJECTS_LIST';
     
     let folderHistory = [];
     let currentPickerFolderId = DEFAULT_FOLDER_ID;
@@ -257,7 +268,6 @@
       }
     }
 
-    // JSONP Promise สำหรับเจาะระบบ CORS แบบ Real-time
     function requestJSONP(action, params = {}) {
       return new Promise((resolve, reject) => {
         let url = getActiveUrl();
@@ -317,6 +327,7 @@
       const lastSync = localStorage.getItem('LAST_CLOUD_SYNC_TIME');
       if (lastSync) document.getElementById('lbl_last_sync_time').textContent = lastSync;
       document.getElementById('input_gas_url').value = getActiveUrl();
+      loadIndexProjectDropdown();
     }
 
     function resetBadge(type, message) {
@@ -337,18 +348,70 @@
       lucide.createIcons();
     }
 
-    // 🚀 ระบบ Auto-Sync ตรวจสอบและดึงข้อมูลล่าสุดแบบ Real-time ทันทีที่เปิดหน้าเว็บ
+    // --- ระบบเลือกสลับโครงการบนหน้าหลัก ---
+    function loadIndexProjectDropdown() {
+      const select = document.getElementById('index_project_selector');
+      if (!select) return;
+
+      let list = [];
+      const raw = localStorage.getItem(PROJECT_LIST_KEY);
+      if (raw) { try { list = JSON.parse(raw); } catch(e){} }
+
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          const bData = JSON.parse(basicRaw);
+          if (bData.contractNo && !list.some(p => p.id === bData.projectID)) {
+            list.push({ id: bData.projectID, name: bData.projectName, contractNo: bData.contractNo });
+            localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
+          }
+        } catch(e){}
+      }
+
+      select.innerHTML = '';
+      if (list.length === 0) {
+        select.innerHTML = `<option value="DEFAULT">โครงการเริ่มต้น (E1/2569)</option>`;
+        return;
+      }
+
+      const activeProjId = JSON.parse(localStorage.getItem('LOCAL_BASIC_INFO') || '{}').projectID || '';
+      list.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = `[สัญญา ${p.contractNo}] ${p.name.substring(0, 45)}...`;
+        if (p.id === activeProjId) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function switchIndexProject(projId) {
+      if (projId === "DEFAULT") return;
+      const key = `LOCAL_BASIC_INFO_${projId}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        localStorage.setItem('LOCAL_BASIC_INFO', saved);
+        updateProjectUI();
+        alert('สลับโครงการบนหน้าหลักเรียบร้อยแล้วค่ะ');
+      }
+    }
+
+    // 🚀 ระบบ Auto-Sync ตรวจสอบและซิงค์ข้อมูลตามโครงการที่เลือกอยู่ปัจจุบัน
     async function checkRealtimeSync() {
       resetBadge('loading', 'กำลังซิงค์ข้อมูล Real-time...');
       try {
-        const result = await requestJSONP('get_latest_project_database');
+        const activeProj = JSON.parse(localStorage.getItem('LOCAL_BASIC_INFO') || '{}');
+        const projId = activeProj.projectID || '';
+
+        const result = await requestJSONP('get_latest_project_database', { projectID: projId });
         if (result && result.status === 'success' && result.database) {
           const cloudDb = result.database;
-          const sampleKey = 'LOCAL_BASIC_INFO';
-          const localVal = localStorage.getItem(sampleKey);
-          const cloudVal = typeof cloudDb[sampleKey] === 'object' ? JSON.stringify(cloudDb[sampleKey]) : String(cloudDb[sampleKey]);
+          
+          // บันทึกแยกเก็บตาม Project ID ใน LocalStorage เพื่อไม่ให้ทับกัน
+          if (projId) {
+            localStorage.setItem(`LOCAL_BASIC_INFO_${projId}`, JSON.stringify(cloudDb));
+          }
+          localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(cloudDb));
 
-          // ดึงประวัติ Log ส่วนกลางมาอัปเดตเสมอ
           try {
             const logResult = await requestJSONP('get_backup_logs', { folderId: DEFAULT_FOLDER_ID });
             if (logResult && logResult.status === 'success' && logResult.data) {
@@ -357,18 +420,10 @@
             }
           } catch(e) {}
 
-          if (localVal !== cloudVal) {
-            Object.keys(cloudDb).forEach(key => {
-              const val = typeof cloudDb[key] === 'object' ? JSON.stringify(cloudDb[key]) : String(cloudDb[key]);
-              localStorage.setItem(key, val);
-            });
-            const syncTime = new Date().toLocaleString('th-TH');
-            localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
-            updateProjectUI();
-            resetBadge('success', 'ซิงค์ข้อมูลล่าสุดแล้ว');
-          } else {
-            resetBadge('success', 'ข้อมูลเป็นปัจจุบันแล้ว');
-          }
+          const syncTime = new Date().toLocaleString('th-TH');
+          localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
+          updateProjectUI();
+          resetBadge('success', 'ข้อมูลเป็นปัจจุบันแล้ว');
         } else {
           resetBadge('ready', 'พร้อมใช้งาน');
         }
@@ -377,7 +432,6 @@
       }
     }
 
-    // ค้นหาโฟลเดอร์ Google Drive
     async function openFolderPicker(folderId = DEFAULT_FOLDER_ID) {
       const modal = document.getElementById('folder_picker_modal');
       const grid = document.getElementById('folder_list_grid');
@@ -460,11 +514,12 @@
       folderHistory = [];
     }
 
-    // ดึงข้อมูลล่าสุดจาก Cloud แบบกดปุ่มบังคับ (Pull) พร้อมดึง Log ส่วนกลาง
     async function forcePullForIpad() {
       resetBadge('loading', 'กำลังดึงข้อมูล...');
       try {
-        const result = await requestJSONP('get_latest_project_database');
+        const activeProj = JSON.parse(localStorage.getItem('LOCAL_BASIC_INFO') || '{}');
+        const result = await requestJSONP('get_latest_project_database', { projectID: activeProj.projectID || '' });
+        
         if (result && result.status === 'success' && result.database) {
           let count = 0;
           const db = result.database;
@@ -473,6 +528,10 @@
             localStorage.setItem(key, val);
             count++;
           });
+
+          if (activeProj.projectID) {
+            localStorage.setItem(`LOCAL_BASIC_INFO_${activeProj.projectID}`, JSON.stringify(db));
+          }
 
           try {
             const logResult = await requestJSONP('get_backup_logs', { folderId: DEFAULT_FOLDER_ID });
@@ -483,7 +542,7 @@
 
           const syncTime = new Date().toLocaleString('th-TH');
           localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
-          alert(`ดึงข้อมูลและประวัติ Log ลงเครื่องสำเร็จค่ะ! อัปเดต ${count} รายการ`);
+          alert(`ดึงข้อมูลโครงการสำเร็จค่ะ! อัปเดต ${count} รายการ`);
           location.reload();
         } else {
           alert('ไม่พบไฟล์ฐานข้อมูลบน Cloud ค่ะ');
@@ -495,7 +554,6 @@
       }
     }
 
-    // กู้คืนข้อมูลจากไฟล์เฉพาะเจาะจงใน Log ส่วนกลาง
     async function restoreFromCloud(fileName) {
       if (!confirm(`คุณต้องการกู้คืนฐานข้อมูลจากไฟล์:\n"${fileName}"\nใช่หรือไม่คะ?\n\n⚠️ คำเตือน: ข้อมูลปัจจุบันในเครื่องจะถูกเขียนทับด้วยข้อมูลจากไฟล์นี้ทั้งหมดค่ะ`)) {
         return;
@@ -573,7 +631,6 @@
       return projectDatabase;
     }
 
-    // สำรองข้อมูลขึ้น Cloud (Push) พร้อมส่งประวัติ Log ส่วนกลางขึ้นไปด้วย
     async function saveProjectToCloudAndLocal() {
       const btn = document.getElementById('btn-cloud-backup');
       try {
@@ -597,7 +654,6 @@
 
         const backupData = exportAllProjectData();
 
-        // บันทึก Log ลงเครื่องและเตรียมส่งขึ้น Cloud ส่วนกลาง
         addLogRecord(finalFileName + '.json', fileDesc, { success: true });
         const currentLogs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
 
@@ -607,7 +663,7 @@
           folderId: folderId,
           timestamp: new Date().toLocaleString('th-TH'),
           database: backupData,
-          logs: currentLogs // ส่งประวัติ Log ไปเก็บส่วนกลางด้วย
+          logs: currentLogs
         };
 
         if (btn) btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังอัปโหลด...`;
@@ -747,7 +803,6 @@
       }
     }
 
-    // 🚀 เริ่มต้นทำงานทันทีเมื่อเปิดหน้าเว็บ (Auto-Sync Real-time และซิงค์ Log ส่วนกลาง)
     window.addEventListener('DOMContentLoaded', () => {
       updateProjectUI();
       renderLogs();
@@ -758,7 +813,8 @@
       const yyyy = today.getFullYear() + 543;
       document.getElementById('backupFileName').value = `Backup_${dd}_${mm}_${yyyy}`;
 
-      // ตรวจสอบข้อมูลและ Log อัปเดตจาก Cloud ทันทีแบบอัตโนมัติ
       checkRealtimeSync();
     });
   </script>
+</body>
+</html>
