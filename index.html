@@ -496,7 +496,7 @@
       return projectDatabase;
     }
 
-    // 7. การสำรองข้อมูลขึ้น Cloud (Push)
+// 7. การสำรองข้อมูลขึ้น Cloud (Push) - แก้ไขปัญหา Storage Quota Exceeded
     async function saveProjectToCloudAndLocal() {
       const btn = document.getElementById('btn-cloud-backup');
       try {
@@ -518,8 +518,8 @@
         const timestampForName = new Date().toISOString().slice(0, 10).replace(/-/g, "");
         const finalFileName = fName || `Project_Backup_${timestampForName}`;
 
+        // รวบรวมข้อมูลเพื่อส่งขึ้น Cloud อย่างเดียว (ตัดการเซฟก้อน Snapshot ลงเครื่องทิ้งเพื่อประหยัดพื้นที่)
         const backupData = exportAllProjectData();
-        localStorage.setItem('PROJECT_FULL_BACKUP_SNAPSHOT', JSON.stringify(backupData));
 
         const payload = {
           action: 'save_full_project_database',
@@ -550,8 +550,8 @@
         }
 
       } catch (err) {
-        alert(`ไม่สามารถเชื่อมต่อ Cloud ได้ค่ะ\nสาเหตุ: ${err.message}\n\n(ระบบได้ทำการสำรองข้อมูลไว้ในเครื่องแทนชั่วคราวแล้วนะคะ)`);
-        addLogRecord('การสำรองข้อมูล (พบปัญหาเครือข่าย)', '', { localOnly: true });
+        alert(`ไม่สามารถเชื่อมต่อ Cloud ได้ค่ะ\nสาเหตุ: ${err.message}`);
+        addLogRecord('การสำรองข้อมูล (พบปัญหาเครือข่าย/พื้นที่เต็ม)', '', { localOnly: false });
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -560,7 +560,7 @@
         }
       }
     }
-
+    
     // 8. นำเข้า / ส่งออก / จัดการ LocalStorage
     function downloadProjectJSON() {
       const fileNameInput = document.getElementById('backupFileName').value.trim();
