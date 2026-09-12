@@ -1,65 +1,66 @@
-const CENTRAL_GAS_URL = 'https://script.google.com/macros/s/AKfycbz9T8I8iojUCXX9D71RRftcemcLsv5-mG1ND1pVbJugwHuDCffxMLHkIKU6V_y6zieJ5A/exec';
-localStorage.setItem('CONSTRUCTION_GAS_URL', CENTRAL_GAS_URL);
-
-async function syncDataToCloud(actionType, payloadData) {
-  try {
-    const payload = { action: actionType, ...payloadData, clientSyncedAt: new Date().toISOString() };
-    const response = await fetch(CENTRAL_GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    });
-    return await response.json();
-  } catch (error) {
-    console.warn('Sync to cloud error (saved locally):', error);
-    return { status: 'offline', message: error.toString() };
-  }
-}
-
-// assets/gas-sync.js
+/**
+ * assets/gas-sync.js
+ * ระบบเชื่อมต่อและซิงค์ข้อมูลอัตโนมัติผ่าน Google Apps Script (Auto-Sync Cloud)
+ */
 
 const GAS_SYNC_CONFIG = {
-  getStorageUrl: () => localStorage.getItem('CONSTRUCTION_GAS_URL') || 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec',
-  autoSyncFileName: 'Project_Database_AutoSync.json'
+  defaultUrl: 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec',
+  autoSyncFileName: 'Project_Database_AutoSync.json',
+  
+  getGasUrl() {
+    return localStorage.getItem('CONSTRUCTION_GAS_URL') || this.defaultUrl;
+  },
+  getFolderId() {
+    return localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || 'root';
+  }
 };
 
-// ฟังก์ชันดึงข้อมูลจาก Cloud มาอัปเดตลงเครื่องปัจจุบัน (Pull)
+/**
+ * ดึงฐานข้อมูลล่าสุดจาก Cloud ลงมาทับ localStorage ในเครื่อง (Pull)
+ * @param {boolean} silent โหมดเงียบ (ไม่แสดง alert)
+ */
 async function pullDataFromCloud(silent = false) {
-  const gasUrl = GAS_SYNC_CONFIG.getStorageUrl();
-  const folderId = localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || 'root';
+  const gasUrl = GAS_SYNC_CONFIG.getGasUrl();
+  const folderId = GAS_SYNC_CONFIG.getFolderId();
 
   try {
-    const res = await fetch(`${gasUrl}?action=get_latest_project_database&folderId=${folderId}`);
+    const res = await fetch(`${gasUrl}?action=get_latest_project_database&folderId=${encodeURIComponent(folderId)}`);
     const result = await res.json();
 
     if (result.status === 'success' && result.database) {
-      // เขียนข้อมูลทับลงใน localStorage ของเครื่องปัจจุบัน
+      let count = 0;
       for (const [key, value] of Object.entries(result.database)) {
-        const valueToStore = typeof value === 'object' ? JSON.stringify(value) : value;
-        localStorage.setItem(key, valueToStore);
+        const valToStore = typeof value === 'object' ? JSON.stringify(value) : value;
+        localStorage.setItem(key, valToStore);
+        count++;
       }
 
-      localStorage.setItem('LAST_CLOUD_SYNC_TIME', new Date().toLocaleString('th-TH'));
+      const syncTime = new Date().toLocaleString('th-TH');
+      localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
 
       if (!silent) {
-        alert('ดึงข้อมูลล่าสุดจาก Cloud เรียบร้อยแล้วค่ะ!');
+        alert(`ดึงข้อมูลล่าสุดจาก Cloud สำเร็จ (${count} รายการ)\nอัปเดตเมื่อ: ${syncTime}`);
         location.reload();
       }
-      return true;
-    } else if (result.status === 'empty' && !silent) {
-      alert('ยังไม่มีไฟล์ฐานข้อมูลบน Cloud ค่ะ');
+      return { success: true, count, lastUpdated: result.lastUpdated };
+    } else if (result.status === 'empty') {
+      if (!silent) alert('ยังไม่มีไฟล์ข้อมูลสำรองบน Google Drive ค่ะ');
+      return { success: false, empty: true };
     }
   } catch (err) {
-    console.warn('Auto pull failed or offline:', err);
-    if (!silent) alert('ไม่สามารถเชื่อมต่อ Cloud ได้ โปรดตรวจสอบสัญญาณอินเทอร์เน็ต');
+    console.warn('Auto-pull failed or offline:', err);
+    if (!silent) alert('ไม่สามารถเชื่อมต่อ Cloud ได้ โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ตหรือ URL Web App');
   }
-  return false;
+  return { success: false };
 }
 
-// ฟังก์ชันส่งข้อมูลจากเครื่องปัจจุบันขึ้น Cloud (Push)
+/**
+ * บันทึกและส่งข้อมูลในเครื่องทั้งหมดขึ้น Cloud (Push)
+ * @param {boolean} silent โหมดเงียบ (ไม่แสดง alert)
+ */
 async function pushDataToCloud(silent = false) {
-  const gasUrl = GAS_SYNC_CONFIG.getStorageUrl();
-  const folderId = localStorage.getItem('SELECTED_DRIVE_FOLDER_ID') || 'root';
+  const gasUrl = GAS_SYNC_CONFIG.getGasUrl();
+  const folderId = GAS_SYNC_CONFIG.getFolderId();
 
   // รวบรวมข้อมูลทั้งหมดใน localStorage
   const projectDatabase = {};
@@ -90,13 +91,31 @@ async function pushDataToCloud(silent = false) {
     const result = await res.json();
 
     if (result.status === 'success') {
-      localStorage.setItem('LAST_CLOUD_SYNC_TIME', new Date().toLocaleString('th-TH'));
-      if (!silent) alert('บันทึกและส่งข้อมูลขึ้น Cloud สำเร็จแล้วค่ะ!');
-      return true;
+      const syncTime = new Date().toLocaleString('th-TH');
+      localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
+      
+      // บันทึกประวัติการสำรองข้อมูลลงประวัติย่อ
+      saveBackupHistoryRecord(syncTime);
+
+      if (!silent) alert(`สำรองข้อมูลและส่งขึ้น Cloud เรียบร้อยแล้วค่ะ!\nเวลา: ${syncTime}`);
+      return { success: true, fileUrl: result.fileUrl };
     }
   } catch (err) {
     console.error('Push data failed:', err);
-    if (!silent) alert('เกิดข้อผิดพลาดในการส่งข้อมูลขึ้น Cloud');
+    if (!silent) alert('เกิดข้อผิดพลาดในการส่งข้อมูลขึ้น Cloud โปรดตรวจสอบสัญญาณอินเทอร์เน็ต');
   }
-  return false;
+  return { success: false };
+}
+
+// ฟังก์ชันเก็บประวัติการสำรองข้อมูล
+function saveBackupHistoryRecord(timeStr) {
+  try {
+    let history = JSON.parse(localStorage.getItem('PROJECT_BACKUP_HISTORY') || '[]');
+    history.unshift({
+      date: timeStr,
+      source: navigator.userAgent.includes('iPad') || navigator.userAgent.includes('Macintosh') ? 'iPad / Mac' : 'Notebook / PC'
+    });
+    if (history.length > 20) history.pop();
+    localStorage.setItem('PROJECT_BACKUP_HISTORY', JSON.stringify(history));
+  } catch(e) {}
 }
