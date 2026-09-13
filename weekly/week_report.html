@@ -3,598 +3,795 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>รายงานผลการก่อสร้างประจำสัปดาห์</title>
+  <title>ข้อมูลรายงานรายสัปดาห์ - กำหนดข้อมูลเบื้องต้น</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="../assets/gas-sync.js"></script>
+  <script src="assets/gas-sync.js"></script>
   <style>
-    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
-    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
-    @page { size: A4 portrait; margin: 0; }
-    body { font-family: 'THSarabunPSK', sans-serif; background-color: #94a3b8; margin: 0; padding: 0; }
-    .sheet-doc { width: 210mm; min-height: 297mm; padding: 15mm 20mm 15mm 25mm; margin: 20px auto; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 16pt !important; line-height: 1.15 !important; color: #000; box-sizing: border-box; }
-    .sheet-doc p, .sheet-doc span, .sheet-doc label, .sheet-doc div { font-size: 16pt; line-height: 1.2; }
-    .doc-title { font-size: 26pt !important; font-weight: bold; }
-    .garuda-img { width: 1.5cm; height: auto; position: absolute; left: 0; top: 0; }
-    .indent-word { text-indent: 1.8cm !important; }
-    .dotted-line { border-bottom: 1px dotted #000; }
-    .table-custom { width: 100%; border-collapse: collapse; border: 1.5px solid #000; }
-    .table-custom th, .table-custom td { border: 1px solid #000; padding: 3px 4px; font-size: 14pt !important; text-align: center; }
-    .editable-input { background: transparent; border: none; outline: none; width: 100%; text-align: center; font-family: inherit; font-size: inherit; }
-    .editable-input:focus { background-color: #fef08a; }
-    @media print {
-      body { background: white !important; padding: 0 !important; }
-      .no-print { display: none !important; }
-      .sheet-doc { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 15mm 20mm 15mm 25mm !important; }
-      .editable-input { background: transparent !important; }
+    @font-face {
+      font-family: 'THSarabunPSK';
+      src: url('assets/THSarabun.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'THSarabunPSK';
+      src: url('assets/THSarabun Bold.ttf') format('truetype');
+      font-weight: bold;
+      font-style: normal;
+    }
+
+    body {
+      font-family: 'THSarabunPSK', sans-serif;
+      background-color: #e2e8f0;
+      font-size: 18pt;
+    }
+
+    .sheet-box {
+      border-collapse: collapse;
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    .sheet-box td, .sheet-box th {
+      border: 1px solid rgba(0, 0, 0, 0.25);
+      padding: 7px 10px;
+      font-size: 17pt;
+      vertical-align: middle;
+    }
+
+    .cell-input {
+      background-color: #ffffff;
+      width: 100%;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-size: 17pt;
+      font-weight: bold;
+      padding: 3px 6px;
+      text-align: center;
+      color: #111827;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    .cell-input:focus {
+      background-color: #fef08a;
+      box-shadow: inset 0 0 0 2px #ca8a04;
+    }
+
+    .btn-3d {
+      box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(255, 255, 255, 0.7);
+      transition: all 0.15s ease-in-out;
+    }
+
+    .btn-3d:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px -1px rgba(0, 0, 0, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+    }
+
+    .btn-3d:active {
+      transform: translateY(1px);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
     }
   </style>
 </head>
-<body class="p-2 sm:p-6 min-h-screen flex justify-center">
-  <div class="max-w-7xl w-full grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-    <div class="xl:col-span-8 flex justify-center overflow-x-auto w-full">
-      <div class="sheet-doc relative" id="doc-print">
-        <div class="relative text-center mb-4">
-          <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img">
-          <h2 class="doc-title pt-1">บันทึกข้อความ</h2>
-        </div>
-        <div class="space-y-1 text-base">
-          <div class="flex flex-wrap items-baseline"><span class="font-bold w-20">ส่วนราชการ</span><span class="flex-1" id="lbl_org">กองช่าง องค์การบริหารส่วนตำบลโพนงาม</span></div>
-          <div class="flex justify-between items-baseline">
-            <div class="flex items-baseline flex-1"><span class="font-bold w-12">ที่</span><span class="flex-1"><input type="text" id="input_doc_no" class="editable-input text-left font-normal inline-block" style="width: 200px;" value="-"></span></div>
-            <div class="flex-1 text-left"><span class="font-bold mr-2">วันที่</span><span id="lbl_report_date">๑๕ มิถุนายน ๒๕๖๙</span></div>
-          </div>
-          <div class="flex items-baseline justify-between pb-1 dotted-line">
-            <div class="flex items-baseline flex-1"><span class="font-bold w-12">เรื่อง</span><span>รายงานผลการก่อสร้างประจำสัปดาห์ ครั้งที่ <span id="lbl_seq" class="font-bold">๑</span></span></div>
-          </div>
-        </div>
-        <div class="mt-2 text-base"><p><span class="font-bold">เรียน</span> ประธานกรรมการตรวจรับพัสดุ</p></div>
-        <div class="mt-2 text-base leading-relaxed text-justify space-y-1.5">
-          <p class="indent-word">รายงานครั้งที่ <span id="lbl_seq_body" class="font-semibold">๑</span> สัปดาห์ที่ <span id="lbl_week_slash_year" class="font-semibold">๑/๒๕๖๙</span> ระหว่างวันที่ <span id="lbl_start_date">๗ มิถุนายน ๒๕๖๙</span> ถึงวันที่ <span id="lbl_end_date">๑๓ มิถุนายน ๒๕๖๙</span></p>
-          <p class="indent-word">
-            งานก่อสร้าง <span id="lbl_project_title">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากนานายราวี ดวงแสนพุฒ ถึงหนองหวาย หมู่ที่ ๑๒</span> 
-            สัญญาจ้างเลขที่ <span id="lbl_contract_no">E๑/๒๕๖๙</span> ลงวันที่ <span id="lbl_contract_date">๕ มิถุนายน ๒๕๖๙</span> 
-            ค่าก่อสร้าง <span id="lbl_budget_amount">๒,๘๔๙,๒๖๐.๐๐</span> บาท<span id="lbl_extension_info"></span>
-          </p>
-        </div>
+<body class="p-3 sm:p-6 min-h-screen">
 
-        <div class="mt-2.5 mb-2">
-          <table class="table-custom">
-            <thead>
-              <tr><th colspan="5" class="py-0.5">การปฏิบัติงาน</th><th colspan="3" class="py-0.5">เงินงบประมาณและการเบิกจ่าย</th></tr>
-              <tr><th colspan="2" class="w-36">% ผลงาน</th><th rowspan="2" class="w-28">ระยะเวลาก่อสร้างคงเหลือ</th><th colspan="2" class="w-32">จำนวนงวดงาน</th><th rowspan="2" class="w-24">ปีงบประมาณ</th><th rowspan="2" class="w-32">จำนวน (บาท)</th><th rowspan="2" class="w-24">เบิกจ่ายแล้ว</th></tr>
-              <tr><th class="w-16">ปัจจุบัน</th><th class="w-20">เร็ว/ช้า</th><th class="w-16">ทั้งหมด</th><th class="w-16">ตรวจรับแล้ว</th></tr>
-            </thead>
-            <tbody id="report_table_tbody"></tbody>
-            <tfoot>
-              <tr>
-                <td colspan="5" class="border-t border-black"></td>
-                <td class="text-center font-bold">รวม</td>
-                <td id="cell_budget_sum" class="text-center font-bold">๒,๘๔๙,๒๖๐.๐๐</td>
-                <td id="cell_paid_sum" class="text-center font-bold">-</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+  <input type="file" id="import_json_input" accept=".json" class="hidden" onchange="handleImportFile(event)">
 
-        <p class="indent-word text-base pt-0.5">จึงเรียนมาเพื่อโปรดทราบ</p>
-        <div id="inspectorSignatureArea" class="mt-2.5 flex justify-end pr-6 text-center text-base"></div>
-        <div class="mt-2.5 pt-1.5 border-t border-slate-300">
-          <p class="text-base font-semibold mb-0.5">- ทราบ</p>
-          <div id="committeeSignatureArea" class="grid grid-cols-2 gap-y-3.5 gap-x-4 text-center text-base"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- แผงควบคุมด้านขวา -->
-    <div class="xl:col-span-4 space-y-4 no-print">
-      <div class="bg-white p-5 rounded-3xl shadow-xl border border-slate-300 space-y-4">
-        <h3 class="text-xl font-bold text-slate-800 text-center border-b pb-2">จัดการข้อมืองวดงาน</h3>
-        <div class="flex gap-3">
-          <button onclick="addInstallmentRow()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-2xl shadow-md text-lg flex items-center justify-center gap-2 cursor-pointer">
-            <i data-lucide="plus-circle" class="w-6 h-6"></i> เพิ่มงวด
-          </button>
-          <button onclick="removeInstallmentRow()" class="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-4 rounded-2xl shadow-md text-lg flex items-center justify-center gap-2 cursor-pointer">
-            <i data-lucide="minus-circle" class="w-6 h-6"></i> ลดงวด
-          </button>
-        </div>
-        <button onclick="syncInstallmentsFromRef()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-2xl shadow-md text-lg flex items-center justify-center gap-2 cursor-pointer">
-          <i data-lucide="refresh-cw" class="w-6 h-6"></i> ซิงค์ข้อมืองวดงานจากข้อมูลเบื้องต้น
-        </button>
+  <!-- Modal สำหรับเลือกเดือนและเลือกวันอาทิตย์เริ่มต้นสัปดาห์ที่ 1 -->
+  <div id="date_calc_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-xl text-slate-800 flex items-center gap-2">
+          <i data-lucide="calendar" class="w-6 h-6 text-emerald-600"></i> เลือกเดือนและวันเริ่มต้นสัปดาห์
+        </h3>
+        <button onclick="closeDateCalcModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-6 h-6"></i></button>
       </div>
 
-      <div class="grid grid-cols-1 gap-4">
-        <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl py-4 px-6 font-bold text-2xl shadow-lg flex items-center justify-center gap-3 cursor-pointer">
-          <i data-lucide="printer" class="w-7 h-7"></i> พิมพ์บันทึกข้อความ
-        </button>
-        <a href="../Weekly_Reference.html" class="bg-gradient-to-b from-slate-100 to-slate-300 border-2 border-slate-400 rounded-2xl py-4 px-6 text-slate-800 font-bold text-2xl text-center shadow-lg flex items-center justify-center gap-3">
-          <i data-lucide="arrow-left" class="w-7 h-7"></i> กลับหน้ารายสัปดาห์
-        </a>
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-bold text-slate-700 mb-1">เลือกเดือน:</label>
+            <select id="modal_calc_month" onchange="updateSundayChoices()" class="w-full border-2 border-slate-300 rounded-xl p-2.5 font-bold text-slate-800 bg-slate-50 outline-none cursor-pointer text-base">
+              <option value="0">มกราคม</option>
+              <option value="1">กุมภาพันธ์</option>
+              <option value="2">มีนาคม</option>
+              <option value="3">เมษายน</option>
+              <option value="4">พฤษภาคม</option>
+              <option value="5">มิถุนายน</option>
+              <option value="6">กรกฎาคม</option>
+              <option value="7" selected>สิงหาคม</option>
+              <option value="8">กันยายน</option>
+              <option value="9">ตุลาคม</option>
+              <option value="10">พฤศจิกายน</option>
+              <option value="11">ธันวาคม</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-slate-700 mb-1">ปี พ.ศ.:</label>
+            <input type="text" id="modal_calc_year" value="2569" oninput="updateSundayChoices()" class="w-full border-2 border-slate-300 rounded-xl p-2.5 font-bold text-slate-800 bg-slate-50 outline-none text-base text-center">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-1">เลือกวันอาทิตย์เริ่มต้นสัปดาห์ที่ 1:</label>
+          <select id="modal_calc_sunday_choice" class="w-full border-2 border-slate-300 rounded-xl p-2.5 font-bold text-emerald-800 bg-emerald-50/60 outline-none cursor-pointer text-base">
+            <!-- ตัวเลือกวันอาทิตย์จะสร้างให้อัตโนมัติ -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-1">รายงานครั้งที่เริ่มต้น (สัปดาห์ที่ 1):</label>
+          <input type="number" id="modal_start_seq" value="1" min="1" class="w-full border-2 border-slate-300 rounded-xl p-2 font-bold text-slate-800 bg-slate-50 outline-none text-base text-center">
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2 border-t">
+        <button onclick="closeDateCalcModal()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-base cursor-pointer">ยกเลิก</button>
+        <button onclick="executeGenerateDatesByMonth()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-base shadow cursor-pointer">คำนวณ 5 สัปดาห์ทันที</button>
       </div>
     </div>
   </div>
 
+  <div class="max-w-[1600px] mx-auto bg-[#edf2f7] p-5 sm:p-8 rounded-3xl shadow-2xl border border-slate-300 space-y-5">
+    
+    <!-- แถบแสดงโครงการปัจจุบัน และ Dropdown เลือกเดือนประจำรายงาน -->
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-300 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="p-2.5 bg-amber-100 text-amber-800 rounded-xl">
+          <i data-lucide="hard-hat" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 block font-bold uppercase">โครงการที่กำลังกำหนดข้อมูลสัปดาห์</span>
+          <span id="lbl_current_project_title" class="font-bold text-slate-800 text-lg">กำลังโหลดข้อมูลโครงการ...</span>
+        </div>
+      </div>
+
+      <!-- แผงเลือกเดือนประจำรายงาน -->
+      <div class="flex items-center gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+        <div class="flex items-center gap-2">
+          <i data-lucide="calendar-range" class="w-5 h-5 text-indigo-600"></i>
+          <span class="text-sm font-bold text-slate-700">รอบเดือนรายงาน:</span>
+        </div>
+        <select id="sel_global_report_month" onchange="switchReportMonth(this.value)" class="border-2 border-indigo-300 rounded-lg p-1.5 font-bold text-indigo-900 bg-white outline-none cursor-pointer text-sm">
+          <option value="JUN_2569">มิถุนายน 2569 (เริ่มสัญญา)</option>
+          <option value="JUL_2569">กรกฎาคม 2569</option>
+          <option value="AUG_2569">สิงหาคม 2569</option>
+          <option value="SEP_2569">กันยายน 2569</option>
+          <option value="OCT_2569">ตุลาคม 2569</option>
+          <option value="NOV_2569">พฤศจิกายน 2569</option>
+          <option value="DEC_2569">ธันวาคม 2569</option>
+          <option value="JAN_2570">มกราคม 2570</option>
+          <option value="FEB_2570">กุมภาพันธ์ 2570</option>
+          <option value="MAR_2570">มีนาคม 2570</option>
+          <option value="APR_2570">เมษายน 2570</option>
+          <option value="MAY_2570">พฤษภาคม 2570</option>
+          <option value="JUN_2570">มิถุนายน 2570</option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap">
+        <button onclick="openDateCalcModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition cursor-pointer shadow">
+          <i data-lucide="calendar-plus" class="w-4 h-4"></i> คำนวณช่วงวันที่อัตโนมัติ
+        </button>
+        <button onclick="exportProjectJSON()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 px-3.5 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm">
+          <i data-lucide="download" class="w-4 h-4"></i> สำรองไฟล์ (Export)
+        </button>
+        <button onclick="document.getElementById('import_json_input').click()" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 px-3.5 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm">
+          <i data-lucide="upload" class="w-4 h-4"></i> กู้คืน (Import)
+        </button>
+        <a href="Cons_Reference.html" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition">
+          <i data-lucide="settings" class="w-4 h-4"></i> สลับโครงการ
+        </a>
+      </div>
+    </div>
+
+    <!-- แถบควบคุมและปุ่มบันทึก -->
+    <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl shadow-md border border-slate-300">
+      <div class="flex items-center gap-3">
+        <span class="w-4 h-4 rounded-full bg-amber-500 animate-pulse"></span>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">ระบบกำหนดข้อมูลเบื้องต้นรายสัปดาห์ (ประจำเดือนที่เลือก)</h1>
+        <span id="sync-status" class="text-base px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold ml-2 shadow-sm">พร้อมใช้งาน</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="saveWeeklyBatch()" id="btn-save-all" class="btn-3d flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-lg shadow cursor-pointer">
+          <i data-lucide="save" class="w-5 h-5"></i> บันทึกข้อมูลทั้งหมด
+        </button>
+        <button onclick="loadWeeklyBatch()" id="btn-load-all" class="btn-3d flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-lg shadow cursor-pointer">
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i> โหลดข้อมูลล่าสุด
+        </button>
+      </div>
+    </div>
+
+    <!-- โครงสร้างหลัก 2 คอลัมน์ (5 สัปดาห์) -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+      
+      <div class="xl:col-span-7 space-y-6" id="weeks_container">
+        <!-- สัปดาห์ที่ 1 ถึง 5 จะถูกสร้างลิงก์พ่วงรหัสเดือนอัตโนมัติ -->
+      </div>
+
+      <!-- คอลัมน์ขวา: ปุ่มนำทาง ปฏิทินจริง และคำแนะนำ -->
+      <div class="xl:col-span-5 space-y-6">
+        
+        <div class="grid grid-cols-2 gap-4">
+          <a href="index.html" class="btn-3d flex items-center justify-center gap-3 bg-gradient-to-b from-slate-100 to-slate-300 border border-slate-400 rounded-2xl py-3 px-4 text-slate-800 font-bold text-xl shadow">
+            <img src="https://cdn-icons-png.flaticon.com/512/619/619032.png" alt="Home" class="w-8 h-8 object-contain">
+            <span>กลับหน้าหลัก</span>
+          </a>
+          <a href="Cons_Reference.html" class="btn-3d flex items-center justify-center gap-3 bg-gradient-to-b from-slate-100 to-slate-300 border border-slate-400 rounded-2xl py-3 px-4 text-slate-800 font-bold text-xl shadow">
+            <img src="https://cdn-icons-png.flaticon.com/512/2921/2921226.png" alt="Ref" class="w-8 h-8 object-contain">
+            <span>กรอกข้อมูลเบื้องต้น</span>
+          </a>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-300 shadow text-center">
+          <div class="text-base text-slate-600 mb-2.5 font-bold">ปฏิทินตรวจสอบวันเวลาจริง</div>
+          <div class="border-2 border-red-600 rounded-xl overflow-hidden bg-white text-slate-800 shadow-inner">
+            <div class="bg-red-600 text-white font-bold py-2 px-4 flex justify-between items-center text-base">
+              <button onclick="changeMonth(-1)" class="hover:bg-red-700 px-2 py-0.5 rounded text-lg font-extrabold cursor-pointer">&lt;</button>
+              <span id="cal-month-year">สิงหาคม 2569</span>
+              <button onclick="changeMonth(1)" class="hover:bg-red-700 px-2 py-0.5 rounded text-lg font-extrabold cursor-pointer">&gt;</button>
+            </div>
+            <div class="grid grid-cols-7 text-sm font-bold text-slate-600 bg-slate-100 border-b border-slate-200 py-1.5">
+              <span class="text-red-600">อา.</span><span>จ.</span><span>อ.</span><span>พ.</span><span>พฤ.</span><span>ศ.</span><span class="text-blue-600">ส.</span>
+            </div>
+            <div id="cal-days-grid" class="grid grid-cols-7 text-base font-semibold p-2.5 gap-y-1.5 text-center"></div>
+          </div>
+        </div>
+
+        <div class="bg-white/95 rounded-2xl p-5 border border-slate-300 shadow text-base leading-relaxed space-y-3 text-slate-800">
+          <h4 class="font-bold text-lg text-slate-900 border-b pb-1.5 flex items-center gap-2">
+            <i data-lucide="info" class="w-5 h-5 text-amber-600"></i> คำแนะนำการใช้งาน
+          </h4>
+          <p>
+            • สามารถเลือก <b>"รอบเดือนรายงาน"</b> จากเมนูด้านบนเพื่อสลับเดือนในการจัดทำข้อมูลได้ทันที<br>
+            • ลิงก์ไปยังหน้าบันทึกย่อยจะส่งค่าเดือนและสัปดาห์ติดไปด้วยอัตโนมัติ ทำให้ข้อมูลแยกเก็บเป็นสัดส่วนตามรอบเดือน
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
   <script>
     lucide.createIcons();
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentWeekIndex = parseInt(urlParams.get('week')) || 1;
+
+    const STORAGE_KEY_GAS_URL = 'CONSTRUCTION_GAS_URL';
+    const DEFAULT_GAS_URL = GAS_SYNC_CONFIG.defaultUrl;
+    
+    function getActiveUrl() {
+      return localStorage.getItem(STORAGE_KEY_GAS_URL) || DEFAULT_GAS_URL;
+    }
+
     let currentProjectID = 'DEFAULT_PROJ';
-    let currentReportMonth = urlParams.get('month') || 'SEP_2569';
+    let currentReportMonth = 'SEP_2569';
 
-    let installmentList = [
-      { year: "๒๕๖๙", amount: "๐.๐๐", paid: "-" }
+    const thaiMonths = [
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", 
+      "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", 
+      "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
     ];
-    let acceptedInstallmentsValue = "-";
 
-    let globalProjectData = null;
-    let globalCurrentWeekObj = null;
+    function getProjectWeeklyKey() {
+      return `CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`;
+    }
+
+    function switchReportMonth(monthVal) {
+      currentReportMonth = monthVal;
+      localStorage.setItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`, monthVal);
+      loadSavedDataForCurrentMonth();
+      updateLinksWithMonth();
+    }
+
+    function updateLinksWithMonth() {
+      for (let i = 1; i <= 5; i++) {
+        const logBtn = document.getElementById(`btn_link_log_${i}`);
+        const photoBtn = document.getElementById(`btn_link_photo_${i}`);
+        const progBtn = document.getElementById(`btn_link_progress_${i}`);
+        const repBtn = document.getElementById(`btn_link_report_${i}`);
+
+        if (logBtn) logBtn.href = `weekly/week_log.html?week=${i}&month=${currentReportMonth}`;
+        if (photoBtn) photoBtn.href = `weekly/week_photo.html?week=${i}&month=${currentReportMonth}`;
+        if (progBtn) progBtn.href = `weekly/week_progress.html?week=${i}&month=${currentReportMonth}`;
+        if (repBtn) repBtn.href = `weekly/week_report.html?week=${i}&month=${currentReportMonth}`;
+      }
+    }
+
+    function buildWeeksUI() {
+      const container = document.getElementById('weeks_container');
+      container.innerHTML = '';
+      
+      const themes = [
+        { bg: 'bg-amber-50/90', border: 'border-amber-300', grad: 'from-[#d97706] to-[#b45309]', btn: 'from-amber-500 to-orange-600' },
+        { bg: 'bg-cyan-50/90', border: 'border-cyan-300', grad: 'from-[#0e7490] to-[#155e75]', btn: 'from-cyan-600 to-teal-700' },
+        { bg: 'bg-purple-50/90', border: 'border-purple-300', grad: 'from-[#6b21a8] to-[#581c87]', btn: 'from-purple-600 to-indigo-700' },
+        { bg: 'bg-stone-100/90', border: 'border-stone-300', grad: 'from-[#292524] to-[#1c1917]', btn: 'from-stone-700 to-stone-900' },
+        { bg: 'bg-lime-50/90', border: 'border-lime-300', grad: 'from-[#4d7c0f] to-[#3f6212]', btn: 'from-lime-600 to-emerald-700' }
+      ];
+
+      for (let i = 1; i <= 5; i++) {
+        const t = themes[i - 1];
+        container.innerHTML += `
+          <div class="flex flex-col sm:flex-row gap-4 items-stretch ${t.bg} p-3.5 rounded-2xl border-2 ${t.border} shadow-sm">
+            <div class="flex-1 bg-gradient-to-br ${t.grad} p-4 rounded-2xl shadow text-white">
+              <div class="text-center font-bold text-xl mb-3 pb-1.5 border-b border-white/20">ข้อมูลรายงาน สัปดาห์ที่ ${i} ประจำรอบเดือนนี้</div>
+              <table class="sheet-box text-slate-900">
+                <colgroup><col style="width: 42%;"><col style="width: 58%;"></colgroup>
+                <tr><td class="text-white font-bold whitespace-nowrap">ครั้งที่</td><td class="bg-white p-1"><input type="text" id="w${i}_seq" class="cell-input" value="${i}"></td></tr>
+                <tr><td class="text-white font-bold whitespace-nowrap">สัปดาห์ที่</td><td class="bg-white p-1"><div class="flex items-center gap-1"><input type="text" id="w${i}_week" class="cell-input" value="${i}"><span class="text-slate-600 font-bold text-lg">/</span><input type="text" id="w${i}_year" class="cell-input" value="2569"></div></td></tr>
+                <tr><td class="text-white font-bold whitespace-nowrap">วันที่รายงาน</td><td class="bg-white p-1"><input type="text" id="w${i}_repDate" class="cell-input font-bold text-blue-700" value=""></td></tr>
+                <tr><td class="text-white font-bold whitespace-nowrap">ตั้งแต่วันที่</td><td class="bg-white p-1"><input type="text" id="w${i}_startDate" class="cell-input" value=""></td></tr>
+                <tr><td class="text-white font-bold whitespace-nowrap">ถึงวันที่</td><td class="bg-white p-1"><input type="text" id="w${i}_endDate" class="cell-input" value=""></td></tr>
+                <tr><td class="text-white font-bold whitespace-nowrap">แผนงานถึงปัจจุบัน(%)</td><td class="bg-white p-1"><input type="text" id="w${i}_plan" class="cell-input font-bold text-rose-600 text-xl" value="0.00"></td></tr>
+              </table>
+            </div>
+            <div class="w-full sm:w-80 flex flex-col justify-between gap-2.5 py-0.5">
+              <a id="btn_link_log_${i}" href="weekly/week_log.html?week=${i}" class="btn-3d flex-1 rounded-xl bg-gradient-to-r ${t.btn} text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+                บันทึกสภาพการปฏิบัติงาน
+              </a>
+              <a id="btn_link_photo_${i}" href="weekly/week_photo.html?week=${i}" class="btn-3d flex-1 rounded-xl bg-gradient-to-r ${t.btn} text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+                ภาพถ่ายสภาพการปฏิบัติงาน
+              </a>
+              <a id="btn_link_progress_${i}" href="weekly/week_progress.html?week=${i}" class="btn-3d flex-1 rounded-xl bg-gradient-to-r ${t.btn} text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+                ผลการดำเนินงานในสัปดาห์
+              </a>
+              <a id="btn_link_report_${i}" href="weekly/week_report.html?week=${i}" class="btn-3d flex-1 rounded-xl bg-gradient-to-r ${t.btn} text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+                รายงานผลการก่อสร้างประจำ
+              </a>
+            </div>
+          </div>`;
+      }
+      setupSeqLiveSync();
+      updateLinksWithMonth();
+    }
+
+    function setupSeqLiveSync() {
+      for (let i = 1; i <= 5; i++) {
+        const seqInput = document.getElementById(`w${i}_seq`);
+        const weekInput = document.getElementById(`w${i}_week`);
+        if (seqInput && weekInput) {
+          seqInput.addEventListener('input', function() {
+            weekInput.value = seqInput.value;
+          });
+        }
+      }
+    }
+
+    function requestJSONP(action, params = {}) {
+      return new Promise((resolve, reject) => {
+        let url = getActiveUrl();
+        if (url.includes('?')) url = url.split('?')[0];
+
+        const callbackName = 'gas_cb_' + Date.now() + Math.round(Math.random() * 1000);
+        let fetchUrl = `${url}?action=${action}&callback=${callbackName}&_t=${Date.now()}`;
+
+        for (const [key, value] of Object.entries(params)) {
+          fetchUrl += `&${key}=${encodeURIComponent(value)}`;
+        }
+
+        const script = document.createElement('script');
+        script.src = fetchUrl;
+
+        const timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error('หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ (Timeout)'));
+        }, 15000);
+
+        function cleanup() {
+          if (window[callbackName]) delete window[callbackName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          clearTimeout(timeoutId);
+        }
+
+        window[callbackName] = function(result) {
+          cleanup();
+          resolve(result);
+        };
+
+        script.onerror = function() {
+          cleanup();
+          reject(new Error('เครือข่ายขัดข้อง หรือถูกเบราว์เซอร์บล็อกสคริปต์ค่ะ'));
+        };
+
+        document.body.appendChild(script);
+      });
+    }
 
     function initProjectContext() {
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
           const projectData = JSON.parse(basicRaw);
+          const pName = projectData.projectName || 'โครงการก่อสร้าง';
           const cNo = projectData.contractNo || 'NO_CONTRACT';
           currentProjectID = getActiveProjectId(projectData);
-          currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
-        } catch(e) {}
-      }
-    }
-
-    function toThaiNumber(numStr) {
-      if (numStr === null || numStr === undefined) return '';
-      const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
-      return numStr.toString().replace(/[0-9]/g, (w) => thaiNums[w]);
-    }
-
-    function calculateReportStatus(actualPercent) {
-      if (actualPercent <= 0) return 'ยังไม่ทำงาน';
-      if (actualPercent >= 100) return 'แล้วเสร็จ';
-      return getProgressStatus(actualPercent, parseFloat(globalCurrentWeekObj && globalCurrentWeekObj.plan) || 0);
-    }
-
-    function thaiToArabic(str) {
-      if (!str) return '';
-      const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
-      return str.toString().replace(/[๐-๙]/g, match => thaiNums.indexOf(match));
-    }
-
-    function thaiDateText(dateStr) {
-      if (!dateStr) return '';
-      const thaiMonths = {
-        "January": "มกราคม", "February": "กุมภาพันธ์", "March": "มีนาคม", "April": "เมษายน",
-        "May": "พฤษภาคม", "June": "มิถุนายน", "July": "กรกฎาคม", "August": "สิงหาคม",
-        "September": "กันยายน", "October": "ตุลาคม", "November": "พฤศจิกายน", "December": "ธันวาคม",
-        "มกราคม": "มกราคม", "กุมภาพันธ์": "กุมภาพันธ์", "มีนาคม": "มีนาคม", "เมษายน": "เมษายน",
-        "พฤษภาคม": "พฤษภาคม", "มิถุนายน": "มิถุนายน", "กรกฎาคม": "กรกฎาคม", "สิงหาคม": "สิงหาคม",
-        "กันยายน": "กันยายน", "ตุลาคม": "ตุลาคม", "พฤศจิกายน": "พฤศจิกายน", "ธันวาคม": "ธันวาคม"
-      };
-      let cleanStr = dateStr.toString().trim();
-      for (const [enM, thM] of Object.entries(thaiMonths)) {
-        if (cleanStr.toLowerCase().includes(enM.toLowerCase())) {
-          cleanStr = cleanStr.replace(new RegExp(enM, 'gi'), thM);
+          document.getElementById('lbl_current_project_title').textContent = `${pName} (สัญญาเลขที่ ${cNo})`;
+        } catch(e) {
+          document.getElementById('lbl_current_project_title').textContent = 'โครงการทั่วไป (ไม่ได้ระบุสัญญา)';
         }
-      }
-      return toThaiNumber(cleanStr);
-    }
-
-    function formatThaiCurrency(amountStr) {
-      if (!amountStr || amountStr === '-') return '-';
-      const clean = amountStr.toString().replace(/,/g, '').replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s));
-      const num = parseFloat(clean);
-      if (isNaN(num)) return toThaiNumber(amountStr);
-      const parts = num.toFixed(2).split('.');
-      const integerPart = parseInt(parts[0]).toLocaleString('en-US');
-      return toThaiNumber(`${integerPart}.${parts[1]}`);
-    }
-
-    function formatInputWithComma(el) {
-      let val = el.value.replace(/,/g, '');
-      let parts = val.split('.');
-      let intPart = parts[0].replace(/\D/g, '');
-      if (intPart !== '') {
-        intPart = Number(intPart).toLocaleString('en-US');
-      }
-      if (parts.length > 1) {
-        el.value = toThaiNumber(intPart + '.' + parts[1].slice(0, 2));
-      } else if (val.endsWith('.')) {
-        el.value = toThaiNumber(intPart + '.');
       } else {
-        el.value = toThaiNumber(intPart);
+        document.getElementById('lbl_current_project_title').textContent = 'ยังไม่ได้ตั้งค่าข้อมูลโครงการ';
       }
     }
 
-    function parseThaiDateStr(str) {
-      if (!str) return null;
-      let cleanStr = thaiToArabic(str.toString().trim());
-      const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-      const thaiMonthsAbbr = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-      
-      let mIndex = -1;
-      for (let i = 0; i < thaiMonths.length; i++) {
-        if (cleanStr.includes(thaiMonths[i]) || cleanStr.includes(thaiMonthsAbbr[i])) {
-          mIndex = i;
-          break;
-        }
-      }
-      
-      const nums = cleanStr.match(/\d+/g);
-      if (nums && nums.length >= 2) {
-        let d = parseInt(nums[0]);
-        let y = parseInt(nums[nums.length - 1]);
-        if (y > 2400) y -= 543;
-        let m = mIndex;
-        if (m === -1 && nums.length >= 3) m = parseInt(nums[1]) - 1;
-        
-        if (!isNaN(d) && m !== -1 && !isNaN(y)) {
-          return new Date(y, m, d);
-        }
-      }
-      const parsed = new Date(str);
-      return !isNaN(parsed.getTime()) ? parsed : null;
+    function formatToThaiDate(d) {
+      if (!d || isNaN(d.getTime())) return '';
+      return `${d.getDate()} ${thaiMonths[d.getMonth()]} ${d.getFullYear() + 543}`;
     }
 
-    function setElText(id, val) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = val;
+    function openDateCalcModal() {
+      const modal = document.getElementById('date_calc_modal');
+      if (!modal) return;
+      updateSundayChoices();
+      modal.classList.remove('hidden');
+      lucide.createIcons();
     }
 
-    function loadAllData() {
-      initProjectContext();
+    function closeDateCalcModal() {
+      const modal = document.getElementById('date_calc_modal');
+      if (modal) modal.classList.add('hidden');
+    }
 
-      const savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`);
-      if (savedAccepted !== null) {
-        acceptedInstallmentsValue = savedAccepted;
+    function updateSundayChoices() {
+      const mIdx = parseInt(document.getElementById('modal_calc_month').value) || 0;
+      const thYear = parseInt(document.getElementById('modal_calc_year').value) || 2569;
+      const ceYear = thYear - 543;
+
+      const sel = document.getElementById('modal_calc_sunday_choice');
+      sel.innerHTML = '';
+
+      // ล็อกเวลาไว้ที่ 12:00 น. เพื่อป้องกันปัญหา Timezone ปัดเศษวันผิดพลาด
+      let firstDayOfMonth = new Date(ceYear, mIdx, 1, 12, 0, 0);
+      let dayOfWeek = firstDayOfMonth.getDay(); // 0 = อาทิตย์, 1 = จันทร์, ...
+
+      let sundays = [];
+
+      let prevSunday = new Date(ceYear, mIdx, 1, 12, 0, 0);
+      prevSunday.setDate(firstDayOfMonth.getDate() - dayOfWeek);
+      if (prevSunday.getMonth() !== mIdx) {
+        sundays.push({ date: new Date(prevSunday), label: `วันอาทิตย์ที่ ${formatToThaiDate(prevSunday)} (คาบเกี่ยวปลายเดือนก่อน)` });
       }
+
+      let cur = new Date(firstDayOfMonth);
+      if (dayOfWeek !== 0) {
+        cur.setDate(firstDayOfMonth.getDate() + (7 - dayOfWeek));
+      }
+
+      while (cur.getMonth() === mIdx || (cur.getMonth() === (mIdx + 1) % 12 && sundays.length < 1)) {
+        sundays.push({ date: new Date(cur), label: `วันอาทิตย์ที่ ${formatToThaiDate(cur)}` });
+        cur.setDate(cur.getDate() + 7);
+        if (sundays.length >= 6) break;
+      }
+
+      sundays.forEach((item, idx) => {
+        const opt = document.createElement('option');
+        const y = item.date.getFullYear();
+        const m = String(item.date.getMonth() + 1).padStart(2, '0');
+        const d = String(item.date.getDate()).padStart(2, '0');
+        opt.value = `${y}-${m}-${d}`;
+        opt.textContent = item.label;
+        if (idx === (sundays.length > 5 && item.label.includes('คาบเกี่ยว') ? 1 : 0)) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    function executeGenerateDatesByMonth() {
+      const chosenDateStr = document.getElementById('modal_calc_sunday_choice').value;
+      if (!chosenDateStr) return;
+
+      const parts = chosenDateStr.split('-');
+      // ล็อกเวลา 12:00 น. ตอนสร้าง Date Object เพื่อความเสถียรของวันที่ ไม่ให้ปัดถอยหลัง
+      let chosenSunday = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 12, 0, 0);
+
+      const startSeq = parseInt(document.getElementById('modal_start_seq').value) || 1;
+      let durationWeeks = 20;
 
       const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
-      let projectData = {};
       if (basicRaw) {
         try {
-          projectData = JSON.parse(basicRaw);
-          globalProjectData = projectData; 
-
-          if (projectData.organizationName) {
-            setElText('lbl_org', `กองช่าง ${projectData.organizationName}`);
-          }
-          if (projectData.projectName) {
-            setElText('lbl_project_title', toThaiNumber(projectData.projectName));
-          }
-          if (projectData.contractNo) {
-            setElText('lbl_contract_no', toThaiNumber(projectData.contractNo));
-          }
-          if (projectData.contractDate) {
-            setElText('lbl_contract_date', thaiDateText(projectData.contractDate));
-          }
-          if (projectData.budgetAmount) {
-            const tAmount = formatThaiCurrency(projectData.budgetAmount);
-            setElText('lbl_budget_amount', tAmount);
-          }
-
-          // จัดการข้อความต่อสัญญา
-          const extInfoEl = document.getElementById('lbl_extension_info');
-          if (extInfoEl) {
-            if (projectData.extendContractDate && projectData.extendContractDate.trim() !== '') {
-              const extDateTh = thaiDateText(projectData.extendContractDate);
-              const extDays = projectData.totalExtendedDays ? toThaiNumber(projectData.totalExtendedDays) : '';
-              extInfoEl.innerHTML = ` <span class="font-bold">(ได้รับการอนุมัติขยายระยะเวลาทำการก่อสร้างออกไปอีก ${extDays ? extDays + ' วัน' : ''} จนถึงวันที่ ${extDateTh})</span>`;
-            } else {
-              extInfoEl.innerHTML = '';
-            }
-          }
-
-          const savedInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`);
-          if (savedInst) {
-            installmentList = JSON.parse(savedInst);
-          } else {
-            let previousInst = null;
-            if (currentWeekIndex > 1) {
-              const prevData = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentReportMonth}_${currentWeekIndex - 1}`);
-              if (prevData) {
-                previousInst = JSON.parse(prevData);
-              }
-            }
-
-            if (previousInst && Array.isArray(previousInst) && previousInst.length > 0) {
-              installmentList = previousInst;
-            } else if (projectData.installments && Array.isArray(projectData.installments) && projectData.installments.length > 0) {
-              installmentList = projectData.installments.map(inst => ({
-                year: toThaiNumber(inst.year || "๒๕๖๙"),
-                amount: formatThaiCurrency(inst.amount || "๐.๐๐"),
-                paid: inst.paid && inst.paid !== '-' ? formatThaiCurrency(inst.paid) : "-"
-              }));
-            }
-          }
+          const pData = JSON.parse(basicRaw);
+          const durationDays = getContractDurationDays(pData);
+          if (durationDays > 0) durationWeeks = Math.ceil(durationDays / 7);
         } catch(e){}
       }
-      renderSignatures(projectData);
 
-      const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`) || localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
-      if (weeklyRefRaw) {
-        try {
-          const weeksData = JSON.parse(weeklyRefRaw);
-          const currentWeekObj = weeksData.find(w => parseInt(w.weekIndex) === currentWeekIndex);
-          if (currentWeekObj) {
-            globalCurrentWeekObj = currentWeekObj;
+      let runningSunday = new Date(chosenSunday);
 
-            if (currentWeekObj.seq) {
-              setElText('lbl_seq', toThaiNumber(currentWeekObj.seq));
-              setElText('lbl_seq_body', toThaiNumber(currentWeekObj.seq));
-            }
-            if (currentWeekObj.week && currentWeekObj.year) {
-              const thYear = toThaiNumber(parseInt(currentWeekObj.year) < 2400 ? parseInt(currentWeekObj.year) + 543 : currentWeekObj.year);
-              setElText('lbl_week_slash_year', `${toThaiNumber(currentWeekObj.week)}/${thYear}`);
-            }
-            if (currentWeekObj.repDate) setElText('lbl_report_date', thaiDateText(currentWeekObj.repDate));
-            if (currentWeekObj.startDate) setElText('lbl_start_date', thaiDateText(currentWeekObj.startDate));
-            if (currentWeekObj.endDate) setElText('lbl_end_date', thaiDateText(currentWeekObj.endDate));
-          }
-        } catch(e) {}
+      for (let i = 1; i <= 5; i++) {
+        let wStart = new Date(runningSunday); // วันอาทิตย์
+        let wEnd = new Date(runningSunday);
+        wEnd.setDate(wEnd.getDate() + 6); // วันเสาร์ (อาทิตย์ + 6 วัน)
+
+        let wRep = new Date(wEnd);
+        wRep.setDate(wRep.getDate() + 2); // วันรายงาน
+
+        const startTh = formatToThaiDate(wStart);
+        const endTh = formatToThaiDate(wEnd);
+        const repTh = formatToThaiDate(wRep);
+        const yearTh = (wEnd.getFullYear() + 543).toString();
+
+        const currentSeq = startSeq + (i - 1);
+
+        if (document.getElementById(`w${i}_seq`)) document.getElementById(`w${i}_seq`).value = currentSeq;
+        if (document.getElementById(`w${i}_week`)) document.getElementById(`w${i}_week`).value = currentSeq;
+        if (document.getElementById(`w${i}_year`)) document.getElementById(`w${i}_year`).value = yearTh;
+        if (document.getElementById(`w${i}_startDate`)) document.getElementById(`w${i}_startDate`).value = startTh;
+        if (document.getElementById(`w${i}_endDate`)) document.getElementById(`w${i}_endDate`).value = endTh;
+        if (document.getElementById(`w${i}_repDate`)) document.getElementById(`w${i}_repDate`).value = repTh;
+
+        let planPercent = ((currentSeq / durationWeeks) * 100);
+        if (planPercent > 100) planPercent = 100;
+        if (document.getElementById(`w${i}_plan`)) document.getElementById(`w${i}_plan`).value = planPercent.toFixed(2);
+
+        runningSunday.setDate(runningSunday.getDate() + 7);
       }
 
-      const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`);
-      let actualWeightPercent = 0;
-      if (progressRaw) {
-        const progData = JSON.parse(progressRaw);
-        actualWeightPercent = parseFloat(progData.totalWeightPercent) || 0;
-      }
-
-      const statusText = calculateReportStatus(actualWeightPercent);
-
-      renderTable(actualWeightPercent, statusText);
+      closeDateCalcModal();
+      alert(`คำนวณช่วงวันที่ตั้งแต่วันอาทิตย์ถึงวันเสาร์ ทั้ง 5 สัปดาห์ถูกต้องแม่นยำแล้วค่ะ!`);
     }
 
-    function syncInstallmentsFromRef() {
-      initProjectContext();
+    function exportProjectJSON() {
+      const exportData = {
+        version: "2.0",
+        projectID: currentProjectID,
+        reportMonth: currentReportMonth,
+        exportedAt: new Date().toLocaleString('th-TH'),
+        basicInfo: null,
+        weeklyRef: null
+      };
+
       const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
-      if (basicRaw) {
+      if (basicRaw) { try { exportData.basicInfo = JSON.parse(basicRaw); } catch(e){} }
+
+      const weeklyRefRaw = localStorage.getItem(getProjectWeeklyKey());
+      if (weeklyRefRaw) { try { exportData.weeklyRef = JSON.parse(weeklyRefRaw); } catch(e){} }
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const filename = `Weekly_Report_${currentProjectID}_${currentReportMonth}.json`;
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      alert(`สำรองไฟล์รายงานประจำเดือน ${currentReportMonth} เรียบร้อยแล้วค่ะ!`);
+    }
+
+    function handleImportFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
         try {
-          const projectData = JSON.parse(basicRaw);
-          if (projectData.installments && Array.isArray(projectData.installments) && projectData.installments.length > 0) {
-            installmentList = projectData.installments.map(inst => ({
-              year: toThaiNumber(inst.year || "๒๕๖๙"),
-              amount: formatThaiCurrency(inst.amount || "๐.๐๐"),
-              paid: inst.paid && inst.paid !== '-' ? formatThaiCurrency(inst.paid) : "-"
-            }));
-            localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`, JSON.stringify(installmentList));
-
-            const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`);
-            let actualWeightPercent = 0;
-            if (progressRaw) {
-              actualWeightPercent = parseFloat(JSON.parse(progressRaw).totalWeightPercent) || 0;
-            }
-            let statusText = calculateReportStatus(actualWeightPercent);
-            renderTable(actualWeightPercent, statusText);
-            alert("ซิงค์ข้อมืองวดงานจากหน้าข้อมูลเบื้องต้นเรียบร้อยแล้วค่ะ!");
-          } else {
-            alert("ไม่พบข้อมืองวดงานในหน้าข้อมูลเบื้องต้นค่ะ");
+          const imported = JSON.parse(e.target.result);
+          if (!imported.weeklyRef) {
+            alert("รูปแบบไฟล์ไม่ถูกต้องค่ะ");
+            return;
           }
-        } catch(e) {
-          alert("เกิดข้อผิดพลาดในการซิงค์ข้อมูลค่ะ");
+
+          const targetProjID = imported.projectID || currentProjectID;
+          const targetMonth = imported.reportMonth || currentReportMonth;
+          const importKey = `CONSTRUCTION_WEEKLY_REF_DB_${targetProjID}_${targetMonth}`;
+
+          localStorage.setItem(importKey, JSON.stringify(imported.weeklyRef));
+          alert(`กู้คืนข้อมูลรายงานประจำเดือน ${targetMonth} สำเร็จแล้วค่ะ!`);
+          location.reload();
+        } catch (err) {
+          alert("เกิดข้อผิดพลาดในการอ่านไฟล์ JSON");
         }
-      } else {
-        alert("ไม่พบข้อมูลพื้นฐานโครงการค่ะ");
-      }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
     }
 
-    function renderTable(actualWeightPercent, statusText) {
-      const tbody = document.getElementById('report_table_tbody');
-      tbody.innerHTML = '';
+    let today = new Date();
+    let currentMonth = today.getMonth();
+    let currentYear = today.getFullYear();
 
-      const totalInstallments = installmentList.length;
-      let totalSum = 0;
-      let totalPaidSum = 0;
-      let hasNumericPaid = false;
-
-      let totalDaysNum = getContractDurationDays({
-        ...(globalProjectData || {}),
-        extensionDays: globalProjectData && (globalProjectData.extensionDays || globalProjectData.totalExtendedDays)
-      }) || parseInt(globalProjectData && globalProjectData.manualDays) || 0;
-
-      let remainDaysText = "- วัน";
-      let timePercentText = "(- %)";
-
-      const rawStartDate = globalProjectData ? (globalProjectData.startDateTh || globalProjectData.startDate) : null;
-      const rawEndDate = globalCurrentWeekObj && globalCurrentWeekObj.endDate ? globalCurrentWeekObj.endDate : (globalProjectData ? (globalProjectData.endDateTh || globalProjectData.endDate) : null);
-
-      if (rawStartDate && rawEndDate && totalDaysNum > 0) {
-        const sDate = parseThaiDateStr(rawStartDate);
-        const eDate = parseThaiDateStr(rawEndDate);
-        
-        if (sDate && eDate && !isNaN(sDate.getTime()) && !isNaN(eDate.getTime())) {
-          const diffTime = eDate.getTime() - sDate.getTime();
-          const passedDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
-          let remainDays = Math.max(0, totalDaysNum - passedDays);
-          let timePercent = (passedDays / totalDaysNum) * 100;
-          if (timePercent > 100) timePercent = 100;
-
-          remainDaysText = `${toThaiNumber(remainDays)} วัน`;
-          timePercentText = `(${toThaiNumber(timePercent.toFixed(2))} %)`;
-        }
-      }
-      const remainHtml = `${remainDaysText}<br>${timePercentText}`;
-
-      installmentList.forEach((item, idx) => {
-        const cleanAmt = parseFloat((item.amount || '0').toString().replace(/,/g, '').replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
-        totalSum += cleanAmt;
-
-        const paidVal = (item.paid || '-').toString().trim();
-        if (paidVal !== '-' && paidVal !== '') {
-          const cleanPaid = parseFloat(paidVal.replace(/,/g, '').replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
-          if (!isNaN(cleanPaid) && cleanPaid > 0) {
-            totalPaidSum += cleanPaid;
-            hasNumericPaid = true;
-          }
-        }
-
-        let rowHTML = `<tr>`;
-        if (idx === 0) {
-          rowHTML += `
-            <td rowspan="${totalInstallments}" class="text-center align-middle">${toThaiNumber(actualWeightPercent.toFixed(2))}</td>
-            <td rowspan="${totalInstallments}" class="text-center align-middle">${statusText}</td>
-            <td rowspan="${totalInstallments}" class="text-center align-middle leading-tight">${remainHtml}</td>
-            <td rowspan="${totalInstallments}" class="text-center align-middle">${toThaiNumber(totalInstallments)}</td>
-            <td rowspan="${totalInstallments}" class="text-center align-middle">
-              <input type="text" class="editable-input text-center" value="${toThaiNumber(acceptedInstallmentsValue)}" onchange="updateAccepted(this.value)">
-            </td>
-          `;
-        }
-        rowHTML += `
-          <td class="text-center"><input type="text" class="editable-input text-center" value="${toThaiNumber(item.year)}" onchange="updateInstallment(${idx}, 'year', this.value)"></td>
-          <td class="text-center"><input type="text" class="editable-input text-center" value="${toThaiNumber(item.amount)}" oninput="formatInputWithComma(this)" onchange="updateInstallment(${idx}, 'amount', this.value)"></td>
-          <td class="text-center"><input type="text" class="editable-input text-center" value="${toThaiNumber(item.paid)}" oninput="formatInputWithComma(this)" onchange="updateInstallment(${idx}, 'paid', this.value)"></td>
-        </tr>`;
-        tbody.innerHTML += rowHTML;
-      });
-
-      document.getElementById('cell_budget_sum').textContent = formatThaiCurrency(totalSum.toFixed(2));
-      document.getElementById('lbl_budget_amount').textContent = formatThaiCurrency(totalSum.toFixed(2));
+    function renderCalendar(month, year) {
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
       
-      if (hasNumericPaid && totalPaidSum > 0) {
-        document.getElementById('cell_paid_sum').textContent = formatThaiCurrency(totalPaidSum.toFixed(2));
-      } else {
-        document.getElementById('cell_paid_sum').textContent = "-";
-      }
-    }
+      const grid = document.getElementById('cal-days-grid');
+      grid.innerHTML = '';
 
-    function updateAccepted(val) {
-      acceptedInstallmentsValue = toThaiNumber(val);
-      localStorage.setItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`, acceptedInstallmentsValue);
-    }
+      document.getElementById('cal-month-year').textContent = `${thaiMonths[month]} ${year + 543}`;
 
-    function updateInstallment(index, field, value) {
-      installmentList[index][field] = toThaiNumber(value);
-      localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`, JSON.stringify(installmentList));
-
-      let totalSum = 0;
-      let totalPaidSum = 0;
-      let hasNumericPaid = false;
-
-      installmentList.forEach(item => {
-        const rawNum = (item.amount || '0').toString().replace(/,/g, '').replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s));
-        totalSum += parseFloat(rawNum) || 0;
-
-        const paidVal = (item.paid || '-').toString().trim();
-        if (paidVal !== '-' && paidVal !== '') {
-          const rawPaid = parseFloat(paidVal.replace(/,/g, '').replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
-          if (!isNaN(rawPaid) && rawPaid > 0) {
-            totalPaidSum += rawPaid;
-            hasNumericPaid = true;
-          }
-        }
-      });
-
-      document.getElementById('cell_budget_sum').textContent = formatThaiCurrency(totalSum.toFixed(2));
-      document.getElementById('lbl_budget_amount').textContent = formatThaiCurrency(totalSum.toFixed(2));
-
-      if (hasNumericPaid && totalPaidSum > 0) {
-        document.getElementById('cell_paid_sum').textContent = formatThaiCurrency(totalPaidSum.toFixed(2));
-      } else {
-        document.getElementById('cell_paid_sum').textContent = "-";
-      }
-    }
-
-    function addInstallmentRow() {
-      installmentList.push({ year: "๒๕๖๙", amount: "๐.๐๐", paid: "-" });
-      localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`, JSON.stringify(installmentList));
-
-      const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`);
-      let actualWeightPercent = 0;
-      if (progressRaw) {
-        actualWeightPercent = parseFloat(JSON.parse(progressRaw).totalWeightPercent) || 0;
-      }
-      renderTable(actualWeightPercent, calculateReportStatus(actualWeightPercent));
-    }
-
-    function removeInstallmentRow() {
-      if (installmentList.length > 1) {
-        installmentList.pop();
-        localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`, JSON.stringify(installmentList));
-
-        const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`);
-        let actualWeightPercent = 0;
-        if (progressRaw) {
-          actualWeightPercent = parseFloat(JSON.parse(progressRaw).totalWeightPercent) || 0;
-        }
-        renderTable(actualWeightPercent, calculateReportStatus(actualWeightPercent));
-      } else {
-        alert("ต้องมีอย่างน้อย 1 งวดงานค่ะ");
-      }
-    }
-
-    function renderSignatures(data) {
-      const inspectors = data.inspectors || [{ name: "นายพัทธิยะ วงษาซ้าย", pos: "ผู้ควบคุมงาน" }];
-      let inspHTML = "";
-      inspectors.forEach(insp => {
-        const inspName = typeof insp === 'object' ? insp.name : insp;
-        const inspPos = typeof insp === 'object' ? insp.pos : "ผู้ควบคุมงาน";
-        if (inspName) {
-          inspHTML += `
-            <div class="space-y-0.5 text-center min-w-[220px] mb-2">
-              <p class="whitespace-nowrap">(ลงชื่อ)........................................................... ${inspPos}</p>
-              <p class="font-medium">(${inspName})</p>
-            </div>`;
-        }
-      });
-      if (!inspHTML) {
-        inspHTML = `
-          <div class="space-y-0.5 text-center min-w-[220px]">
-            <p class="whitespace-nowrap">(ลงชื่อ)........................................................... ผู้ควบคุมงาน</p>
-            <p class="font-medium">(นายพัทธิยะ วงษาซ้าย)</p>
-          </div>`;
-      }
-      document.getElementById('inspectorSignatureArea').innerHTML = inspHTML;
-
-      const comms = data.committees || [];
-      const commArea = document.getElementById('committeeSignatureArea');
-      commArea.innerHTML = '';
-      
-      if (comms.length === 0) {
-        commArea.innerHTML = `
-          <div class="col-span-2 flex justify-center mb-3">
-            <div class="text-center">
-              <p class="whitespace-nowrap">(ลงชื่อ).................................................... ประธานกรรมการฯ</p>
-              <p class="font-medium mt-1">(นางสาวถนอมนวล วะทวีก้านตรงฯ)</p>
-            </div>
-          </div>
-          <div class="flex justify-center mb-3">
-            <div class="text-center">
-              <p class="whitespace-nowrap">(ลงชื่อ).................................................... กรรมการฯ</p>
-              <p class="font-medium mt-1">(จ่าเอกธีรพงษ์ ดรชานนท์)</p>
-            </div>
-          </div>`;
-        return;
+      for (let i = 0; i < firstDay; i++) {
+        const span = document.createElement('span');
+        grid.appendChild(span);
       }
 
-      comms.forEach((item, idx) => {
-        if (!item) return;
-        const cName = typeof item === 'object' ? item.name : item;
-        const cPos = typeof item === 'object' ? item.pos : "";
-        if (!cName) return;
-
-        const roleLabel = cPos ? cPos : (idx === 0 ? 'ประธานกรรมการฯ' : 'กรรมการฯ');
+      for (let d = 1; d <= daysInMonth; d++) {
+        const span = document.createElement('span');
+        span.textContent = d;
+        span.className = "py-1 rounded-lg";
         
-        if (idx === 0) {
-          commArea.innerHTML += `
-            <div class="col-span-2 flex justify-center mb-3">
-              <div class="text-center">
-                <p class="whitespace-nowrap">(ลงชื่อ).................................................... ${roleLabel}</p>
-                <p class="font-medium mt-1">(${cName})</p>
-              </div>
-            </div>`;
+        if (d === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+          span.className += " bg-red-600 text-white font-bold shadow";
         } else {
-          commArea.innerHTML += `
-            <div class="flex justify-center mb-3">
-              <div class="text-center">
-                <p class="whitespace-nowrap">(ลงชื่อ).................................................... ${roleLabel}</p>
-                <p class="font-medium mt-1">(${cName})</p>
-              </div>
-            </div>`;
+          span.className += " hover:bg-slate-100";
         }
+        grid.appendChild(span);
+      }
+    }
+
+    function changeMonth(direction) {
+      currentMonth += direction;
+      if (currentMonth > 11) { currentMonth = 0; currentYear++; } 
+      else if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+      renderCalendar(currentMonth, currentYear);
+    }
+
+    function getBatchData() {
+      const data = { 
+        action: 'save_weekly_reference', 
+        projectID: currentProjectID,
+        reportMonth: currentReportMonth,
+        weeks: [] 
+      };
+      for (let i = 1; i <= 5; i++) {
+        data.weeks.push({
+          weekIndex: i,
+          seq: document.getElementById(`w${i}_seq`).value,
+          week: document.getElementById(`w${i}_week`).value,
+          year: document.getElementById(`w${i}_year`).value,
+          repDate: document.getElementById(`w${i}_repDate`).value,
+          startDate: document.getElementById(`w${i}_startDate`).value,
+          endDate: document.getElementById(`w${i}_endDate`).value,
+          plan: document.getElementById(`w${i}_plan`).value
+        });
+      }
+      return data;
+    }
+
+    function populateData(weeks) {
+      if (!weeks || !Array.isArray(weeks)) return;
+      weeks.forEach((w, idx) => {
+        const i = idx + 1;
+        if (document.getElementById(`w${i}_seq`)) document.getElementById(`w${i}_seq`).value = w.seq || i;
+        if (document.getElementById(`w${i}_week`)) document.getElementById(`w${i}_week`).value = w.week || i;
+        if (document.getElementById(`w${i}_year`)) document.getElementById(`w${i}_year`).value = w.year || '2569';
+        if (document.getElementById(`w${i}_repDate`)) document.getElementById(`w${i}_repDate`).value = w.repDate || '';
+        if (document.getElementById(`w${i}_startDate`)) document.getElementById(`w${i}_startDate`).value = w.startDate || '';
+        if (document.getElementById(`w${i}_endDate`)) document.getElementById(`w${i}_endDate`).value = w.endDate || '';
+        if (document.getElementById(`w${i}_plan`)) document.getElementById(`w${i}_plan`).value = w.plan || '';
       });
     }
 
-    window.addEventListener('DOMContentLoaded', loadAllData);
+    function loadSavedDataForCurrentMonth() {
+      const local = localStorage.getItem(getProjectWeeklyKey()) ||
+        localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) ||
+        localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+      if (local) {
+        try {
+          populateData(JSON.parse(local));
+        } catch(e){}
+      } else {
+        for (let i = 1; i <= 5; i++) {
+          if (document.getElementById(`w${i}_seq`)) document.getElementById(`w${i}_seq`).value = i;
+          if (document.getElementById(`w${i}_week`)) document.getElementById(`w${i}_week`).value = i;
+          if (document.getElementById(`w${i}_year`)) document.getElementById(`w${i}_year`).value = '2569';
+          if (document.getElementById(`w${i}_startDate`)) document.getElementById(`w${i}_startDate`).value = '';
+          if (document.getElementById(`w${i}_endDate`)) document.getElementById(`w${i}_endDate`).value = '';
+          if (document.getElementById(`w${i}_repDate`)) document.getElementById(`w${i}_repDate`).value = '';
+          if (document.getElementById(`w${i}_plan`)) document.getElementById(`w${i}_plan`).value = '0.00';
+        }
+      }
+    }
+
+    async function saveWeeklyBatch() {
+      const btn = document.getElementById('btn-save-all');
+      const statusEl = document.getElementById('sync-status');
+      const payload = getBatchData();
+
+      localStorage.setItem(getProjectWeeklyKey(), JSON.stringify(payload.weeks));
+
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> กำลังบันทึก...`;
+      lucide.createIcons();
+
+      try {
+        const res = await fetch(getActiveUrl(), {
+          method: 'POST',
+          mode: 'cors',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const result = await res.json();
+        if (result.status === 'success') {
+          statusEl.textContent = 'บันทึกสำเร็จ (ซิงค์ชีตแล้ว)';
+          statusEl.className = 'text-base px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold ml-2 shadow-sm';
+          alert(`บันทึกข้อมูลรายสัปดาห์ประจำรอบเดือน ${currentReportMonth} ลงระบบเรียบร้อยแล้วค่ะ`);
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (err) {
+        statusEl.textContent = 'บันทึกในเครื่องแล้ว';
+        statusEl.className = 'text-base px-3.5 py-1 rounded-full bg-blue-100 text-blue-800 font-bold ml-2 shadow-sm';
+        alert(`บันทึกข้อมูลรอบเดือน ${currentReportMonth} ไว้ในเครื่องเรียบร้อยแล้วค่ะ`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> บันทึกข้อมูลทั้งหมด`;
+        lucide.createIcons();
+      }
+    }
+
+    async function loadWeeklyBatch() {
+      const btn = document.getElementById('btn-load-all');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> กำลังโหลด...`;
+      lucide.createIcons();
+
+      try {
+        const result = await requestJSONP('get_weekly_reference', { projectID: currentProjectID, reportMonth: currentReportMonth });
+        
+        if (result && result.weeks && result.weeks.length > 0) {
+          populateData(result.weeks);
+          localStorage.setItem(getProjectWeeklyKey(), JSON.stringify(result.weeks));
+          alert(`ดึงข้อมูลรายสัปดาห์รอบเดือน ${currentReportMonth} เรียบร้อยแล้วค่ะ`);
+        } else {
+          throw new Error('ไม่พบข้อมูลส่วนกลาง');
+        }
+      } catch (err) {
+        loadSavedDataForCurrentMonth();
+        alert(`โหลดข้อมูลประจำรอบเดือน ${currentReportMonth} ที่เก็บไว้ในเครื่องเรียบร้อยแล้วค่ะ`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="refresh-cw" class="w-5 h-5"></i> โหลดข้อมูลล่าสุด`;
+        lucide.createIcons();
+      }
+    }
+
+   window.addEventListener('DOMContentLoaded', () => {
+      initProjectContext();
+      
+      const lastSavedMonth = localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`);
+      if (lastSavedMonth) {
+        currentReportMonth = lastSavedMonth;
+        const selMonth = document.getElementById('sel_global_report_month');
+        if (selMonth) {
+          selMonth.value = lastSavedMonth;
+        }
+      } else {
+        const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+        if (basicRaw) {
+          try {
+            const pData = JSON.parse(basicRaw);
+            if (pData.startDate) {
+              const sDate = new Date(pData.startDate);
+              if (!isNaN(sDate.getTime())) {
+                const mKeys = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                const codeMonth = `${mKeys[sDate.getMonth()]}_${sDate.getFullYear() + 543}`;
+                
+                const selMonth = document.getElementById('sel_global_report_month');
+                for (let opt of selMonth.options) {
+                  if (opt.value === codeMonth) {
+                    selMonth.value = codeMonth;
+                    currentReportMonth = codeMonth;
+                    break;
+                  }
+                }
+              }
+            }
+          } catch(e){}
+        }
+      }
+
+      buildWeeksUI();
+      loadSavedDataForCurrentMonth();
+      renderCalendar(currentMonth, currentYear);
+    });
   </script>
 </body>
 </html>
