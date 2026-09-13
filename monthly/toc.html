@@ -82,7 +82,8 @@
   <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
   <div class="max-w-4xl w-full mb-4 bg-white p-4 rounded-xl shadow border border-slate-300 flex flex-wrap items-center justify-between gap-3 no-print">
     <div class="flex items-center gap-2">
-      <a href="../Monthly_Reference.html" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1.5 text-sm font-bold">
+      <!-- 💡 เพิ่ม id="btn_back_menu" เพื่อใช้ Javascript อัปเดตลิงก์ -->
+      <a id="btn_back_menu" href="../Monthly_Reference.html" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1.5 text-sm font-bold">
         <i data-lucide="arrow-left" class="w-4 h-4"></i> กลับเมนู
       </a>
       <span class="font-bold text-slate-800 text-lg">หน้าสารบัญรายงานประจำเดือน</span>
@@ -170,6 +171,15 @@
 
   <script>
     lucide.createIcons();
+
+    // 💡 ดึงพารามิเตอร์ month จาก URL เพื่อส่งกลับไปหน้าหลักให้ตรงเดือน
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const monthCode = urlParams.get('month');
+      if (monthCode) {
+        document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
+      }
+    });
   </script>
 </body>
 </html>

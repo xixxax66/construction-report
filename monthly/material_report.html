@@ -71,7 +71,7 @@
       background-color: #f8fafc;
     }
 
-    /* กล่องพิมพ์ข้อความแบบขยายสูงอัตโนมัติ */
+    /* 💡 กล่องพิมพ์ข้อความแบบขยายสูงอัตโนมัติ สำหรับทุกช่อง */
     .auto-expand-area {
       width: 100%;
       min-height: 26px;
@@ -89,7 +89,6 @@
       box-sizing: border-box;
       white-space: pre-wrap;
       word-break: break-word;
-      text-align: left;
     }
     .auto-expand-area:focus {
       background-color: #fef08a;
@@ -124,7 +123,7 @@
       body { background: white !important; padding: 0 !important; }
       .no-print { display: none !important; }
       .sheet-workspace { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 15mm 15mm 15mm 20mm !important; }
-      .editable-input { background: transparent !important; }
+      .editable-input, .auto-expand-area { background: transparent !important; }
       .auto-expand-area {
         overflow: visible !important;
         height: auto !important;
@@ -137,7 +136,7 @@
   <!-- แผงควบคุมด้านบน -->
   <div class="max-w-[210mm] w-full mb-3 flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl shadow border border-slate-300 no-print">
     <div class="flex items-center gap-2">
-      <a href="../Monthly_Reference.html" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1 text-base font-bold">
+      <a id="btn_back_menu" href="../Monthly_Reference.html" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1 text-base font-bold">
         <i data-lucide="arrow-left" class="w-5 h-5"></i> กลับเมนู
       </a>
       <span class="font-bold text-slate-800 text-xl">ผลการทดสอบและขออนุมัติใช้วัสดุ</span>
@@ -222,7 +221,7 @@
     let currentProjectID = 'DEFAULT_PROJ';
 
     function getStorageKeyMaterial() {
-      return getMonthlySectionKey('MATERIAL_REPORT_DB', currentProjectID);
+      return `MONTHLY_MATERIAL_REPORT_DB_${currentProjectID}`;
     }
 
     function initProjectContext() {
@@ -231,7 +230,7 @@
         try {
           const projectData = JSON.parse(basicRaw);
           const cNo = projectData.contractNo || 'NO_CONTRACT';
-          currentProjectID = getActiveProjectId(projectData);
+          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
         } catch(e) {}
       }
     }
@@ -241,9 +240,9 @@
         { name: "-", qty: "-", date: "-", agency: "-", pos: "-", result: "-" }
       ],
       approvals: [
-        { name: "คอนกรีต", date: "๑๒ มิถุนายน ๒๕๖๙", approver: "คณะกรรมการตรวจการจ้าง", result: "อนุมัติ" },
-        { name: "ตะแกรงเหล็ก (wire mesh) ๔ มม. @๒๐x๒๐ ซม.", date: "๑๒ มิถุนายน ๒๕๖๙", approver: "คณะกรรมการตรวจการจ้าง", result: "อนุมัติ" },
-        { name: "เหล็กเส้นกลมผิวเรียบ sr-24 RB15", date: "๑๒ มิถุนายน ๒๕๖๙", approver: "คณะกรรมการตรวจการจ้าง", result: "อนุมัติ" }
+        { name: "คอนกรีต", date: "๑๒ มิถุนายน ๒๕๖๙", approver: "คณะกรรมการตรวจรับพัสดุ", result: "อนุมัติ" },
+        { name: "ตะแกรงเหล็ก (wire mesh) ๔ มม. @๒๐x๒๐ ซม.", date: "๑๒ มิถุนายน ๒๕๖๙", approver: "คณะกรรมการตรวจรับพัสดุ", result: "อนุมัติ" },
+        { name: "เหล็กเส้นกลมผิวเรียบ sr-24 RB15", date: "๑๒ มิถุนายน ๒๕๖๙", approver: "คณะกรรมการตรวจรับพัสดุ", result: "อนุมัติ" }
       ]
     };
 
@@ -251,6 +250,12 @@
       if (!element) return;
       element.style.height = 'auto';
       element.style.height = Math.max(element.scrollHeight, 26) + 'px';
+    }
+
+    function toThaiNumber(numStr) {
+      if (numStr === null || numStr === undefined) return '';
+      const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+      return numStr.toString().replace(/[0-9]/g, (w) => thaiNums[w]);
     }
 
     function toThaiDate(dateStr) {
@@ -266,10 +271,7 @@
       const month = monthNames[parseInt(parts[1])];
       const day = parseInt(parts[2]);
       
-      const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
-      const toThNum = (str) => str.toString().replace(/[0-9]/g, (w) => thaiNums[w]);
-      
-      return `${toThNum(day)} ${month} ${toThNum(year)}`;
+      return `${toThaiNumber(day)} ${month} ${toThaiNumber(year)}`;
     }
 
     function loadMaterialData() {
@@ -281,7 +283,7 @@
           const data = JSON.parse(basicRaw);
           if (data.organizationName) orgName = data.organizationName;
         }
-        document.getElementById('lbl_org_name').textContent = orgName;
+        document.getElementById('lbl_org_name').textContent = toThaiNumber(orgName);
 
         const saved = localStorage.getItem(getStorageKeyMaterial()) || localStorage.getItem('MONTHLY_MATERIAL_REPORT_DB');
         if (saved) {
@@ -299,21 +301,30 @@
       const testTbody = document.getElementById('test_table_tbody');
       testTbody.innerHTML = '';
       materialData.tests.forEach((item, idx) => {
+        // 💡 เปลี่ยน input ให้เป็น textarea ทั้งหมดเพื่อรองรับ Dynamic Wrap
         testTbody.innerHTML += `
           <tr>
             <td class="p-1 align-middle">
-              <textarea rows="1" class="auto-expand-area" oninput="autoExpandTextarea(this)" onchange="updateTestData(${idx}, 'name', this.value)">${escapeHTML(item.name || '')}</textarea>
+              <textarea rows="1" class="auto-expand-area text-left" oninput="autoExpandTextarea(this)" onchange="updateTestData(${idx}, 'name', this.value)">${item.name || ''}</textarea>
             </td>
-            <td><input type="text" class="editable-input text-center" value="${escapeHTML(item.qty || '')}" onchange="updateTestData(${idx}, 'qty', this.value)"></td>
-            <td>
+            <td class="p-1 align-middle">
+              <textarea rows="1" class="auto-expand-area text-center" oninput="autoExpandTextarea(this)" onchange="updateTestData(${idx}, 'qty', this.value)">${item.qty || ''}</textarea>
+            </td>
+            <td class="p-1 align-middle">
               <div class="flex items-center justify-center gap-0.5">
-                <input type="text" class="editable-input text-center text-xs" value="${escapeHTML(item.date || '')}" onchange="updateTestData(${idx}, 'date', this.value)" id="test_date_${idx}">
+                <input type="text" class="editable-input text-center text-xs" value="${item.date || ''}" onchange="updateTestData(${idx}, 'date', this.value)" id="test_date_${idx}">
                 <input type="date" class="no-print cursor-pointer text-xs p-0.5 rounded border border-slate-300 bg-slate-50" onchange="onDateSelected(${idx}, 'test', this.value)" title="เลือกจากปฏิทิน">
               </div>
             </td>
-            <td><input type="text" class="editable-input text-center" value="${escapeHTML(item.agency || '')}" onchange="updateTestData(${idx}, 'agency', this.value)"></td>
-            <td><input type="text" class="editable-input text-center" value="${escapeHTML(item.pos || '')}" onchange="updateTestData(${idx}, 'pos', this.value)"></td>
-            <td><input type="text" class="editable-input text-center font-bold" value="${escapeHTML(item.result || '')}" onchange="updateTestData(${idx}, 'result', this.value)"></td>
+            <td class="p-1 align-middle">
+              <textarea rows="1" class="auto-expand-area text-center" oninput="autoExpandTextarea(this)" onchange="updateTestData(${idx}, 'agency', this.value)">${item.agency || ''}</textarea>
+            </td>
+            <td class="p-1 align-middle">
+              <textarea rows="1" class="auto-expand-area text-center" oninput="autoExpandTextarea(this)" onchange="updateTestData(${idx}, 'pos', this.value)">${item.pos || ''}</textarea>
+            </td>
+            <td class="p-1 align-middle">
+              <textarea rows="1" class="auto-expand-area text-center font-bold" oninput="autoExpandTextarea(this)" onchange="updateTestData(${idx}, 'result', this.value)">${item.result || ''}</textarea>
+            </td>
           </tr>
         `;
       });
@@ -325,21 +336,25 @@
         appTbody.innerHTML += `
           <tr>
             <td class="p-1 align-middle">
-              <textarea rows="1" class="auto-expand-area" oninput="autoExpandTextarea(this)" onchange="updateApproveData(${idx}, 'name', this.value)">${escapeHTML(item.name || '')}</textarea>
+              <textarea rows="1" class="auto-expand-area text-left" oninput="autoExpandTextarea(this)" onchange="updateApproveData(${idx}, 'name', this.value)">${item.name || ''}</textarea>
             </td>
-            <td>
+            <td class="p-1 align-middle">
               <div class="flex items-center justify-center gap-0.5">
-                <input type="text" class="editable-input text-center text-xs" value="${escapeHTML(item.date || '')}" onchange="updateApproveData(${idx}, 'date', this.value)" id="approve_date_${idx}">
+                <input type="text" class="editable-input text-center text-xs" value="${item.date || ''}" onchange="updateApproveData(${idx}, 'date', this.value)" id="approve_date_${idx}">
                 <input type="date" class="no-print cursor-pointer text-xs p-0.5 rounded border border-slate-300 bg-slate-50" onchange="onDateSelected(${idx}, 'approve', this.value)" title="เลือกจากปฏิทิน">
               </div>
             </td>
-            <td><input type="text" class="editable-input text-center" value="${escapeHTML(item.approver || '')}" onchange="updateApproveData(${idx}, 'approver', this.value)"></td>
-            <td><input type="text" class="editable-input text-center font-bold" value="${escapeHTML(item.result || '')}" onchange="updateApproveData(${idx}, 'result', this.value)"></td>
+            <td class="p-1 align-middle">
+              <textarea rows="1" class="auto-expand-area text-center" oninput="autoExpandTextarea(this)" onchange="updateApproveData(${idx}, 'approver', this.value)">${item.approver || ''}</textarea>
+            </td>
+            <td class="p-1 align-middle">
+              <textarea rows="1" class="auto-expand-area text-center font-bold" oninput="autoExpandTextarea(this)" onchange="updateApproveData(${idx}, 'result', this.value)">${item.result || ''}</textarea>
+            </td>
           </tr>
         `;
       });
 
-      // ปรับความสูงของ Textarea ทั้งหมดหลังเรนเดอร์
+      // ปรับความสูงของ Textarea ทั้งหมดหลังเรนเดอร์ให้พอดีกับเนื้อหา
       setTimeout(() => {
         document.querySelectorAll('.auto-expand-area').forEach(el => autoExpandTextarea(el));
       }, 50);
@@ -370,10 +385,11 @@
 
     function saveMaterialData() {
       localStorage.setItem(getStorageKeyMaterial(), JSON.stringify(materialData));
+      localStorage.setItem('MONTHLY_MATERIAL_REPORT_DB', JSON.stringify(materialData));
     }
 
     function addTestRow() {
-      materialData.tests.push({ name: "", qty: "-", date: "-", agency: "-", pos: "-", result: "ผ่าน" });
+      materialData.tests.push({ name: "-", qty: "-", date: "-", agency: "-", pos: "-", result: "-" });
       saveMaterialData();
       renderTables();
     }
@@ -389,7 +405,7 @@
     }
 
     function addApproveRow() {
-      materialData.approvals.push({ name: "", date: "-", approver: "คณะกรรมการตรวจการจ้าง", result: "อนุมัติ" });
+      materialData.approvals.push({ name: "", date: "-", approver: "คณะกรรมการตรวจรับพัสดุ", result: "อนุมัติ" });
       saveMaterialData();
       renderTables();
     }
@@ -404,7 +420,14 @@
       }
     }
 
-    window.addEventListener('DOMContentLoaded', loadMaterialData);
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const monthCode = urlParams.get('month');
+      if (monthCode) {
+        document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
+      }
+      loadMaterialData();
+    });
   </script>
 </body>
 </html>

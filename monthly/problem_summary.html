@@ -59,29 +59,42 @@
       border: 1.5px solid #000;
       margin-top: 4px;
       margin-bottom: 12px;
+      table-layout: fixed;
     }
 
     .table-problem th, .table-problem td {
       border: 1px solid #000;
       padding: 4px 6px;
       font-size: 15pt !important;
-      vertical-align: middle;
+      vertical-align: top; /* 💡 ปรับให้ข้อความชิดบน */
     }
 
     .table-problem th {
       text-align: center;
       font-weight: bold;
+      vertical-align: middle;
+      background-color: #f8fafc;
     }
 
-    .editable-input {
-      background: transparent;
+    /* 💡 เปลี่ยนเป็น auto-expand ให้เหมือนหน้าวัสดุ */
+    .auto-expand-area {
+      width: 100%;
+      min-height: 25mm;
       border: none;
       outline: none;
-      width: 100%;
+      background: transparent;
       font-family: inherit;
-      font-size: inherit;
+      font-size: 15pt;
+      line-height: 1.2;
+      padding: 2px 4px;
+      resize: none;
+      overflow: hidden;
+      display: block;
+      box-sizing: border-box;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
-    .editable-input:focus {
+    .auto-expand-area:focus {
       background-color: #fef08a;
     }
 
@@ -156,7 +169,7 @@
       body { background: white !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       .no-print { display: none !important; }
       .sheet-workspace { box-shadow: none !important; margin: 0 !important; width: 210mm !important; height: 297mm !important; padding: 15mm 15mm 15mm 20mm !important; }
-      .editable-input { background: transparent !important; }
+      .auto-expand-area { background: transparent !important; overflow: visible !important; height: auto !important; }
       .custom-checkbox { 
         border: 1.5px solid #000 !important; 
         background-color: #fff !important; 
@@ -171,7 +184,8 @@
 
   <div class="max-w-[210mm] w-full mb-3 flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl shadow border border-slate-300 no-print">
     <div class="flex items-center gap-2">
-      <a href="../Monthly_Reference.html" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1 text-base font-bold">
+      <!-- 💡 เพิ่ม ID btn_back_menu -->
+      <a id="btn_back_menu" href="../Monthly_Reference.html" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1 text-base font-bold">
         <i data-lucide="arrow-left" class="w-5 h-5"></i> กลับเมนู
       </a>
       <span class="font-bold text-slate-800 text-xl">ปัญหา/อุปสรรคและสรุปผลการดำเนินงาน</span>
@@ -203,18 +217,24 @@
         <input type="checkbox" id="chk_yes" class="custom-checkbox" onclick="event.stopPropagation(); toggleHasProblem(true);"> มี รายละเอียดดังนี้
       </div>
 
+      <!-- 💡 เพิ่มปุ่มลบ/เพิ่มแถว เหมือนในหน้าวัสดุ ให้ยืดหยุ่นขึ้น -->
+      <div class="flex justify-end gap-2 mb-1 no-print" id="problem_tools" style="display: none;">
+        <button onclick="addProblemRow()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2 py-1 rounded font-bold">＋ เพิ่มข้อ</button>
+        <button onclick="removeProblemRow()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-2 py-1 rounded font-bold">－ ลบข้อ</button>
+      </div>
+
       <table class="table-problem" id="problem_table_container">
         <thead>
           <tr>
             <th class="w-12">ที่</th>
-            <th>ปัญหา - อุปสรรค - การแก้ไข</th>
-            <th class="w-56">หมายเหตุ</th>
+            <th style="width: 58%;">ปัญหา - อุปสรรค - การแก้ไข</th>
+            <th style="width: 32%;">หมายเหตุ</th>
           </tr>
         </thead>
         <tbody id="problem_table_tbody"></tbody>
       </table>
 
-      <div class="header-row mb-2">
+      <div class="header-row mb-2 mt-4">
         <span>๖ สรุปผลการดำเนินงานถึงปัจจุบัน</span>
       </div>
 
@@ -245,9 +265,6 @@
           </div>
           <div class="flex items-center gap-2">
             <input type="checkbox" id="status_delayed" disabled class="custom-checkbox"> ช้า
-          </div>
-          <div class="flex items-center gap-2">
-            <input type="checkbox" id="status_on_plan" disabled class="custom-checkbox"> ตามแผน
           </div>
           <div class="flex items-center gap-2">
             <input type="checkbox" id="status_ahead" disabled class="custom-checkbox"> เร็ว
@@ -281,6 +298,7 @@
   <script>
     lucide.createIcons();
     let currentProjectID = 'DEFAULT_PROJ';
+    let currentMonthCode = ''; // 💡 เพิ่มตัวแปรรหัสเดือน
 
     let problemData = {
       hasProblem: false,
@@ -292,7 +310,8 @@
     };
 
     function getStorageKeyProblem() {
-      return getMonthlySectionKey('PROBLEM_SUMMARY_DB', currentProjectID);
+      // 💡 แยกเก็บตามโปรเจกต์และรหัสเดือนเลย
+      return `MONTHLY_PROBLEM_SUMMARY_DB_${currentProjectID}_${currentMonthCode}`;
     }
 
     function initProjectContext() {
@@ -301,9 +320,20 @@
         try {
           const projectData = JSON.parse(basicRaw);
           const cNo = projectData.contractNo || 'NO_CONTRACT';
-          currentProjectID = getActiveProjectId(projectData);
+          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
         } catch(e) {}
       }
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('month')) {
+        currentMonthCode = urlParams.get('month');
+      }
+    }
+
+    function autoExpandTextarea(element) {
+      if (!element) return;
+      element.style.height = 'auto';
+      element.style.height = Math.max(element.scrollHeight, 30) + 'px';
     }
 
     function toThaiNumber(numStr) {
@@ -337,13 +367,27 @@
       saveAndRender();
     }
 
-    // ฟังก์ชันดึงปัญหา-อุปสรรคจากหน้ารายงานประจำสัปดาห์ (1-5) อัตโนมัติ
+    function addProblemRow() {
+      problemData.problems.push({ desc: "", notifyContractor: false, reportPresident: false });
+      saveAndRender();
+    }
+
+    function removeProblemRow() {
+      if (problemData.problems.length > 1) {
+        problemData.problems.pop();
+        saveAndRender();
+      } else {
+        alert("ต้องมีอย่างน้อย 1 รายการค่ะ");
+      }
+    }
+
+    // ฟังก์ชันดึงปัญหา-อุปสรรคจากหน้ารายงานประจำสัปดาห์ (1-5) อัตโนมัติ (💡 ปรับให้ดึงเฉพาะของเดือนนั้นๆ)
     function pullWeeklyProblems() {
       const pulledList = [];
-      const reportMonth = getActiveReportMonth(currentProjectID);
       for (let w = 1; w <= 5; w++) {
-        const raw = localStorage.getItem(getWeeklyProgressKey(w, currentProjectID, reportMonth)) ||
-          localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+        // ดึงให้แม่นยำตาม Project และ Month
+        const key = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${w}`;
+        const raw = localStorage.getItem(key) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`);
         if (raw) {
           try {
             const data = JSON.parse(raw);
@@ -360,15 +404,22 @@
 
       if (pulledList.length > 0) {
         problemData.hasProblem = true;
-        problemData.problems = [
-          { desc: pulledList[0] || "", notifyContractor: true, reportPresident: true },
-          { desc: pulledList[1] || "", notifyContractor: false, reportPresident: false },
-          { desc: pulledList[2] || "", notifyContractor: false, reportPresident: false }
-        ];
+        // เคลียร์ของเก่าออก แล้วใส่ของใหม่
+        problemData.problems = pulledList.map(desc => ({
+          desc: desc, 
+          notifyContractor: true, 
+          reportPresident: true 
+        }));
+        
+        // ถ้าดึงมาได้น้อยกว่า 3 ข้อ ให้เติมแถวว่างให้ครบ 3 เพื่อความสวยงาม
+        while(problemData.problems.length < 3) {
+          problemData.problems.push({ desc: "", notifyContractor: false, reportPresident: false });
+        }
+
         saveAndRender();
         alert(`ดึงปัญหา-อุปสรรคจากรายงานประจำสัปดาห์มาใส่ในแบบสรุปเรียบร้อยแล้วค่ะ! (พบ ${pulledList.length} รายการ)`);
       } else {
-        alert("ไม่พบข้อมูลปัญหา-อุปสรรคในรายงานประจำสัปดาห์ของโครงการนี้ค่ะ");
+        alert("ไม่พบข้อมูลปัญหา-อุปสรรคในรายงานประจำสัปดาห์ของโครงการนี้ในเดือนนี้ค่ะ");
       }
     }
 
@@ -377,7 +428,6 @@
       try {
         let orgName = "องค์การบริหารส่วนตำบลโพนงาม";
         let targetWeek = 5;
-        const reportMonth = getActiveReportMonth(currentProjectID);
 
         const monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
         let monthlyData = {};
@@ -386,6 +436,9 @@
             monthlyData = JSON.parse(monthlyRaw);
             if (monthlyData.planWeek) {
               targetWeek = parseInt(monthlyData.planWeek) || 5;
+            }
+            if (!currentMonthCode && monthlyData.monthCode) {
+              currentMonthCode = monthlyData.monthCode;
             }
           } catch(e){}
         }
@@ -400,21 +453,23 @@
           const data = JSON.parse(basicRaw);
           if (data.organizationName) orgName = data.organizationName;
           if (data.inspectors && data.inspectors[0] && data.inspectors[0].name) {
-            document.getElementById('txt_insp_name').textContent = data.inspectors[0].name;
+            document.getElementById('txt_insp_name').textContent = toThaiNumber(data.inspectors[0].name);
           }
           if (data.budgetAmount) {
             totalBudget = parseFloat(data.budgetAmount.toString().replace(/,/g, '').replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
           }
-          totalDaysNum = getContractDurationDays({
-            ...data,
-            extensionDays: data.extensionDays || data.totalExtendedDays
-          }) || parseInt(data.manualDays) || 140;
+          if (data.durationDays || data.manualDays) {
+            totalDaysNum = parseInt(data.durationDays || data.manualDays) || 140;
+          }
+          if (data.totalExtendedDays && parseInt(data.totalExtendedDays) > 0) {
+            totalDaysNum = parseInt(data.totalExtendedDays);
+          }
           if (data.startDate) startDateStr = data.startDate;
           if (data.installments && Array.isArray(data.installments)) {
             installments = data.installments;
           }
         }
-        document.getElementById('lbl_org_name').textContent = orgName;
+        document.getElementById('lbl_org_name').textContent = toThaiNumber(orgName);
 
         let remainDays = totalDaysNum;
         if (startDateStr && monthlyData.reportDate) {
@@ -428,8 +483,8 @@
         }
         document.getElementById('val_remaining_days').textContent = toThaiNumber(remainDays);
 
-        const savedWeekInst = localStorage.getItem(getWeeklyReportKey('INSTALLMENTS', targetWeek, currentProjectID, reportMonth)) ||
-          localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${targetWeek}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${targetWeek}`);
+        const savedWeekInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || 
+                              localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${targetWeek}`);
         if (savedWeekInst) {
           try { installments = JSON.parse(savedWeekInst); } catch(e){}
         }
@@ -437,14 +492,14 @@
         let completedCount = 0;
         let completedAmountSum = 0;
 
-        const savedAccepted = localStorage.getItem(getWeeklyReportKey('ACCEPTED', targetWeek, currentProjectID, reportMonth)) ||
-          localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${targetWeek}`) || localStorage.getItem(`WEEK_REPORT_ACCEPTED_${targetWeek}`);
+        const savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || 
+                              localStorage.getItem(`WEEK_REPORT_ACCEPTED_${targetWeek}`);
         if (savedAccepted && savedAccepted !== '-' && savedAccepted.trim() !== '') {
           completedCount = parseInt(savedAccepted.toString().replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
         }
 
         let savedDates = {};
-        const savedDatesRaw = localStorage.getItem(getMonthlySectionKey('INSPECTION_DATES_DB', currentProjectID, reportMonth)) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
+        const savedDatesRaw = localStorage.getItem(`MONTHLY_INSPECTION_DATES_DB_${currentProjectID}`) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
         if (savedDatesRaw) {
           try { savedDates = JSON.parse(savedDatesRaw); } catch(e){}
         }
@@ -468,15 +523,16 @@
           document.getElementById('val_paid_percent').textContent = '-';
         }
 
-        const saved = localStorage.getItem(getStorageKeyProblem()) || localStorage.getItem('MONTHLY_PROBLEM_SUMMARY_DB');
+        const saved = localStorage.getItem(getStorageKeyProblem()) || 
+                      localStorage.getItem(`MONTHLY_PROBLEM_SUMMARY_DB_${currentProjectID}`) || 
+                      localStorage.getItem('MONTHLY_PROBLEM_SUMMARY_DB');
         if (saved) {
           problemData = JSON.parse(saved);
         }
 
         let planProg = parseFloat(monthlyData.planPercent) || 0;
         if (planProg === 0) {
-          const weeklyRefRaw = localStorage.getItem(getWeeklyReferenceKey(currentProjectID, reportMonth)) ||
-            localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+          const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentMonthCode}`) || localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`);
           if (weeklyRefRaw) {
             try {
               const weeksArray = JSON.parse(weeklyRefRaw);
@@ -490,8 +546,7 @@
 
         let actualProg = parseFloat(monthlyData.actualPercent) || 0;
         if (actualProg === 0) {
-          const progressRaw = localStorage.getItem(getWeeklyProgressKey(targetWeek, currentProjectID, reportMonth)) ||
-            localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
+          const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`);
           if (progressRaw) {
             try {
               const progData = JSON.parse(progressRaw);
@@ -502,8 +557,7 @@
 
         if (actualProg === 0) {
           for (let w = 5; w >= 1; w--) {
-            const wRaw = localStorage.getItem(getWeeklyProgressKey(w, currentProjectID, reportMonth)) ||
-              localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+            const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`);
             if (wRaw) {
               const wData = JSON.parse(wRaw);
               actualProg = parseFloat(wData.totalWeightPercent) || 0;
@@ -519,18 +573,17 @@
         document.getElementById('val_total_prog').textContent = actTh;
         document.getElementById('val_plan_prog').textContent = planTh;
 
-        let statusType = 'on_plan';
+        let statusType = 'ahead';
         if (actualProg <= 0) {
           statusType = 'not_started';
-        } else if (getProgressStatus(actualProg, planProg) === 'ช้ากว่าแผน') {
+        } else if (actualProg < planProg) {
           statusType = 'delayed';
-        } else if (getProgressStatus(actualProg, planProg) === 'เร็วกว่าแผน') {
+        } else {
           statusType = 'ahead';
         }
 
         document.getElementById('status_not_started').checked = (statusType === 'not_started');
         document.getElementById('status_delayed').checked = (statusType === 'delayed');
-        document.getElementById('status_on_plan').checked = (statusType === 'on_plan');
         document.getElementById('status_ahead').checked = (statusType === 'ahead');
 
         renderUI();
@@ -555,8 +608,10 @@
       }
 
       const container = document.getElementById('problem_table_container');
-      if (container) {
+      const tools = document.getElementById('problem_tools');
+      if (container && tools) {
         container.style.display = problemData.hasProblem ? 'table' : 'none';
+        tools.style.display = problemData.hasProblem ? 'flex' : 'none';
       }
 
       const tbody = document.getElementById('problem_table_tbody');
@@ -566,42 +621,54 @@
       problemData.problems.forEach((item, idx) => {
         const idxTh = toThaiNumber(idx + 1);
         
+        // 💡 ใช้ auto-expand-area แทน textarea แบบฟิกขนาด
         tbody.innerHTML += `
-          <tr style="height: 25mm;">
-            <td class="text-center font-bold">${idxTh}</td>
-            <td><textarea class="editable-input resize-none h-full" rows="3" onchange="updateProblemDesc(${idx}, this.value)">${item.desc || ''}</textarea></td>
-            <td class="text-xs">
+          <tr>
+            <td class="text-center font-bold align-top pt-3">${idxTh}</td>
+            <td class="p-2">
+              <textarea class="auto-expand-area" rows="1" oninput="autoExpandTextarea(this)" onchange="updateProblemDesc(${idx}, this.value)">${item.desc || ''}</textarea>
+            </td>
+            <td class="p-2">
               <label class="flex items-center gap-2 cursor-pointer select-none">
                 <input type="checkbox" class="custom-checkbox" ${item.notifyContractor ? 'checked' : ''} onchange="toggleCheck(${idx}, 'notifyContractor', this.checked)"> แจ้งผู้รับจ้างดำเนินการ
               </label>
-              <label class="flex items-center gap-2 cursor-pointer select-none mt-1">
+              <label class="flex items-center gap-2 cursor-pointer select-none mt-2">
                 <input type="checkbox" class="custom-checkbox" ${item.reportPresident ? 'checked' : ''} onchange="toggleCheck(${idx}, 'reportPresident', this.checked)"> รายงานประธานฯ
               </label>
             </td>
           </tr>
         `;
       });
+
+      // สั่งขยายกล่องข้อความอัตโนมัติเมื่อเรนเดอร์เสร็จ
+      setTimeout(() => {
+        document.querySelectorAll('.auto-expand-area').forEach(el => autoExpandTextarea(el));
+      }, 50);
     }
 
     function updateProblemDesc(idx, val) {
       problemData.problems[idx].desc = val;
       localStorage.setItem(getStorageKeyProblem(), JSON.stringify(problemData));
-      localStorage.setItem('MONTHLY_PROBLEM_SUMMARY_DB', JSON.stringify(problemData));
     }
 
     function toggleCheck(idx, field, val) {
       problemData.problems[idx][field] = val;
       localStorage.setItem(getStorageKeyProblem(), JSON.stringify(problemData));
-      localStorage.setItem('MONTHLY_PROBLEM_SUMMARY_DB', JSON.stringify(problemData));
     }
 
     function saveAndRender() {
       localStorage.setItem(getStorageKeyProblem(), JSON.stringify(problemData));
-      localStorage.setItem('MONTHLY_PROBLEM_SUMMARY_DB', JSON.stringify(problemData));
       renderUI();
     }
 
-    window.addEventListener('DOMContentLoaded', () => loadProblemData(false));
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const monthCode = urlParams.get('month');
+      if (monthCode) {
+        document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
+      }
+      loadProblemData(false);
+    });
   </script>
 </body>
 </html>

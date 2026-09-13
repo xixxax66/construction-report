@@ -44,7 +44,7 @@
         
         <!-- ส่วนหัวตามที่คุณอรรถวัตต้องการ (mb-1) -->
         <div class="relative text-center mb-1">
-          <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img">
+          <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img" onerror="this.src='../../assets/Krut.png'">
           <h2 class="doc-title pt-1">บันทึกข้อความ</h2>
         </div>
 
@@ -110,7 +110,7 @@
         <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl py-4 px-6 font-bold text-2xl shadow-lg flex items-center justify-center gap-3 cursor-pointer">
           <i data-lucide="printer" class="w-7 h-7"></i> พิมพ์บันทึกข้อความ
         </button>
-        <a href="../Monthly_Reference.html" class="bg-gradient-to-b from-slate-100 to-slate-300 border-2 border-slate-400 rounded-2xl py-4 px-6 text-slate-800 font-bold text-2xl text-center shadow-lg flex items-center justify-center gap-3">
+        <a id="btn_back_menu" href="../Monthly_Reference.html" class="bg-gradient-to-b from-slate-100 to-slate-300 border-2 border-slate-400 rounded-2xl py-4 px-6 text-slate-800 font-bold text-2xl text-center shadow-lg flex items-center justify-center gap-3">
           <i data-lucide="arrow-left" class="w-7 h-7"></i> กลับเมนูรายงานประจำเดือน
         </a>
       </div>
@@ -119,6 +119,25 @@
 
   <script>
     lucide.createIcons();
+    
+    let currentProjectID = 'DEFAULT_PROJ';
+    let currentMonthCode = '';
+
+    function initProjectContext() {
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          const projectData = JSON.parse(basicRaw);
+          const cNo = projectData.contractNo || 'NO_CONTRACT';
+          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        } catch(e) {}
+      }
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('month')) {
+        currentMonthCode = urlParams.get('month');
+      }
+    }
 
     function toThaiNumber(numStr) {
       if (numStr === null || numStr === undefined) return '';
@@ -177,12 +196,10 @@
     }
 
     function loadAllData(isManualAlert = false) {
+      initProjectContext();
       try {
-        let projectData = getActiveProjectData();
-        const currentProjectID = getActiveProjectId(projectData);
-        const reportMonth = getActiveReportMonth(currentProjectID);
         let targetWeek = 5;
-        const monthlyRaw = localStorage.getItem(getMonthlyInfoKey(currentProjectID)) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+        const monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
         let monthlyData = {};
         if (monthlyRaw) {
           try {
@@ -196,15 +213,19 @@
             if (monthlyData.planWeek) {
               targetWeek = parseInt(monthlyData.planWeek) || 5;
             }
+            if (!currentMonthCode && monthlyData.monthCode) {
+              currentMonthCode = monthlyData.monthCode;
+            }
           } catch(e){}
         }
 
         const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+        let projectData = {};
         if (basicRaw) {
           try {
             projectData = JSON.parse(basicRaw);
             if (projectData.organizationName) {
-              document.getElementById('lbl_org').textContent = `คณะกรรมการตรวจรับพัสดุ ${projectData.organizationName}`;
+              document.getElementById('lbl_org').textContent = `คณะกรรมการตรวจรับพัสดุ ${toThaiNumber(projectData.organizationName)}`;
               document.getElementById('lbl_employer').textContent = toThaiNumber(projectData.organizationName);
             }
             if (projectData.projectName) {
@@ -220,15 +241,14 @@
               document.getElementById('lbl_contractor').textContent = toThaiNumber(projectData.contractorName || projectData.contractor);
             }
             
-            // ดึงข้อมูลวันเริ่ม สิ้นสุด และระยะเวลาก่อสร้าง
             if (projectData.startDateTh || projectData.startDate) {
               document.getElementById('lbl_contract_start').textContent = thaiDateText(projectData.startDateTh || projectData.startDate);
             }
             if (projectData.endDateTh || projectData.endDate) {
               document.getElementById('lbl_contract_end').textContent = thaiDateText(projectData.endDateTh || projectData.endDate);
             }
-            if (getContractDurationDays(projectData) || projectData.manualDays) {
-              document.getElementById('lbl_duration_days').textContent = toThaiNumber(getContractDurationDays(projectData) || projectData.manualDays);
+            if (projectData.durationDays || projectData.manualDays) {
+              document.getElementById('lbl_duration_days').textContent = toThaiNumber(projectData.durationDays || projectData.manualDays);
             }
 
             if (projectData.budgetAmount) {
@@ -242,7 +262,7 @@
             if (projectData.extendContractDate && projectData.extendContractDate.trim() !== '') {
               const extDateTh = thaiDateText(projectData.extendContractDate);
               const extDays = projectData.totalExtendedDays ? toThaiNumber(projectData.totalExtendedDays) : '';
-              document.getElementById('lbl_extension_info').textContent = `และได้รับการอนุมัติขยายระยะเวลาทำการก่อสร้างออกไปอีก ${extDays ? extDays + ' วัน' : ''} จนถึงวันที่ ${extDateTh}`;
+              document.getElementById('lbl_extension_info').textContent = `(ได้รับการอนุมัติขยายระยะเวลาทำการก่อสร้างออกไปอีก ${extDays ? extDays + ' วัน' : ''} จนถึงวันที่ ${extDateTh})`;
             } else {
               document.getElementById('lbl_extension_info').textContent = '';
             }
@@ -252,9 +272,7 @@
 
         let latestProgress = parseFloat(monthlyData.actualPercent) || 0;
         if (latestProgress === 0) {
-          const progressRaw = localStorage.getItem(getWeeklyProgressKey(targetWeek, currentProjectID, reportMonth)) ||
-            localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`) ||
-            localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
+          const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`);
           if (progressRaw) {
             try {
               const progData = JSON.parse(progressRaw);
@@ -265,9 +283,7 @@
 
         if (latestProgress === 0) {
           for (let w = 5; w >= 1; w--) {
-            const wRaw = localStorage.getItem(getWeeklyProgressKey(w, currentProjectID, reportMonth)) ||
-              localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) ||
-              localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+            const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`);
             if (wRaw) {
               try {
                 const wData = JSON.parse(wRaw);
@@ -278,17 +294,17 @@
           }
         }
 
-        const plannedProgress = parseFloat(monthlyData.planPercent) || 0;
-        let statusText = getProgressStatus(latestProgress, plannedProgress);
+        let planProg = parseFloat(monthlyData.planPercent) || 0;
+        let statusText = 'ปกติ';
         if (latestProgress <= 0) statusText = 'ยังไม่ทำงาน';
         else if (latestProgress >= 100) statusText = 'แล้วเสร็จ';
+        else if (planProg > 0 && latestProgress < planProg) statusText = 'ช้า';
+        else statusText = 'เร็ว';
 
         const progressTh = toThaiNumber(latestProgress.toFixed(2));
 
         let installments = [];
-        const savedWeekInst = localStorage.getItem(getWeeklyReportKey('INSTALLMENTS', targetWeek, currentProjectID, reportMonth)) ||
-          localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${targetWeek}`) ||
-          localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${targetWeek}`);
+        const savedWeekInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${targetWeek}`);
         if (savedWeekInst) {
           try { installments = JSON.parse(savedWeekInst); } catch(e){}
         }
@@ -300,8 +316,7 @@
         }
 
         let savedDates = {};
-        const savedDatesRaw = localStorage.getItem(getMonthlySectionKey('INSPECTION_DATES_DB', currentProjectID, reportMonth)) ||
-          localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
+        const savedDatesRaw = localStorage.getItem(`MONTHLY_INSPECTION_DATES_DB_${currentProjectID}`) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
         if (savedDatesRaw) {
           try { savedDates = JSON.parse(savedDatesRaw); } catch(e){}
         }
@@ -316,9 +331,7 @@
         });
 
         let acceptedValue = completedCount > 0 ? toThaiNumber(completedCount) : "-";
-        const savedAccepted = localStorage.getItem(getWeeklyReportKey('ACCEPTED', targetWeek, currentProjectID, reportMonth)) ||
-          localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${targetWeek}`) ||
-          localStorage.getItem(`WEEK_REPORT_ACCEPTED_${targetWeek}`);
+        const savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${targetWeek}`);
         if (savedAccepted && savedAccepted !== '-') {
           acceptedValue = savedAccepted;
         }
@@ -333,10 +346,10 @@
         let totalPaidSum = 0;
         let hasNumericPaid = false;
 
-        let totalDaysNum = getContractDurationDays({
-          ...projectData,
-          extensionDays: projectData.extensionDays || projectData.totalExtendedDays
-        }) || parseInt(projectData.manualDays) || 140;
+        let totalDaysNum = projectData && projectData.durationDays ? parseInt(projectData.durationDays) : 140;
+        if (projectData && projectData.totalExtendedDays && parseInt(projectData.totalExtendedDays) > 0) {
+          totalDaysNum = parseInt(projectData.totalExtendedDays);
+        }
 
         let remainDays = totalDaysNum;
         let timePercent = 0;
@@ -347,9 +360,9 @@
           if (sDate && !isNaN(sDate.getTime()) && eDate && !isNaN(eDate.getTime())) {
             const diffTime = eDate.getTime() - sDate.getTime();
             const passedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-            remainDays = totalDaysNum - passedDays;
+            remainDays = Math.max(0, totalDaysNum - passedDays);
             if (totalDaysNum > 0) {
-              timePercent = (passedDays / totalDaysNum) * 100;
+              timePercent = Math.min(100, (passedDays / totalDaysNum) * 100);
             }
           }
         }
@@ -412,25 +425,31 @@
     }
 
     function renderSignatures(data) {
+      // 💡 1. ผู้ควบคุมงาน (ขยับซ้าย 12px)
       const inspectors = data.inspectors || [{ name: "นายพัทธิยะ วงษาซ้าย", pos: "ผู้ควบคุมงาน" }];
       let inspHTML = "";
       inspectors.forEach(insp => {
         if (insp.name) {
-          inspHTML += `<div class="space-y-1 text-center min-w-[220px] mb-3"><p>(ลงชื่อ)........................................................... ${insp.pos || 'ผู้ควบคุมงาน'}</p><p class="font-medium mt-1">(${insp.name})</p></div>`;
+          inspHTML += `
+            <div class="space-y-1 text-center min-w-[220px] mb-3">
+              <p>(ลงชื่อ)........................................................... ${toThaiNumber(insp.pos || 'ผู้ควบคุมงาน')}</p>
+              <p class="font-medium mt-1" style="position: relative; right: 18px;">(${toThaiNumber(insp.name)})</p>
+            </div>`;
         }
       });
       if (!inspHTML) {
-        inspHTML = `<div class="space-y-1 text-center min-w-[220px]"><p>(ลงชื่อ)........................................................... ผู้ควบคุมงาน</p><p class="font-medium mt-1">(นายพัทธิยะ วงษาซ้าย)</p></div>`;
+        inspHTML = `
+          <div class="space-y-1 text-center min-w-[220px]">
+            <p>(ลงชื่อ)........................................................... ผู้ควบคุมงาน</p>
+            <p class="font-medium mt-1" style="position: relative; right: 12px;">(นายพัทธิยะ วงษาซ้าย)</p>
+          </div>`;
       }
       const inspArea = document.getElementById('inspectorSignatureArea');
       if (inspArea) inspArea.innerHTML = inspHTML;
 
+      // 💡 2. คณะกรรมการ (ประธานฯ ขยับซ้าย 24px)
       const defaultComms = [
-        "นางสาวถนอมนวล วะทวีก้านตรงฯ",
-        "จ่าเอกธีรพงษ์ ดรชานนท์",
-        "นางสาวปนัดดา ภูอาษา",
-        "นายวีระศักดิ์ ทับวิชร",
-        "นายอรรถวัต อดทน"
+        "นางสาวถนอมนวล วะทวีก้านตรงฯ", "จ่าเอกธีรพงษ์ ดรชานนท์", "นางสาวปนัดดา ภูอาษา", "นายวีระศักดิ์ ทับวิชร", "นายอรรถวัต อดทน"
       ];
       const comms = data.committees && data.committees.length > 0 ? data.committees : defaultComms;
       const commArea = document.getElementById('committeeSignatureArea');
@@ -440,18 +459,27 @@
         comms.forEach((name, idx) => {
           if (!name) return;
           const roleLabel = (idx === 0) ? 'ประธานกรรมการฯ' : 'กรรมการฯ';
+          const nameStyle = (idx === 0) ? 'style="position: relative; right: 36px;"' : ''; // ใส่สไตล์เฉพาะประธาน
+          
           commArea.innerHTML += `
             <div class="${idx === 0 ? 'col-span-2 mb-2' : 'mb-2'} flex flex-col items-center">
               <div class="inline-block text-center">
                 <p>(ลงชื่อ).................................................... ${roleLabel}</p>
-                <p class="font-medium mt-1">(${name})</p>
+                <p class="font-medium mt-1" ${nameStyle}>(${toThaiNumber(name)})</p>
               </div>
             </div>`;
         });
       }
     }
 
-    window.addEventListener('DOMContentLoaded', () => loadAllData(false));
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const monthCode = urlParams.get('month');
+      if (monthCode) {
+        document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
+      }
+      loadAllData(false);
+    });
   </script>
 </body>
 </html>

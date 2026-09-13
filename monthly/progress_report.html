@@ -107,7 +107,7 @@
     <!-- ฝั่งเอกสาร -->
     <div class="xl:col-span-8 flex flex-col items-center w-full gap-6" id="pages_container"></div>
 
-    <!-- แผงควบคุมด้านข้าง (ปรับกรอบให้กะทัดรัดขึ้น แต่คงขนาดตัวหนังสือไว้) -->
+    <!-- แผงควบคุมด้านข้าง -->
     <div class="xl:col-span-4 space-y-3 no-print sticky top-4">
       
       <!-- การตั้งค่าวันที่รายงาน -->
@@ -148,7 +148,8 @@
         <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3 px-5 font-bold text-xl shadow-lg flex items-center justify-center gap-3 cursor-pointer">
           <i data-lucide="printer" class="w-6 h-6"></i> พิมพ์บันทึกข้อความ (A4)
         </button>
-        <a href="../Monthly_Reference.html" class="bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl py-3 px-5 font-bold text-lg text-center shadow-lg flex items-center justify-center gap-3">
+        <!-- 💡 เพิ่ม ID btn_back_menu เพื่อจดจำเดือนเวลากลับเมนู -->
+        <a id="btn_back_menu" href="../Monthly_Reference.html" class="bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl py-3 px-5 font-bold text-lg text-center shadow-lg flex items-center justify-center gap-3">
           <i data-lucide="arrow-left" class="w-6 h-6"></i> กลับเมนูรายงานประจำเดือน
         </a>
       </div>
@@ -158,9 +159,7 @@
 
   <script>
     lucide.createIcons();
-    function getReportStorageKey() {
-      return getMonthlySectionKey('PROGRESS_REPORT_DB');
-    }
+    const STORAGE_KEY_REPORT = 'MONTHLY_PROGRESS_REPORT_DB';
 
     let globalProjectData = {};
     let globalMonthlyData = {};
@@ -245,10 +244,8 @@
     }
 
     function loadMonthlyProgressData(isManual = false) {
-      const projectId = getActiveProjectId();
-      const reportMonth = getActiveReportMonth(projectId);
       let targetWeek = 5;
-      const monthlyRaw = localStorage.getItem(getMonthlyInfoKey(projectId)) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+      const monthlyRaw = localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
       if (monthlyRaw) {
         try {
           globalMonthlyData = JSON.parse(monthlyRaw);
@@ -258,17 +255,17 @@
         } catch(e){}
       }
 
-      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${projectId}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
           globalProjectData = JSON.parse(basicRaw);
         } catch(e) {}
       }
 
-      let totalDaysNum = getContractDurationDays({
-        ...globalProjectData,
-        extensionDays: globalProjectData.extensionDays || globalProjectData.totalExtendedDays
-      }) || parseInt(globalProjectData.manualDays) || 140;
+      let totalDaysNum = globalProjectData && globalProjectData.durationDays ? parseInt(globalProjectData.durationDays) : 140;
+      if (globalProjectData && globalProjectData.totalExtendedDays && parseInt(globalProjectData.totalExtendedDays) > 0) {
+        totalDaysNum = parseInt(globalProjectData.totalExtendedDays);
+      }
 
       let passedDays = targetWeek * 7;
       if (globalProjectData && globalProjectData.startDate && globalMonthlyData && globalMonthlyData.reportDate) {
@@ -287,8 +284,7 @@
 
       let planProg = parseFloat(globalMonthlyData.planPercent) || 0;
       if (planProg === 0) {
-        const weeklyRefRaw = localStorage.getItem(getWeeklyReferenceKey(projectId, reportMonth)) ||
-          localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${projectId}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+        const weeklyRefRaw = localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
         if (weeklyRefRaw) {
           try {
             const weeksArray = JSON.parse(weeklyRefRaw);
@@ -305,8 +301,7 @@
 
       let actualProg = parseFloat(globalMonthlyData.actualPercent) || 0;
       if (actualProg === 0) {
-        const progressRaw = localStorage.getItem(getWeeklyProgressKey(targetWeek, projectId, reportMonth)) ||
-          localStorage.getItem(`WEEK_PROGRESS_DATA_${projectId}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
+        const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
         if (progressRaw) {
           try {
             const progData = JSON.parse(progressRaw);
@@ -327,7 +322,7 @@
         diffProg: diffProg
       };
 
-      const saved = localStorage.getItem(getReportStorageKey()) || localStorage.getItem('MONTHLY_PROGRESS_REPORT_DB');
+      const saved = localStorage.getItem(STORAGE_KEY_REPORT);
       if (saved) {
         try {
           const s = JSON.parse(saved);
@@ -396,7 +391,7 @@
       const reportDateText = customDateInput ? customDateInput.value : thaiDateText(mData.reportDate || '๑ กรกฎาคม ๒๕๖๙');
 
       let savedState = {};
-      const saved = localStorage.getItem(getReportStorageKey()) || localStorage.getItem('MONTHLY_PROGRESS_REPORT_DB');
+      const saved = localStorage.getItem(STORAGE_KEY_REPORT);
       if (saved) {
         try { savedState = JSON.parse(saved); } catch(e){}
       }
@@ -669,12 +664,19 @@
         extraSigners: extraSigners,
         updatedAt: new Date().toLocaleString('th-TH')
       };
-      localStorage.setItem(getReportStorageKey(), JSON.stringify(data));
+      localStorage.setItem(STORAGE_KEY_REPORT, JSON.stringify(data));
       alert("บันทึกข้อมูลรายงานความคืบหน้าประจำเดือนเรียบร้อยแล้วค่ะ");
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      const saved = localStorage.getItem(getReportStorageKey()) || localStorage.getItem('MONTHLY_PROGRESS_REPORT_DB');
+      // 💡 จดจำพารามิเตอร์ URL เพื่อกลับไปเมนูเดือนเดิม
+      const urlParams = new URLSearchParams(window.location.search);
+      const monthCode = urlParams.get('month');
+      if (monthCode) {
+        document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
+      }
+
+      const saved = localStorage.getItem(STORAGE_KEY_REPORT);
       if (saved) {
         try {
           const s = JSON.parse(saved);

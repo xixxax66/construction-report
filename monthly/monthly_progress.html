@@ -73,16 +73,17 @@
   <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
   <div class="max-w-[210mm] w-full mb-4 bg-white p-5 rounded-2xl shadow-lg border border-slate-300 flex flex-wrap items-center justify-between gap-4 no-print">
     <div class="flex items-center gap-3">
-      <a href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-xl font-bold border border-slate-300 shadow-sm">
+      <!-- 💡 เพิ่ม ID ให้ปุ่มกลับเมนูเพื่อรอรับค่าเดือนจาก JS -->
+      <a id="btn_back_menu" href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-xl font-bold border border-slate-300 shadow-sm">
         <i data-lucide="arrow-left" class="w-6 h-6"></i> กลับเมนู
       </a>
       <span class="font-bold text-slate-800 text-2xl">ผลงานการดำเนินงานประจำเดือน</span>
     </div>
     <div class="flex items-center gap-3 flex-wrap">
-      <button onclick="loadProgressData()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow">
+      <button onclick="loadProgressData()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow cursor-pointer">
         <i data-lucide="refresh-cw" class="w-6 h-6"></i> ปรับปรุงข้อมูล
       </button>
-      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow">
+      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow cursor-pointer">
         <i data-lucide="printer" class="w-6 h-6"></i> พิมพ์ / PDF
       </button>
     </div>
@@ -136,6 +137,7 @@
     lucide.createIcons();
 
     let currentProjectID = 'DEFAULT_PROJ';
+    let currentMonthCode = '';
 
     function initProjectContext() {
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
@@ -143,7 +145,7 @@
         try {
           const projectData = JSON.parse(basicRaw);
           const cNo = projectData.contractNo || 'NO_CONTRACT';
-          currentProjectID = getActiveProjectId(projectData);
+          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
         } catch(e) {}
       }
     }
@@ -169,7 +171,7 @@
         }
         document.getElementById('lbl_org_name').textContent = orgName;
 
-        // 2. ตรวจสอบสัปดาห์ที่ถูกเลือกล่าสุดของโครงการนี้ จากหน้ารายงานประจำเดือน
+        // 2. ตรวจสอบสัปดาห์ที่ถูกเลือกล่าสุด และรหัสเดือน ของโครงการนี้ 
         let targetWeek = 5; 
         const monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
         if (monthlyRaw) {
@@ -177,20 +179,28 @@
           if (mData.planWeek !== undefined && mData.planWeek !== '') {
             targetWeek = parseInt(mData.planWeek) || 5;
           }
+          if (mData.monthCode) {
+            currentMonthCode = mData.monthCode;
+          }
         }
+        
+        // ดึงจาก URL กรณีที่เปิดตรงๆ
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('month')) currentMonthCode = urlParams.get('month');
 
-        // 3. โหลดข้อมูลผลงานรายสัปดาห์ ตาม targetWeek
+        // 3. โหลดข้อมูลผลงานรายสัปดาห์ โดยระบุโปรเจกต์และรหัสเดือนให้ชัดเจน
         let weekDataObj = null;
-        const reportMonth = getActiveReportMonth(currentProjectID);
-        const progressRaw = localStorage.getItem(getWeeklyProgressKey(targetWeek, currentProjectID, reportMonth)) ||
-          localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
+        const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || 
+                            localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`) || 
+                            localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
+                            
         if (progressRaw) {
           weekDataObj = JSON.parse(progressRaw);
         } else {
-          // หากไม่มี ลองถอยหาสัปดาห์ก่อนหน้าที่มีการบันทึก
+          // หากไม่มี ลองถอยหาสัปดาห์ก่อนหน้าที่มีการบันทึกในเดือนนี้
           for (let w = targetWeek; w >= 1; w--) {
-            const wRaw = localStorage.getItem(getWeeklyProgressKey(w, currentProjectID, reportMonth)) ||
-              localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+            const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${w}`) || 
+                         localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`);
             if (wRaw) {
               weekDataObj = JSON.parse(wRaw);
               break;
@@ -198,23 +208,18 @@
           }
         }
 
-        // 4. โหลดผลงานสะสมของเดือนก่อนหน้า (เพื่อเอามาใส่ช่อง "ถึงเดือนก่อน")
-        // *สมมติฐาน: ในการทำงานจริงจะต้องมีกลไกบันทึกว่าเดือนก่อนได้เท่าไหร่ 
-        // เบื้องต้นในระบบนี้จะใช้ค่า prev จาก tasks ของสัปดาห์ที่ 1 หรือถ้าให้ง่ายสุด ตอนนี้แสดงผลเฉพาะในเดือนและสะสมให้ตรงกับสัปดาห์ล่าสุด
-        
         const tbody = document.getElementById('progress_table_body');
         if (!tbody) return;
         tbody.innerHTML = '';
 
         if (!weekDataObj || !weekDataObj.tasks || weekDataObj.tasks.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" class="text-center text-rose-500 py-4">ไม่พบข้อมูลการบันทึกผลงานในสัปดาห์ที่ ${targetWeek} ของโครงการนี้ กรุณาบันทึกข้อมูลในหน้ารายสัปดาห์ก่อนค่ะ</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center text-rose-500 py-4 font-bold">ไม่พบข้อมูลการบันทึกผลงานในสัปดาห์ที่ ${targetWeek} ของโครงการนี้ กรุณาบันทึกข้อมูลในหน้ารายสัปดาห์ก่อนค่ะ</td></tr>`;
           return;
         }
 
         let sumProportion = 0;
         let sumPrev = 0;
         let sumMonth = 0;
-        let sumAccum = 0;
         let sumTotalResult = 0;
 
         weekDataObj.tasks.forEach((task, idx) => {
@@ -231,7 +236,6 @@
           sumProportion += prop;
           sumPrev += resultPrev;
           sumMonth += resultCurr;
-          sumAccum += resultAccum;
           sumTotalResult += resultAccum;
 
           const idxTh = toThaiNumber(idx + 1).replace('.๐๐', '');
@@ -244,7 +248,7 @@
           tbody.innerHTML += `
             <tr>
               <td class="text-center">${idxTh}</td>
-              <td class="pl-2">${escapeHTML(task.name || 'ไม่มีชื่อรายการ')}</td>
+              <td class="pl-2">${task.name || 'ไม่มีชื่อรายการ'}</td>
               <td class="text-center">${propTh}</td>
               <td class="text-center">${prevTh}</td>
               <td class="text-center">${currTh}</td>
@@ -257,7 +261,8 @@
         document.getElementById('total_weight_sum').textContent = sumProportion > 0 ? toThaiNumber(sumProportion) : '๑๐๐.๐๐';
         document.getElementById('total_prev_sum').textContent = sumPrev > 0 ? toThaiNumber(sumPrev) : '-';
         document.getElementById('total_month_sum').textContent = sumMonth > 0 ? toThaiNumber(sumMonth) : '-';
-        document.getElementById('total_accumulated_sum').textContent = sumAccum > 0 ? toThaiNumber(sumAccum) : '-'; // ปกติผลรวมของเปอร์เซ็นต์รวมจะไม่ถูกรวมแบบตรงๆ แต่จะใช้ totalResult แทน
+        // ในรายงานทางวิศวกรรม ช่องผลรวมของเปอร์เซ็นต์สะสมแต่ละบรรทัดจะไม่รวมยอดตรงๆ เพราะจะทำให้เกิน 100% จึงให้แสดงเป็น - เสมอ
+        document.getElementById('total_accumulated_sum').textContent = '-'; 
         document.getElementById('total_result_sum').textContent = sumTotalResult > 0 ? toThaiNumber(sumTotalResult) : '-';
 
       } catch (err) {
@@ -265,7 +270,16 @@
       }
     }
 
-    window.addEventListener('DOMContentLoaded', loadProgressData);
+    window.addEventListener('DOMContentLoaded', () => {
+      // จดจำพารามิเตอร์ URL 
+      const urlParams = new URLSearchParams(window.location.search);
+      const monthCode = urlParams.get('month');
+      if (monthCode) {
+        document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
+      }
+      
+      loadProgressData();
+    });
   </script>
 </body>
 </html>
