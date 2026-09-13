@@ -14,13 +14,15 @@
   <style>
     @font-face {
       font-family: 'THSarabunPSK';
-      src: url('assets/THSarabun.ttf') format('truetype');
+      src: url('../assets/THSarabun.ttf') format('truetype'),
+           url('assets/THSarabun.ttf') format('truetype');
       font-weight: normal;
       font-style: normal;
     }
     @font-face {
       font-family: 'THSarabunPSK';
-      src: url('assets/THSarabun Bold.ttf') format('truetype');
+      src: url('../assets/THSarabun Bold.ttf') format('truetype'),
+           url('assets/THSarabun Bold.ttf') format('truetype');
       font-weight: bold;
       font-style: normal;
     }
@@ -40,7 +42,6 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ขอบกระดาษ A4: บน 2.5 ซม. (25mm), ขวา 2 ซม. (20mm), ล่าง 2 ซม. (20mm), ซ้าย 3 ซม. (30mm) */
     .sheet-doc {
       width: 210mm;
       min-height: 297mm;
@@ -57,17 +58,16 @@
       line-height: 1.15;
     }
 
-    /* โครงสร้างส่วนหัวหนังสือที่บังคับตำแหน่ง 100% ตามระเบียบ */
     .header-section {
       position: relative;
       width: 100%;
-      height: 3.5cm; /* ความสูงครอบคลุมตราครุฑและส่วนหัว */
-      margin-bottom: 5mm;
+      height: 3.5cm;
+      margin-bottom: 3mm;
     }
 
     .garuda-box {
       position: absolute;
-      top: -0.5cm; /* ยกตราครุฑขึ้นเหนือส่วนหัว */
+      top: -0.5cm;
       left: 0;
       width: 100%;
       display: flex;
@@ -79,74 +79,73 @@
       height: auto;
     }
 
-    /* "ที่" ให้อยู่ระดับใกล้เคียงอุ้งเท้าครุฑ */
     .header-left {
       position: absolute;
       top: 1.5cm;
       left: 0;
-      bottom: 0; /* จัดชิดล่างของกล่อง header-section */
+      bottom: 0;
       line-height: 1.15;
     }
 
-    /* ที่อยู่ส่วนราชการ ให้อยู่ระดับเดียวกับ "ที่" และเริ่มพิมพ์จากกึ่งกลางหน้ากระดาษ */
     .header-right {
       position: absolute;
       left: 70%;
-      bottom: 0; /* จัดชิดล่างของกล่อง header-section ให้ตรงกับ header-left */
+      bottom: 0;
       line-height: 1.15;
-      width: 50%; /* ใช้พื้นที่ที่เหลือฝั่งขวา */
+      width: 50%;
     }
 
-    /* วันที่ กึ่งกลางหน้ากระดาษ */
     .date-center {
-      position: absolute-;
-      text-align: center;
-      margin-bottom: 6mm;
+      position: relative;
+      width: 100%;
+      text-align: left;
+      left: 55%;
+      margin-bottom: 4mm;
       line-height: 1.15;
     }
 
-    /* เรื่อง / เรียน / อ้างถึง */
     .meta-section {
-      margin-bottom: 6mm;
-      line-height: 1.15;
+      margin-bottom: 4mm;
+      line-height: 1.25;
     }
     .meta-row {
       display: flex;
-      align-items: top;
+      align-items: flex-start;
       margin-bottom: 3pt;
     }
     .meta-label {
-      width: 1.25cm; /* ระยะช่องไฟของคำว่า เรื่อง/เรียน/อ้างถึง */
+      width: 1.25cm;
       flex-shrink: 0;
     }
     .meta-content {
       flex: 1;
     }
 
-    /* เนื้อความหนังสือ */
     .body-section {
       text-align: justify;
       line-height: 1.15;
     }
-    .body-section p {
+    .body-section .paragraph-box {
       margin-top: 0;
       margin-bottom: 6pt;
-      text-indent: 2.5cm; /* ย่อหน้ามาตรฐาน 2.5 ซม. */
+      text-indent: 2.5cm;
+      width: 100%;
     }
 
-    /* คำลงท้ายและส่วนลงนาม */
+    .body-section .auto-expand-area {
+      text-indent: 2.5cm;
+    }
+
     .closing-sign-area {
       width: 50%;
-      margin-left: 50%; /* เริ่มกึ่งกลางหน้ากระดาษ */
+      margin-left: 35%;
       text-align: center;
-      margin-top: 6mm;
       line-height: 1.15;
     }
 
-    /* ส่วนท้ายหนังสือ (ด้านล่างสุด) */
     .footer-section {
       line-height: 1.15;
-      margin-top: auto; /* ดันลงล่างสุด */
+      margin-top: auto;
       padding-top: 15mm;
     }
 
@@ -161,6 +160,27 @@
       line-height: inherit;
     }
     .editable-input:focus {
+      background-color: #fef08a;
+    }
+
+    .auto-expand-area {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+      padding: 0;
+      line-height: inherit;
+      resize: none;
+      overflow: hidden;
+      display: block;
+      box-sizing: border-box;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .auto-expand-area:focus {
       background-color: #fef08a;
     }
 
@@ -183,7 +203,7 @@
         page-break-after: avoid;
         page-break-inside: avoid;
       }
-      .editable-input {
+      .editable-input, .auto-expand-area {
         background: transparent !important;
       }
     }
@@ -213,26 +233,26 @@
   <div class="sheet-doc" id="doc-print">
     <div>
       
-      <!-- 1. ส่วนหัวที่ถูกควบคุมด้วย Absolute Position (ตราครุฑ / ที่ / ที่อยู่) -->
+      <!-- 1. ส่วนหัว -->
       <div class="header-section">
         <div class="garuda-box">
-          <img src="assets/Krut.png" alt="ตราครุฑ" class="garuda-img">
+          <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img" onerror="this.src='assets/Krut.png';">
         </div>
         
         <div class="header-left">
-          ที่ <input type="text" id="doc_no" class="editable-input w-[3.5cm]" value="มค ๗๗๔๐๑/">
+          ที่ <input type="text" id="doc_no" class="editable-input w-[3.5cm]" value="มค ๗๗๔๐๑/" oninput="autoThaiNum(this)">
         </div>
         
         <div class="header-right">
-          <p><input type="text" id="txt_org_issuer" class="editable-input w-full" value="องค์การบริหารส่วนตำบลโพนงาม"></p>
-          <p><input type="text" id="txt_org_address_1" class="editable-input w-full" value="หมู่ที่ ๑๒ ตำบลโพนงาม อำเภอโกสุมพิสัย"></p>
-          <p><input type="text" id="txt_org_address_2" class="editable-input w-full" value="จังหวัดมหาสารคาม ๔๔๑๔๐"></p>
+          <p><input type="text" id="txt_org_issuer" class="editable-input w-full" value="องค์การบริหารส่วนตำบลโพนงาม" oninput="autoThaiNum(this)"></p>
+          <p><input type="text" id="txt_org_address_1" class="editable-input w-full" value="หมู่ที่ ๑๒ ตำบลโพนงาม อำเภอโกสุมพิสัย" oninput="autoThaiNum(this)"></p>
+          <p><input type="text" id="txt_org_address_2" class="editable-input w-full" value="จังหวัดมหาสารคาม ๔๔๑๔๐" oninput="autoThaiNum(this)"></p>
         </div>
       </div>
 
       <!-- 2. วันที่ -->
       <div class="date-center">
-        <input type="text" id="doc_date" class="editable-input text-left w-[6cm]" value="มิถุนายน ๒๕๖๙">
+        <input type="text" id="doc_date" class="editable-input w-[6cm]" value="มิถุนายน ๒๕๖๙" oninput="autoThaiNum(this)">
       </div>
 
       <!-- 3. เรื่อง / เรียน / อ้างถึง -->
@@ -240,45 +260,45 @@
         <div class="meta-row">
           <span class="meta-label">เรื่อง</span>
           <span class="meta-content">
-            <textarea class="editable-input w-full resize-none" rows="2" style="overflow: hidden;">ขอให้เร่งรัดการดำเนินงานก่อสร้าง โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากสามแยกถนนลาดยางสวนนางสมดี การเพิ่ม ไปดอนแรด หมู่ที่ ๑๑ (สัญญาเลขที่ E๒/๒๕๖๙)</textarea>
+            <textarea id="txt_subject" class="auto-expand-area" rows="1" oninput="autoExpand(this); autoThaiNum(this);">ขอให้เร่งรัดการดำเนินงานก่อสร้าง โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากสามแยกถนนลาดยางสวนนางสมดี การเพิ่ม ไปดอนแรด หมู่ที่ ๑๑ (สัญญาเลขที่ E๒/๒๕๖๙)</textarea>
           </span>
         </div>
         <div class="meta-row">
           <span class="meta-label">เรียน</span>
-          <span class="meta-content"><input type="text" class="editable-input w-full" id="txt_contractor_recipient" value="ห้างหุ้นส่วนจำกัด โพธิ์ชัยแอสโซซิเอส"></span>
+          <span class="meta-content"><input type="text" class="editable-input w-full" id="txt_contractor_recipient" value="ห้างหุ้นส่วนจำกัด โพธิ์ชัยแอสโซซิเอส" oninput="autoThaiNum(this)"></span>
         </div>
         <div class="meta-row">
           <span class="meta-label">อ้างถึง</span>
-          <span class="meta-content"><input type="text" class="editable-input w-full" id="txt_contract_ref" value="สัญญาจ้างเลขที่ E๒/๒๕๖๙ ลงวันที่ ๑๐ ตุลาคม ๒๕๖๙"></span>
+          <span class="meta-content"><input type="text" class="editable-input w-full" id="txt_contract_ref" value="สัญญาจ้างเลขที่ E๒/๒๕๖๙ ลงวันที่ ๑๐ ตุลาคม ๒๕๖๙" oninput="autoThaiNum(this)"></span>
         </div>
       </div>
 
-      <!-- 4. เนื้อความหนังสือ -->
+      <!-- 4. เนื้อความหนังสือ (จัดรูปแบบย่อหน้าตามรูปแบบ Word) -->
       <div class="body-section">
-        <p>
-          ตามที่ ท่านได้ทำสัญญาจ้างกับ องค์การบริหารส่วนตำบลโพนงาม เพื่อดำเนินก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากสามแยกถนนลาดยางสวนนางสมดี การเพิ่ม ไปดอนแรด หมู่ที่ ๑๑ กว้าง ๒.๖๐ เมตร ยาว ๑,๑๐๐.๐๐ เมตร หนา ๐.๑๕ เมตร ไหล่ทางลูกรัง ข้างละ ๐.๒๐ เมตร หรือพื้นที่ผิวจราจรไม่น้อยกว่า ๒,๘๖๐.๐๐ ตารางเมตร ด้วยวิธีประกวดราคาอิเล็กทรอนิกส์ ตามสัญญาที่อ้างถึง นั้น
-        </p>
+          <div class="paragraph-box">
+          <textarea id="txt_body_1" class="auto-expand-area" rows="3" oninput="autoExpand(this); autoThaiNum(this);">ตามที่ ท่านได้ทำสัญญาจ้างกับ องค์การบริหารส่วนตำบลโพนงาม เพื่อดำเนินก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากสามแยกถนนลาดยางสวนนางสมดี การเพิ่ม ไปดอนแรด หมู่ที่ ๑๑ กว้าง ๒.๖๐ เมตร ยาว ๑,๑๐๐.๐๐ เมตร หนา ๐.๑๕ เมตร ไหล่ทางลูกรัง ข้างละ ๐.๒๐ เมตร หรือพื้นที่ผิวจราจรไม่น้อยกว่า ๒,๘๖๐.๐๐ ตารางเมตร ด้วยวิธีประกวดราคาอิเล็กทรอนิกส์ ตามสัญญาที่อ้างถึง นั้น</textarea>
+        </div>
 
-        <p>
-          เนื่องจากการลงพื้นที่ตรวจสอบการดำเนินงานที่ผ่านมา ปรากฏว่าการปฏิบัติงานของท่านมีความล่าช้ากว่าแผนงานที่กำหนดไว้ในสัญญา เพื่อให้การดำเนินโครงการดังกล่าวเป็นไปด้วยความเรียบร้อยและแล้วเสร็จตามกำหนดเวลา องค์การบริหารส่วนตำบลโพนงามจึงขอให้ท่านเร่งรัดการดำเนินงาน โดยการระดมเครื่องจักร วัสดุอุปกรณ์ และคนงานเข้าปฏิบัติงานในพื้นที่ก่อสร้างให้เต็มกำลังความสามารถ หากพ้นกำหนดแล้วยังไม่มีความคืบหน้า องค์การบริหารส่วนตำบลโพนงามจะดำเนินการตามเงื่อนไขแห่งสัญญาและระเบียบของทางราชการต่อไป
-        </p>
+        <div class="paragraph-box">
+          <textarea id="txt_body_2" class="auto-expand-area" rows="4" oninput="autoExpand(this); autoThaiNum(this);">เนื่องจากการลงพื้นที่ตรวจสอบการดำเนินงานที่ผ่านมา ปรากฏว่าการปฏิบัติงานของท่านมีความล่าช้ากว่าแผนงานที่กำหนดไว้ในสัญญา เพื่อให้การดำเนินโครงการดังกล่าวเป็นไปด้วยความเรียบร้อยและแล้วเสร็จตามกำหนดเวลา องค์การบริหารส่วนตำบลโพนงามจึงขอให้ท่านเร่งรัดการดำเนินงาน โดยการระดมเครื่องจักร วัสดุอุปกรณ์ และคนงานเข้าปฏิบัติงานในพื้นที่ก่อสร้างให้เต็มกำลังความสามารถ หากพ้นกำหนดแล้วยังไม่มีความคืบหน้า องค์การบริหารส่วนตำบลโพนงามจะดำเนินการตามเงื่อนไขแห่งสัญญาและระเบียบของทางราชการต่อไป</textarea>
+        </div>
 
-        <p>
-          จึงเรียนมาเพื่อโปรดพิจารณา
-        </p>
+        <div class="paragraph-box">
+          <textarea class="auto-expand-area" rows="1" oninput="autoExpand(this); autoThaiNum(this);">จึงเรียนมาเพื่อโปรดพิจารณา</textarea>
+        </div>
       </div>
 
       <!-- 5. คำลงท้ายและส่วนลงนาม -->
       <div class="closing-sign-area">
         <p>ขอแสดงความนับถือ</p>
-        <div class="pt-8">
-          <p>(นายชาญยุทธ ตวงพลจันทร์)</p>
-          <p>นายกองค์การบริหารส่วนตำบลโพนงาม</p>
+        <div class="pt-12">
+          <p><input type="text" class="editable-input text-center w-full" value="(นายชาญยุทธ ตวงพลจันทร์)" oninput="autoThaiNum(this)"></p>
+          <p><input type="text" class="editable-input text-center w-full" value="นายกองค์การบริหารส่วนตำบลโพนงาม" oninput="autoThaiNum(this)"></p>
         </div>
       </div>
     </div>
 
-    <!-- 6. ส่วนท้ายหนังสือราชการ (ดันลงล่างสุดอัตโนมัติ) -->
+    <!-- 6. ส่วนท้ายหนังสือ -->
     <div class="footer-section">
       <p>องค์การบริหารส่วนตำบลโพนงาม</p>
       <p>สำนักปลัด</p>
@@ -297,7 +317,7 @@
         try {
           const projectData = JSON.parse(basicRaw);
           const cNo = projectData.contractNo || 'E2/2569';
-          currentProjectID = getActiveProjectId(projectData);
+          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
         } catch(e) {}
       }
     }
@@ -306,6 +326,15 @@
       if (numStr === null || numStr === undefined) return '';
       const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
       return numStr.toString().replace(/[0-9]/g, (w) => thaiNums[w]);
+    }
+
+    function autoThaiNum(el) {
+      el.value = toThaiNumber(el.value);
+    }
+
+    function autoExpand(ta) {
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
     }
 
     function loadContractData() {
@@ -317,32 +346,37 @@
         const data = JSON.parse(basicRaw);
 
         if (data.contractorName) {
-          document.getElementById('txt_contractor_recipient').value = data.contractorName;
+          document.getElementById('txt_contractor_recipient').value = toThaiNumber(data.contractorName);
         }
 
+        let cNoStr = data.contractNo ? toThaiNumber(data.contractNo) : '—';
+        let cDateStr = data.contractDate ? toThaiNumber(data.contractDate) : '—';
+
         if (data.contractNo && data.contractDate) {
-          const cNoTh = toThaiNumber(data.contractNo);
-          const cDate = data.contractDate; // อาจจะต้องใช้ฟังก์ชันแปลงวันที่เป็นภาษาไทยถ้าไม่ได้จัดเก็บเป็นแบบนั้น
-          document.getElementById('txt_contract_ref').value = `สัญญาจ้างเลขที่ ${cNoTh} ลงวันที่ ${cDate}`;
+          document.getElementById('txt_contract_ref').value = toThaiNumber(`สัญญาจ้างเลขที่ ${cNoStr} ลงวันที่ ${cDateStr}`);
+        }
+
+        if (data.projectName) {
+          document.getElementById('txt_subject').value = toThaiNumber(`ขอให้เร่งรัดการดำเนินงานก่อสร้าง ${data.projectName} (สัญญาเลขที่ ${cNoStr})`);
+        }
+
+        let orgName = data.organizationName ? toThaiNumber(data.organizationName) : 'องค์การบริหารส่วนตำบลโพนงาม';
+        if (data.projectName && data.projectScope) {
+          document.getElementById('txt_body_1').value = toThaiNumber(`ตามที่ ท่านได้ทำสัญญาจ้างกับ ${orgName} เพื่อดำเนินงาน ${data.projectName} (${data.projectScope}) ตามสัญญาที่อ้างถึง นั้น`);
         }
 
       } catch(e) {
         console.error("Error loading contract data:", e);
       }
+      
+      document.querySelectorAll('textarea.auto-expand-area').forEach(ta => autoExpand(ta));
     }
 
     window.addEventListener('DOMContentLoaded', () => {
       loadContractData();
       
-      // ปรับขนาดความสูง Textarea ให้พอดีกับข้อความอัตโนมัติ
-      const textareas = document.querySelectorAll('textarea');
-      textareas.forEach(ta => {
-        ta.style.height = 'auto';
-        ta.style.height = ta.scrollHeight + 'px';
-        ta.addEventListener('input', function() {
-          this.style.height = 'auto';
-          this.style.height = this.scrollHeight + 'px';
-        });
+      document.querySelectorAll('textarea.auto-expand-area').forEach(ta => {
+        autoExpand(ta);
       });
     });
   </script>
