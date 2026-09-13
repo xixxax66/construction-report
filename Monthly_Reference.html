@@ -100,7 +100,7 @@
             <tr>
               <td class="bg-red-600 text-white font-medium">แผนงานถึงปัจจุบัน (%)</td>
               <td class="bg-white font-bold text-center text-red-600 flex items-center justify-center gap-2">
-                <select id="select_plan_week" onchange="updatePlanPercent()" class="border border-slate-300 rounded px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                <select id="select_plan_week" onchange="updatePlanPercent(); updateActualPercent();" class="border border-slate-300 rounded px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                   <option value="1">สัปดาห์ที่ 1</option>
                   <option value="2">สัปดาห์ที่ 2</option>
                   <option value="3">สัปดาห์ที่ 3</option>
@@ -177,116 +177,57 @@
       <h3 class="font-bold text-slate-800 text-base mb-3 border-b pb-2 flex items-center gap-2">
         <i data-lucide="file-text" class="w-5 h-5 text-emerald-600"></i> รายการเอกสารรายงานประจำเดือนทั้งหมด
       </h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="links_container">
         
-        <!-- หน้าปก -->
-        <a href="monthly/cover.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
-          <div class="w-10 h-10 rounded-lg bg-blue-100 group-hover:bg-emerald-600 text-blue-600 group-hover:text-white flex items-center justify-center transition">
-            <i data-lucide="book-open" class="w-5 h-5"></i>
-          </div>
-          <div class="flex-1">
-            <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">1. หน้าปกรายงานประจำเดือน</h4>
-          </div>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        <!-- ลิงก์ทั้งหมดจะถูกสร้างและอัปเดต href อัตโนมัติจาก Script -->
+        <a id="link_cover" href="monthly/cover.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
+          <div class="w-10 h-10 rounded-lg bg-blue-100 group-hover:bg-emerald-600 text-blue-600 group-hover:text-white flex items-center justify-center transition"><i data-lucide="book-open" class="w-5 h-5"></i></div>
+          <div class="flex-1"><h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">1. หน้าปกรายงานประจำเดือน</h4></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
 
-        <!-- สารบัญ -->
-        <a href="monthly/toc.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
-          <div class="w-10 h-10 rounded-lg bg-amber-100 group-hover:bg-emerald-600 text-amber-600 group-hover:text-white flex items-center justify-center transition">
-            <i data-lucide="list-tree" class="w-5 h-5"></i>
-          </div>
-          <div class="flex-1">
-            <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">2. หน้าสารบัญรายงาน</h4>
-          </div>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        <a id="link_toc" href="monthly/toc.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
+          <div class="w-10 h-10 rounded-lg bg-amber-100 group-hover:bg-emerald-600 text-amber-600 group-hover:text-white flex items-center justify-center transition"><i data-lucide="list-tree" class="w-5 h-5"></i></div>
+          <div class="flex-1"><h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">2. หน้าสารบัญรายงาน</h4></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
 
-        <!-- ข้อมูลเกี่ยวกับงาน -->
-        <a href="monthly/work_info.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
-          <div class="w-10 h-10 rounded-lg bg-indigo-100 group-hover:bg-emerald-600 text-indigo-600 group-hover:text-white flex items-center justify-center transition">
-            <i data-lucide="file-text" class="w-5 h-5"></i>
-          </div>
-          <div class="flex-1">
-            <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">3. ข้อมูลเกี่ยวกับงาน</h4>
-          </div>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        <a id="link_info" href="monthly/work_info.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
+          <div class="w-10 h-10 rounded-lg bg-indigo-100 group-hover:bg-emerald-600 text-indigo-600 group-hover:text-white flex items-center justify-center transition"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+          <div class="flex-1"><h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">3. ข้อมูลเกี่ยวกับงาน</h4></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
 
-        <!-- รายงานผลการก่อสร้าง -->
-        <a href="monthly/construction_report.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
-          <div class="w-10 h-10 rounded-lg bg-emerald-100 group-hover:bg-emerald-600 text-emerald-600 group-hover:text-white flex items-center justify-center transition">
-            <i data-lucide="file-check-2" class="w-5 h-5"></i>
-          </div>
-          <div class="flex-1">
-            <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">4. บันทึกข้อความรายงานผลการก่อสร้าง</h4>
-          </div>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        <a id="link_cons" href="monthly/construction_report.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
+          <div class="w-10 h-10 rounded-lg bg-emerald-100 group-hover:bg-emerald-600 text-emerald-600 group-hover:text-white flex items-center justify-center transition"><i data-lucide="file-check-2" class="w-5 h-5"></i></div>
+          <div class="flex-1"><h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">4. บันทึกข้อความรายงานผลการก่อสร้าง</h4></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
 
-        <!-- แผนที่แสดงที่ตั้งโครงการ -->
-        <a href="monthly/map.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
-          <div class="w-10 h-10 rounded-lg bg-purple-100 group-hover:bg-emerald-600 text-purple-600 group-hover:text-white flex items-center justify-center transition">
-            <i data-lucide="map" class="w-5 h-5"></i>
-          </div>
-          <div class="flex-1">
-            <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">5. แผนที่แสดงที่ตั้งโครงการ</h4>
-          </div>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        <a id="link_map" href="monthly/map.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
+          <div class="w-10 h-10 rounded-lg bg-purple-100 group-hover:bg-emerald-600 text-purple-600 group-hover:text-white flex items-center justify-center transition"><i data-lucide="map" class="w-5 h-5"></i></div>
+          <div class="flex-1"><h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">5. แผนที่แสดงที่ตั้งโครงการ</h4></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
 
-        <!-- ผลการดำเนินงานประจำเดือน -->
-        <a href="monthly/monthly_progress.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
-          <div class="w-10 h-10 rounded-lg bg-cyan-100 group-hover:bg-emerald-600 text-cyan-600 group-hover:text-white flex items-center justify-center transition">
-            <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
-          </div>
-          <div class="flex-1">
-            <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">6. ผลการดำเนินงานประจำเดือน</h4>
-          </div>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        <a id="link_mprog" href="monthly/monthly_progress.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
+          <div class="w-10 h-10 rounded-lg bg-cyan-100 group-hover:bg-emerald-600 text-cyan-600 group-hover:text-white flex items-center justify-center transition"><i data-lucide="bar-chart-3" class="w-5 h-5"></i></div>
+          <div class="flex-1"><h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">6. ผลการดำเนินงานประจำเดือน</h4></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
 
-        <!-- รายละเอียดงวดงานและการตรวจรับงาน -->
-        <a href="monthly/inspection_report.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
-          <div class="w-10 h-10 rounded-lg bg-rose-100 group-hover:bg-emerald-600 text-rose-600 group-hover:text-white flex items-center justify-center transition">
-            <i data-lucide="clipboard-check" class="w-5 h-5"></i>
-          </div>
-          <div class="flex-1">
-            <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">7. รายละเอียดงวดงานและการตรวจรับ</h4>
-          </div>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        <a id="link_insp" href="monthly/inspection_report.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
+          <div class="w-10 h-10 rounded-lg bg-rose-100 group-hover:bg-emerald-600 text-rose-600 group-hover:text-white flex items-center justify-center transition"><i data-lucide="clipboard-check" class="w-5 h-5"></i></div>
+          <div class="flex-1"><h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">7. รายละเอียดงวดงานและการตรวจรับ</h4></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
 
-        <!-- ผลการทดสอบและขออนุมัติใช้วัสดุ -->
-        <a href="monthly/material_report.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
-          <div class="w-10 h-10 rounded-lg bg-teal-100 group-hover:bg-emerald-600 text-teal-600 group-hover:text-white flex items-center justify-center transition">
-            <i data-lucide="check-circle" class="w-5 h-5"></i>
-          </div>
-          <div class="flex-1">
-            <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">8. ผลการทดสอบและขออนุมัติใช้วัสดุ</h4>
-          </div>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        <a id="link_mat" href="monthly/material_report.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
+          <div class="w-10 h-10 rounded-lg bg-teal-100 group-hover:bg-emerald-600 text-teal-600 group-hover:text-white flex items-center justify-center transition"><i data-lucide="check-circle" class="w-5 h-5"></i></div>
+          <div class="flex-1"><h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">8. ผลการทดสอบและขออนุมัติใช้วัสดุ</h4></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
 
-        <!-- ปัญหา/อุปสรรคและสรุปผลการดำเนินงาน -->
-        <a href="monthly/problem_summary.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
-          <div class="w-10 h-10 rounded-lg bg-orange-100 group-hover:bg-emerald-600 text-orange-600 group-hover:text-white flex items-center justify-center transition">
-            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
-          </div>
-          <div class="flex-1">
-            <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">9. ปัญหา/อุปสรรค และสรุปผลการดำเนินงาน</h4>
-          </div>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        <a id="link_prob" href="monthly/problem_summary.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
+          <div class="w-10 h-10 rounded-lg bg-orange-100 group-hover:bg-emerald-600 text-orange-600 group-hover:text-white flex items-center justify-center transition"><i data-lucide="alert-triangle" class="w-5 h-5"></i></div>
+          <div class="flex-1"><h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">9. ปัญหา/อุปสรรค และสรุปผลการดำเนินงาน</h4></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
 
-        <!-- รายงานความคืบหน้างานก่อสร้าง -->
-        <a href="monthly/progress_report.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
-          <div class="w-10 h-10 rounded-lg bg-emerald-100 group-hover:bg-emerald-600 text-emerald-600 group-hover:text-white flex items-center justify-center transition">
-            <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
-          </div>
-          <div class="flex-1">
-            <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">10. รายงานความคืบหน้างานก่อสร้าง</h4>
-          </div>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        <a id="link_prog" href="monthly/progress_report.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
+          <div class="w-10 h-10 rounded-lg bg-emerald-100 group-hover:bg-emerald-600 text-emerald-600 group-hover:text-white flex items-center justify-center transition"><i data-lucide="file-spreadsheet" class="w-5 h-5"></i></div>
+          <div class="flex-1"><h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">10. รายงานความคืบหน้างานก่อสร้าง</h4></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
 
       </div>
@@ -296,12 +237,34 @@
 
   <script>
     lucide.createIcons();
-    const WEEKLY_REF_KEY = 'CONSTRUCTION_WEEKLY_REF_DB';
-    const MONTHLY_STORAGE_KEY = 'MONTHLY_REPORT_INFO_DATA';
-
     let currentProjectID = 'DEFAULT_PROJECT';
 
-    // โหลดข้อมูลชื่อโครงการปัจจุบันเพื่อใช้เป็น Namespace แยกข้อมูล
+    // 💡 ฟังก์ชันแปลงเดือนไทยเป็นรหัสภาษาอังกฤษ (เพื่อใช้ทำเป็น Key เก็บข้อมูล)
+    function getMonthCode() {
+      const monthCodes = {
+        "มกราคม": "JAN", "กุมภาพันธ์": "FEB", "มีนาคม": "MAR", "เมษายน": "APR",
+        "พฤษภาคม": "MAY", "มิถุนายน": "JUN", "กรกฎาคม": "JUL", "สิงหาคม": "AUG",
+        "กันยายน": "SEP", "ตุลาคม": "OCT", "พฤศจิกายน": "NOV", "ธันวาคม": "DEC"
+      };
+      const m = document.getElementById('monthly_month').value;
+      const y = document.getElementById('monthly_year').value;
+      return `${monthCodes[m]}_${y}`;
+    }
+
+    function updateDocLinks() {
+      const mCode = getMonthCode();
+      document.getElementById('link_cover').href = `monthly/cover.html?month=${mCode}`;
+      document.getElementById('link_toc').href = `monthly/toc.html?month=${mCode}`;
+      document.getElementById('link_info').href = `monthly/work_info.html?month=${mCode}`;
+      document.getElementById('link_cons').href = `monthly/construction_report.html?month=${mCode}`;
+      document.getElementById('link_map').href = `monthly/map.html?month=${mCode}`;
+      document.getElementById('link_mprog').href = `monthly/monthly_progress.html?month=${mCode}`;
+      document.getElementById('link_insp').href = `monthly/inspection_report.html?month=${mCode}`;
+      document.getElementById('link_mat').href = `monthly/material_report.html?month=${mCode}`;
+      document.getElementById('link_prob').href = `monthly/problem_summary.html?month=${mCode}`;
+      document.getElementById('link_prog').href = `monthly/progress_report.html?month=${mCode}`;
+    }
+
     function initProjectContext() {
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
@@ -309,7 +272,7 @@
           const projectData = JSON.parse(basicRaw);
           const pName = projectData.projectName || 'โครงการก่อสร้าง';
           const cNo = projectData.contractNo || 'NO_CONTRACT';
-          currentProjectID = getActiveProjectId(projectData);
+          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
           document.getElementById('lbl_current_project_name').textContent = `${pName} (สัญญาเลขที่ ${cNo})`;
         } catch(e) {
           document.getElementById('lbl_current_project_name').textContent = 'โครงการทั่วไป (ไม่ได้ระบุสัญญา)';
@@ -327,19 +290,8 @@
       return `CONSTRUCTION_MONTHLY_HISTORY_DB_${currentProjectID}`;
     }
 
-    function getSelectedReportMonthId() {
-      const monthCodes = {
-        'มกราคม': 'JAN', 'กุมภาพันธ์': 'FEB', 'มีนาคม': 'MAR', 'เมษายน': 'APR',
-        'พฤษภาคม': 'MAY', 'มิถุนายน': 'JUN', 'กรกฎาคม': 'JUL', 'สิงหาคม': 'AUG',
-        'กันยายน': 'SEP', 'ตุลาคม': 'OCT', 'พฤศจิกายน': 'NOV', 'ธันวาคม': 'DEC'
-      };
-      const month = document.getElementById('monthly_month').value;
-      const year = document.getElementById('monthly_year').value;
-      return `${monthCodes[month] || 'SEP'}_${year || '2569'}`;
-    }
-
     function onDatePicked(picker) {
-      const val = picker.value; // YYYY-MM-DD
+      const val = picker.value;
       if (!val) return;
       const parts = val.split('-');
       const year = parseInt(parts[0]) + 543;
@@ -354,14 +306,15 @@
       document.getElementById('monthly_report_date').value = `${day} ${month} ${year}`;
     }
 
+    // 💡 ปรับให้ดึงแผนงานจากคีย์เฉพาะของโปรเจกต์และเดือนนั้นๆ
     function updatePlanPercent() {
       const selectedWeek = parseInt(document.getElementById('select_plan_week').value);
+      const mCode = getMonthCode();
       let planVal = 0;
 
-      const reportMonth = getSelectedReportMonthId();
-      const weeklyDataRaw = localStorage.getItem(getWeeklyReferenceKey(currentProjectID, reportMonth)) ||
-        localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) ||
-        localStorage.getItem(WEEKLY_REF_KEY);
+      const weeklyDataRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${mCode}`) ||
+                            localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) ||
+                            localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
       if (weeklyDataRaw) {
         try {
           const weeksArray = JSON.parse(weeklyDataRaw);
@@ -374,24 +327,24 @@
       document.getElementById('plan_current_percent').textContent = planVal.toFixed(2);
     }
 
+    // 💡 ปรับให้ดึงผลงานจากคีย์เฉพาะของโปรเจกต์และเดือนนั้นๆ ป้องกันข้อมูลข้ามเดือน
     function updateActualPercent() {
       const selectedWeek = parseInt(document.getElementById('select_plan_week').value);
+      const mCode = getMonthCode();
       let actualVal = 0;
 
-      const reportMonth = getSelectedReportMonthId();
-      const progressRaw = localStorage.getItem(getWeeklyProgressKey(selectedWeek, currentProjectID, reportMonth)) ||
-        localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${selectedWeek}`) ||
-        localStorage.getItem(`WEEK_PROGRESS_DATA_${selectedWeek}`);
+      const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${mCode}_${selectedWeek}`) || 
+                          localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${selectedWeek}`);
       if (progressRaw) {
         try {
           const progData = JSON.parse(progressRaw);
           actualVal = parseFloat(progData.totalWeightPercent) || 0;
         } catch(e) {}
       } else {
-        for (let w = 5; w >= 1; w--) {
-          const wRaw = localStorage.getItem(getWeeklyProgressKey(w, currentProjectID, reportMonth)) ||
-            localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) ||
-            localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+        // ถอยหาสัปดาห์ก่อนหน้าในเดือนนี้
+        for (let w = selectedWeek; w >= 1; w--) {
+          const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${mCode}_${w}`) || 
+                       localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`);
           if (wRaw) {
             try {
               const wData = JSON.parse(wRaw);
@@ -405,34 +358,38 @@
     }
 
     function syncFromWeekReport() {
-      const selectedWeek = parseInt(document.getElementById('select_plan_week').value);
       updatePlanPercent();
       updateActualPercent();
-      alert(`ซิงค์ข้อมูลแผนงานและผลงานจากสัปดาห์ที่ ${selectedWeek} เรียบร้อยแล้วค่ะ!`);
+      const selectedWeek = document.getElementById('select_plan_week').value;
+      alert(`ซิงค์ข้อมูลแผนงานและผลงานจากสัปดาห์ที่ ${selectedWeek} ของเดือนที่เลือกเรียบร้อยแล้วค่ะ!`);
     }
 
     function saveMonthlyInfo() {
       const month = document.getElementById('monthly_month').value;
       const year = document.getElementById('monthly_year').value;
+      const mCode = getMonthCode();
+
       const payload = {
         month: month,
         year: year,
+        monthCode: mCode,
         reportDate: document.getElementById('monthly_report_date').value,
         planWeek: document.getElementById('select_plan_week').value,
         planPercent: document.getElementById('plan_current_percent').textContent,
         actualPercent: document.getElementById('actual_current_percent').textContent
       };
       
-      // บันทึกแยกตามรหัสโครงการปัจจุบัน
+      // บันทึกแยกตามรหัสโครงการ
       localStorage.setItem(getProjectMonthlyKey(), JSON.stringify(payload));
-      localStorage.setItem('MONTHLY_REPORT_INFO_DATA', JSON.stringify(payload)); // สำรองไว้หน้าอื่นเรียกใช้
-      localStorage.setItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`, getSelectedReportMonthId());
+      localStorage.setItem('MONTHLY_REPORT_INFO_DATA', JSON.stringify(payload)); 
       
       archiveMonthlyHistorySilent(payload);
       alert(`บันทึกข้อมูลรายงานประจำเดือน ${month} ${year} ของโครงการนี้เรียบร้อยแล้วค่ะ!`);
     }
 
     function onMonthOrYearChanged() {
+      updateDocLinks(); // อัปเดตพารามิเตอร์ของทุกลิงก์ทันทีเมื่อเปลี่ยนเดือน
+      
       const month = document.getElementById('monthly_month').value;
       const year = document.getElementById('monthly_year').value;
       const targetId = `${month}_${year}`;
@@ -452,6 +409,7 @@
         
         const payload = {
           month: month, year: year,
+          monthCode: getMonthCode(),
           reportDate: found.reportDate,
           planWeek: found.planWeek || '5',
           planPercent: found.planPercent,
@@ -516,10 +474,10 @@
       historyList.forEach((item, index) => {
         tbody.innerHTML += `
           <tr class="bg-white border-b hover:bg-slate-50">
-            <td class="p-2 border font-medium text-slate-800">${escapeHTML(item.monthYear)}</td>
-            <td class="p-2 border">${escapeHTML(item.reportDate)}</td>
-            <td class="p-2 border text-center text-red-600 font-bold">${escapeHTML(item.planPercent)}%</td>
-            <td class="p-2 border text-center text-emerald-700 font-bold">${escapeHTML(item.actualPercent)}%</td>
+            <td class="p-2 border font-medium text-slate-800">${item.monthYear}</td>
+            <td class="p-2 border">${item.reportDate}</td>
+            <td class="p-2 border text-center text-red-600 font-bold">${item.planPercent}%</td>
+            <td class="p-2 border text-center text-emerald-700 font-bold">${item.actualPercent}%</td>
             <td class="p-2 border text-center">
               <button onclick="restoreHistory('${item.id}')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded text-xs font-bold mr-1 cursor-pointer" title="เรียกข้อมูลนี้">เรียกใช้</button>
               <button onclick="deleteHistory(${index})" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-2 py-1 rounded text-xs font-bold cursor-pointer" title="ลบประวัติ">ลบ</button>
@@ -545,17 +503,8 @@
         document.getElementById('actual_current_percent').textContent = target.actualPercent;
         if (target.planWeek) document.getElementById('select_plan_week').value = target.planWeek;
         
-        const payload = {
-          month: parts[0], year: parts[1],
-          reportDate: target.reportDate,
-          planWeek: target.planWeek || '5',
-          planPercent: target.planPercent,
-          actualPercent: target.actualPercent
-        };
-        localStorage.setItem(getProjectMonthlyKey(), JSON.stringify(payload));
-        localStorage.setItem('MONTHLY_REPORT_INFO_DATA', JSON.stringify(payload));
+        onMonthOrYearChanged(); // ให้อัปเดตลิงก์พร้อมบันทึกเป็นเดือนปัจจุบัน
 
-        loadMonthlyHistory();
         alert(`ดึงข้อมูลประวัติประจำเดือน ${target.monthYear} ของโครงการนี้มาใช้งานเรียบร้อยแล้วค่ะ!`);
       }
     }
@@ -576,7 +525,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       initProjectContext();
 
-      const saved = localStorage.getItem(getProjectMonthlyKey()) || localStorage.getItem(MONTHLY_STORAGE_KEY);
+      const saved = localStorage.getItem(getProjectMonthlyKey()) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
       if (saved) {
         try {
           const data = JSON.parse(saved);
@@ -595,6 +544,8 @@
         updatePlanPercent();
         updateActualPercent();
       }
+      
+      updateDocLinks();
       loadMonthlyHistory();
     });
   </script>
