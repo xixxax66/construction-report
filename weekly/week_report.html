@@ -51,7 +51,11 @@
         <div class="mt-2 text-base"><p><span class="font-bold">เรียน</span> ประธานกรรมการตรวจรับพัสดุ</p></div>
         <div class="mt-2 text-base leading-relaxed text-justify space-y-1.5">
           <p class="indent-word">รายงานครั้งที่ <span id="lbl_seq_body" class="font-semibold">๑</span> สัปดาห์ที่ <span id="lbl_week_slash_year" class="font-semibold">๑/๒๕๖๙</span> ระหว่างวันที่ <span id="lbl_start_date">๗ มิถุนายน ๒๕๖๙</span> ถึงวันที่ <span id="lbl_end_date">๑๓ มิถุนายน ๒๕๖๙</span></p>
-          <p class="indent-word">งานก่อสร้าง <span id="lbl_project_title">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากนานายราวี ดวงแสนพุฒ ถึงหนองหวาย หมู่ที่ ๑๒</span> สัญญาจ้างเลขที่ <span id="lbl_contract_no">E๑/๒๕๖๙</span> ลงวันที่ <span id="lbl_contract_date">๕ มิถุนายน ๒๕๖๙</span> ค่าก่อสร้าง <span id="lbl_budget_amount">๒,๘๔๙,๒๖๐.๐๐</span> บาท</p>
+          <p class="indent-word">
+            งานก่อสร้าง <span id="lbl_project_title">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากนานายราวี ดวงแสนพุฒ ถึงหนองหวาย หมู่ที่ ๑๒</span> 
+            สัญญาจ้างเลขที่ <span id="lbl_contract_no">E๑/๒๕๖๙</span> ลงวันที่ <span id="lbl_contract_date">๕ มิถุนายน ๒๕๖๙</span> 
+            ค่าก่อสร้าง <span id="lbl_budget_amount">๒,๘๔๙,๒๖๐.๐๐</span> บาท<span id="lbl_extension_info"></span>
+          </p>
         </div>
 
         <div class="mt-2.5 mb-2">
@@ -122,7 +126,6 @@
     ];
     let acceptedInstallmentsValue = "-";
 
-    // 💡 ประกาศตัวแปรส่วนกลางไว้คำนวณวันและตารางตอนกดเพิ่ม/ลดงวด
     let globalProjectData = null;
     let globalCurrentWeekObj = null;
 
@@ -195,7 +198,6 @@
       }
     }
 
-    // 💡 ฟังก์ชันแปลงวันที่ภาษาไทย ป้องกันค่า NaN 
     function parseThaiDateStr(str) {
       if (!str) return null;
       let cleanStr = thaiToArabic(str.toString().trim());
@@ -226,6 +228,11 @@
       return !isNaN(parsed.getTime()) ? parsed : null;
     }
 
+    function setElText(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    }
+
     function loadAllData() {
       initProjectContext();
 
@@ -242,30 +249,29 @@
           globalProjectData = projectData; 
 
           if (projectData.organizationName) {
-            document.getElementById('lbl_org').textContent = `กองช่าง ${projectData.organizationName}`;
+            setElText('lbl_org', `กองช่าง ${projectData.organizationName}`);
           }
           if (projectData.projectName) {
-            document.getElementById('lbl_project_title').textContent = toThaiNumber(projectData.projectName);
+            setElText('lbl_project_title', toThaiNumber(projectData.projectName));
           }
           if (projectData.contractNo) {
-            document.getElementById('lbl_contract_no').textContent = toThaiNumber(projectData.contractNo);
+            setElText('lbl_contract_no', toThaiNumber(projectData.contractNo));
           }
           if (projectData.contractDate) {
-            document.getElementById('lbl_contract_date').textContent = thaiDateText(projectData.contractDate);
+            setElText('lbl_contract_date', thaiDateText(projectData.contractDate));
           }
           if (projectData.budgetAmount) {
             const tAmount = formatThaiCurrency(projectData.budgetAmount);
-            document.getElementById('lbl_budget_amount').textContent = tAmount;
+            setElText('lbl_budget_amount', tAmount);
           }
 
-          // 💡 ส่วนสำหรับคำนวณและแสดงผลข้อความกรณีต่อสัญญา (ขยายระยะเวลา)
+          // จัดการข้อความต่อสัญญา
           const extInfoEl = document.getElementById('lbl_extension_info');
           if (extInfoEl) {
             if (projectData.extendContractDate && projectData.extendContractDate.trim() !== '') {
               const extDateTh = thaiDateText(projectData.extendContractDate);
               const extDays = projectData.totalExtendedDays ? toThaiNumber(projectData.totalExtendedDays) : '';
-              // แสดงข้อความต่อท้ายย่อหน้า
-              extInfoEl.innerHTML = `<span class="font-bold"> (ได้รับการอนุมัติขยายระยะเวลาทำการก่อสร้างออกไปอีก ${extDays ? extDays + ' วัน' : ''} จนถึงวันที่ ${extDateTh})</span>`;
+              extInfoEl.innerHTML = ` <span class="font-bold">(ได้รับการอนุมัติขยายระยะเวลาทำการก่อสร้างออกไปอีก ${extDays ? extDays + ' วัน' : ''} จนถึงวันที่ ${extDateTh})</span>`;
             } else {
               extInfoEl.innerHTML = '';
             }
@@ -306,16 +312,16 @@
             globalCurrentWeekObj = currentWeekObj;
 
             if (currentWeekObj.seq) {
-              document.getElementById('lbl_seq').textContent = toThaiNumber(currentWeekObj.seq);
-              document.getElementById('lbl_seq_body').textContent = toThaiNumber(currentWeekObj.seq);
+              setElText('lbl_seq', toThaiNumber(currentWeekObj.seq));
+              setElText('lbl_seq_body', toThaiNumber(currentWeekObj.seq));
             }
             if (currentWeekObj.week && currentWeekObj.year) {
               const thYear = toThaiNumber(parseInt(currentWeekObj.year) < 2400 ? parseInt(currentWeekObj.year) + 543 : currentWeekObj.year);
-              document.getElementById('lbl_week_slash_year').textContent = `${toThaiNumber(currentWeekObj.week)}/${thYear}`;
+              setElText('lbl_week_slash_year', `${toThaiNumber(currentWeekObj.week)}/${thYear}`);
             }
-            if (currentWeekObj.repDate) document.getElementById('lbl_report_date').textContent = thaiDateText(currentWeekObj.repDate);
-            if (currentWeekObj.startDate) document.getElementById('lbl_start_date').textContent = thaiDateText(currentWeekObj.startDate);
-            if (currentWeekObj.endDate) document.getElementById('lbl_end_date').textContent = thaiDateText(currentWeekObj.endDate);
+            if (currentWeekObj.repDate) setElText('lbl_report_date', thaiDateText(currentWeekObj.repDate));
+            if (currentWeekObj.startDate) setElText('lbl_start_date', thaiDateText(currentWeekObj.startDate));
+            if (currentWeekObj.endDate) setElText('lbl_end_date', thaiDateText(currentWeekObj.endDate));
           }
         } catch(e) {}
       }
@@ -377,7 +383,6 @@
       let totalPaidSum = 0;
       let hasNumericPaid = false;
 
-      // 💡 คำนวณวันคงเหลือแบบอัตโนมัติ 
       let totalDaysNum = parseInt(globalProjectData && (globalProjectData.durationDays || globalProjectData.manualDays));
       if (isNaN(totalDaysNum) && globalProjectData && globalProjectData.durationWeeks) {
         totalDaysNum = parseInt(globalProjectData.durationWeeks) * 7;
@@ -519,7 +524,6 @@
       }
     }
 
-    // 💡 จัดการรายชื่อคณะกรรมการให้มาครบ และไม่ตกบรรทัด
     function renderSignatures(data) {
       const inspectors = data.inspectors || [{ name: "นายพัทธิยะ วงษาซ้าย", pos: "ผู้ควบคุมงาน" }];
       let inspHTML = "";
