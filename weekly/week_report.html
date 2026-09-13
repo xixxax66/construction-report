@@ -229,7 +229,6 @@
     function loadAllData() {
       initProjectContext();
 
-      // 💡 ใช้ Key ที่ผูกกับ Project และ เดือน ป้องกันข้อมูลข้ามเดือน
       const savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`);
       if (savedAccepted !== null) {
         acceptedInstallmentsValue = savedAccepted;
@@ -257,6 +256,19 @@
           if (projectData.budgetAmount) {
             const tAmount = formatThaiCurrency(projectData.budgetAmount);
             document.getElementById('lbl_budget_amount').textContent = tAmount;
+          }
+
+          // 💡 ส่วนสำหรับคำนวณและแสดงผลข้อความกรณีต่อสัญญา (ขยายระยะเวลา)
+          const extInfoEl = document.getElementById('lbl_extension_info');
+          if (extInfoEl) {
+            if (projectData.extendContractDate && projectData.extendContractDate.trim() !== '') {
+              const extDateTh = thaiDateText(projectData.extendContractDate);
+              const extDays = projectData.totalExtendedDays ? toThaiNumber(projectData.totalExtendedDays) : '';
+              // แสดงข้อความต่อท้ายย่อหน้า
+              extInfoEl.innerHTML = `<span class="font-bold"> (ได้รับการอนุมัติขยายระยะเวลาทำการก่อสร้างออกไปอีก ${extDays ? extDays + ' วัน' : ''} จนถึงวันที่ ${extDateTh})</span>`;
+            } else {
+              extInfoEl.innerHTML = '';
+            }
           }
 
           const savedInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`);
