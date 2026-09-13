@@ -920,13 +920,16 @@
       btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> บันทึก...`;
 
       try {
-        await fetch(GOOGLE_SCRIPT_URL, {
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
           mode: 'cors',
           redirect: 'follow',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'save_week_log', ...payload })
         });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json();
+        if (result && result.status && result.status !== 'success') throw new Error(result.message || 'Cloud save failed');
         alert(`บันทึกข้อมูลการปฏิบัติงานสัปดาห์ที่ ${currentWeekIndex} เรียบร้อยแล้วค่ะ`);
       } catch (err) {
         alert(`บันทึกลงในระบบเครื่องเรียบร้อยแล้วค่ะ (สัปดาห์ที่ ${currentWeekIndex})`);
@@ -943,7 +946,7 @@
         try {
           const projectData = JSON.parse(basicRaw);
           if (projectData.contractNo) {
-            currentProjectID = `PROJ_${projectData.contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            currentProjectID = getActiveProjectId(projectData);
             currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
             WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
           }

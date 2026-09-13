@@ -137,7 +137,9 @@
 
   <script>
     lucide.createIcons();
-    const MAP_STORAGE_KEY = 'PROJECT_MAP_IMAGE_DATA';
+    function getMapStorageKey() {
+      return getMonthlySectionKey('MAP_IMAGE_DATA');
+    }
 
     function processMapUpload(e) {
       const file = e.target.files[0];
@@ -146,7 +148,7 @@
       const reader = new FileReader();
       reader.onload = function(evt) {
         const base64Img = evt.target.result;
-        localStorage.setItem(MAP_STORAGE_KEY, base64Img);
+        localStorage.setItem(getMapStorageKey(), base64Img);
         displayMapImage(base64Img);
         alert("อัปโหลดรูปภาพแผนที่สำเร็จแล้วค่ะ!");
       };
@@ -156,14 +158,18 @@
     function displayMapImage(src) {
       const img = document.getElementById('map_image_preview');
       const placeholder = document.getElementById('map_placeholder');
-      img.src = src;
+      const safeSrc = safeImageUrl(src);
+      if (!safeSrc) return;
+      img.src = safeSrc;
       img.classList.remove('hidden');
       placeholder.classList.add('hidden');
     }
 
     window.addEventListener('DOMContentLoaded', () => {
       // 1. ดึงข้อมูลชื่อโครงการและหน่วยงานจากฐานข้อมูลกลาง (LOCAL_BASIC_INFO)
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      const projectData = getActiveProjectData();
+      const projectId = getActiveProjectId(projectData);
+      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${projectId}`) || localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
           const projectData = JSON.parse(basicRaw);
@@ -179,7 +185,7 @@
       }
 
       // 2. โหลดรูปภาพแผนที่ที่เคยอัปโหลดไว้ (ถ้ามี)
-      const savedMap = localStorage.getItem(MAP_STORAGE_KEY);
+      const savedMap = localStorage.getItem(getMapStorageKey()) || localStorage.getItem('PROJECT_MAP_IMAGE_DATA');
       if (savedMap) {
         displayMapImage(savedMap);
       }

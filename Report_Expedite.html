@@ -6,7 +6,7 @@
   <title>บันทึกเร่งรัดการก่อสร้าง</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="../assets/gas-sync.js"></script>
+  <script src="assets/gas-sync.js"></script>
   <style>
   /* ดึงฟอนต์จากไฟล์ในโฟลเดอร์ */
   @font-face {
@@ -266,8 +266,8 @@
           if (insp.name) {
             inspArea.innerHTML += `
               <div class="space-y-0.5 text-center min-w-[220px]">
-                <p>(ลงชื่อ)........................................................... ${insp.pos}</p>
-                <p class="font-medium">(${insp.name})</p>
+                <p>(ลงชื่อ)........................................................... ${escapeHTML(insp.pos)}</p>
+                <p class="font-medium">(${escapeHTML(insp.name)})</p>
               </div>
             `;
           }
@@ -288,7 +288,7 @@
             <div class="${colSpanClass}">
               <div>
                 <p>(ลงชื่อ).................................................... ${roleText}</p>
-                <p class="font-medium mt-0.5">(${name})</p>
+                <p class="font-medium mt-0.5">(${escapeHTML(name)})</p>
               </div>
             </div>
           `;
@@ -333,12 +333,12 @@
         planPercent: document.getElementById('in_planPercent').value,
         savedAt: new Date().toLocaleString('th-TH')
       };
-      localStorage.setItem('LOCAL_EXPEDITE_RECORD', JSON.stringify(payload));
+      localStorage.setItem(`LOCAL_EXPEDITE_RECORD_${getActiveProjectId()}`, JSON.stringify(payload));
       alert('บันทึกข้อมูลเร่งรัดการก่อสร้างเรียบร้อยแล้วค่ะ');
     }
     window.addEventListener('DOMContentLoaded', () => {
       loadProjectData();
-      const cached = localStorage.getItem('LOCAL_EXPEDITE_RECORD');
+      const cached = localStorage.getItem(`LOCAL_EXPEDITE_RECORD_${getActiveProjectId()}`) || localStorage.getItem('LOCAL_EXPEDITE_RECORD');
       if (cached) {
         const item = JSON.parse(cached);
         if (item.reportDate) document.getElementById('in_reportDate').value = item.reportDate;

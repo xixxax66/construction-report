@@ -13,6 +13,75 @@ const GAS_SYNC_CONFIG = {
 };
 
 /**
+ * Shared helpers for project-scoped local data. Keeping keys in one place
+ * prevents reports from different projects, months, and weeks being mixed.
+ */
+function getActiveProjectData() {
+  try {
+    return JSON.parse(localStorage.getItem('LOCAL_BASIC_INFO') || '{}');
+  } catch (error) {
+    console.warn('Invalid LOCAL_BASIC_INFO:', error);
+    return {};
+  }
+}
+
+function getActiveProjectId(projectData = getActiveProjectData()) {
+  if (projectData.projectID) return String(projectData.projectID);
+  const contractNo = String(projectData.contractNo || 'DEFAULT_PROJECT');
+  return `PROJ_${contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+}
+
+function getActiveReportMonth(projectId = getActiveProjectId()) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${projectId}`) || 'SEP_2569';
+}
+
+function getMonthlyInfoKey(projectId = getActiveProjectId()) {
+  return `MONTHLY_REPORT_INFO_DATA_${projectId}`;
+}
+
+function getWeeklyReferenceKey(projectId = getActiveProjectId(), reportMonth = getActiveReportMonth(projectId)) {
+  return `CONSTRUCTION_WEEKLY_REF_DB_${projectId}_${reportMonth}`;
+}
+
+function getWeeklyProgressKey(week, projectId = getActiveProjectId(), reportMonth = getActiveReportMonth(projectId)) {
+  return `WEEK_PROGRESS_DATA_${projectId}_${reportMonth}_${week}`;
+}
+
+function getWeeklyReportKey(section, week, projectId = getActiveProjectId(), reportMonth = getActiveReportMonth(projectId)) {
+  return `WEEK_REPORT_${section}_${projectId}_${reportMonth}_${week}`;
+}
+
+function getMonthlySectionKey(section, projectId = getActiveProjectId(), reportMonth = getActiveReportMonth(projectId)) {
+  return `MONTHLY_${section}_${projectId}_${reportMonth}`;
+}
+
+function getContractDurationDays(projectData = {}) {
+  const originalDays = Number(projectData.durationDays) || ((Number(projectData.durationWeeks) || 0) * 7);
+  const extensionDays = Number(projectData.extensionDays || projectData.totalExtendedDays || projectData.extDays) || 0;
+  return Math.max(0, originalDays + extensionDays);
+}
+
+function getProgressStatus(actual, planned, tolerance = 0.01) {
+  const actualValue = Number(actual) || 0;
+  const plannedValue = Number(planned) || 0;
+  if (actualValue + tolerance < plannedValue) return 'ช้ากว่าแผน';
+  if (actualValue > plannedValue + tolerance) return 'เร็วกว่าแผน';
+  return 'ตามแผน';
+}
+
+function escapeHTML(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+  })[char]);
+}
+
+function safeImageUrl(value) {
+  const url = String(value || '').trim();
+  return /^(data:image\/(?:png|jpe?g|webp|gif);base64,|https:\/\/)/i.test(url) ? url : '';
+}
+
+/**
  * ดึงข้อมูลด้วย JSONP เพื่อข้ามข้อจำกัด CORS / Redirect บน iPad
  */
 function fetchJsonp(url, timeout = 12000) {
@@ -122,6 +191,8 @@ async function pushDataToCloud(silent = false) {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
     });
+
+    if (!res.ok) throw new Error(`Cloud returned HTTP ${res.status}`);
 
     const result = await res.json();
 

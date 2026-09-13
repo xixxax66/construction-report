@@ -6,10 +6,10 @@
   <title>รายงานผลการก่อสร้างประจำสัปดาห์</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="../assets/gas-sync.js"></script>
+  <script src="assets/gas-sync.js"></script>
   <style>
-    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
-    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
+    @font-face { font-family: 'THSarabunPSK'; src: url('assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
+    @font-face { font-family: 'THSarabunPSK'; src: url('assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
     @page { size: A4 portrait; margin: 0; }
     body { font-family: 'THSarabunPSK', sans-serif; background-color: #94a3b8; margin: 0; padding: 0; }
     .sheet-doc { width: 210mm; min-height: 297mm; padding: 10mm 15mm 10mm 25mm; margin: 20px auto; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 16pt !important; line-height: 1.25 !important; color: #000; box-sizing: border-box; }
@@ -35,7 +35,7 @@
     <div class="xl:col-span-8 flex justify-center overflow-x-auto w-full">
       <div class="sheet-doc relative" id="doc-print">
         <div class="relative text-center mb-1">
-          <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Garuda_Emblem_of_Thailand.svg/300px-Garuda_Emblem_of_Thailand.svg.png';">
+          <img src="assets/Krut.png" alt="ตราครุฑ" class="garuda-img" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Garuda_Emblem_of_Thailand.svg/300px-Garuda_Emblem_of_Thailand.svg.png';">
           <h2 class="doc-title pt-1">บันทึกข้อความ</h2>
         </div>
         <div class="space-y-1 text-base">
@@ -131,6 +131,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentWeekIndex = parseInt(urlParams.get('week')) || 1;
     let currentProjectID = 'DEFAULT_PROJ';
+    let currentReportMonth = urlParams.get('month') || 'SEP_2569';
 
     let installmentList = [
       { year: "๒๕๖๙", amount: "๒,๘๔๙,๒๖๐.๐๐", paid: "-" }
@@ -143,7 +144,8 @@
         try {
           const projectData = JSON.parse(basicRaw);
           const cNo = projectData.contractNo || 'NO_CONTRACT';
-          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          currentProjectID = getActiveProjectId(projectData);
+          currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
         } catch(e) {}
       }
     }
@@ -223,7 +225,7 @@
     function loadAllData(isManualAlert = false) {
       initProjectContext();
       
-      const savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentWeekIndex}`);
+      const savedAccepted = localStorage.getItem(getWeeklyReportKey('ACCEPTED', currentWeekIndex, currentProjectID, currentReportMonth)) || localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentWeekIndex}`);
       if (savedAccepted !== null) {
         acceptedInstallmentsValue = savedAccepted;
       }
@@ -256,8 +258,8 @@
           if (projectData.endDateTh || projectData.endDate) {
             document.getElementById('lbl_contract_end').textContent = thaiDateText(projectData.endDateTh || projectData.endDate);
           }
-          if (projectData.durationDays || projectData.manualDays) {
-            document.getElementById('lbl_duration_days').textContent = toThaiNumber(projectData.durationDays || projectData.manualDays);
+          if (getContractDurationDays({ ...projectData, extensionDays: projectData.extensionDays || projectData.totalExtendedDays }) || projectData.manualDays) {
+            document.getElementById('lbl_duration_days').textContent = toThaiNumber(getContractDurationDays({ ...projectData, extensionDays: projectData.extensionDays || projectData.totalExtendedDays }) || projectData.manualDays);
           }
 
           if (projectData.budgetAmount) {
@@ -276,13 +278,13 @@
             document.getElementById('lbl_extension_info').textContent = '';
           }
 
-          const savedInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex}`);
+          const savedInst = localStorage.getItem(getWeeklyReportKey('INSTALLMENTS', currentWeekIndex, currentProjectID, currentReportMonth)) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex}`);
           if (savedInst) {
             installmentList = JSON.parse(savedInst);
           } else {
             let previousInst = null;
             if (currentWeekIndex > 1) {
-              const prevData = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex - 1}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex - 1}`);
+              const prevData = localStorage.getItem(getWeeklyReportKey('INSTALLMENTS', currentWeekIndex - 1, currentProjectID, currentReportMonth)) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex - 1}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentWeekIndex - 1}`);
               if (prevData) {
                 previousInst = JSON.parse(prevData);
               }
@@ -302,7 +304,7 @@
       }
       renderSignatures(projectData);
 
-      const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+      const weeklyRefRaw = localStorage.getItem(getWeeklyReferenceKey(currentProjectID, currentReportMonth)) || localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
       let currentWeekObj = null;
       if (weeklyRefRaw) {
         try {
@@ -327,7 +329,7 @@
       // ระบบ Fallback: วนลูปหาสัปดาห์ล่าสุดที่มีข้อมูลบันทึกไว้ เพื่อดึง % ผลงานมาแสดง
       let actualWeightPercent = 0;
       for (let w = currentWeekIndex; w >= 1; w--) {
-        const pRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+        const pRaw = localStorage.getItem(getWeeklyProgressKey(w, currentProjectID, currentReportMonth)) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
         if (pRaw) {
           const pData = JSON.parse(pRaw);
           actualWeightPercent = parseFloat(pData.totalWeightPercent) || 0;
@@ -335,10 +337,9 @@
         }
       }
 
-      let statusText = 'ช้า';
+      let statusText = getProgressStatus(actualWeightPercent, parseFloat(currentWeekObj && currentWeekObj.plan) || 0);
       if (actualWeightPercent <= 0) statusText = 'ยังไม่ทำงาน';
       else if (actualWeightPercent >= 100) statusText = 'แล้วเสร็จ';
-      else statusText = 'ช้า';
 
       renderTable(actualWeightPercent, statusText, projectData, currentWeekObj);
       
@@ -359,7 +360,7 @@
               amount: formatThaiCurrency(inst.amount || "๐.๐๐"),
               paid: inst.paid && inst.paid !== '-' ? formatThaiCurrency(inst.paid) : "-"
             }));
-            localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`, JSON.stringify(installmentList));
+            localStorage.setItem(getWeeklyReportKey('INSTALLMENTS', currentWeekIndex, currentProjectID, currentReportMonth), JSON.stringify(installmentList));
             loadAllData(false);
             alert("ซิงค์ข้อมืองวดงานจากหน้าข้อมูลเบื้องต้นเรียบร้อยแล้วค่ะ!");
           } else {
@@ -382,10 +383,10 @@
       let totalPaidSum = 0;
       let hasNumericPaid = false;
 
-      let totalDaysNum = projectData && projectData.durationDays ? parseInt(projectData.durationDays) : 140;
-      if (projectData && projectData.totalExtendedDays && parseInt(projectData.totalExtendedDays) > 0) {
-        totalDaysNum = parseInt(projectData.totalExtendedDays);
-      }
+      let totalDaysNum = getContractDurationDays({
+        ...(projectData || {}),
+        extensionDays: projectData && (projectData.extensionDays || projectData.totalExtendedDays)
+      }) || parseInt(projectData && projectData.manualDays) || 140;
 
       let remainDays = totalDaysNum;
       let timePercent = 0;
@@ -450,12 +451,12 @@
 
     function updateAccepted(val) {
       acceptedInstallmentsValue = toThaiNumber(val);
-      localStorage.setItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentWeekIndex}`, acceptedInstallmentsValue);
+      localStorage.setItem(getWeeklyReportKey('ACCEPTED', currentWeekIndex, currentProjectID, currentReportMonth), acceptedInstallmentsValue);
     }
 
     function updateInstallment(index, field, value) {
       installmentList[index][field] = toThaiNumber(value);
-      localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`, JSON.stringify(installmentList));
+      localStorage.setItem(getWeeklyReportKey('INSTALLMENTS', currentWeekIndex, currentProjectID, currentReportMonth), JSON.stringify(installmentList));
 
       let totalSum = 0;
       let totalPaidSum = 0;
@@ -487,14 +488,14 @@
 
     function addInstallmentRow() {
       installmentList.push({ year: "๒๕๖๙", amount: "๐.๐๐", paid: "-" });
-      localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`, JSON.stringify(installmentList));
+      localStorage.setItem(getWeeklyReportKey('INSTALLMENTS', currentWeekIndex, currentProjectID, currentReportMonth), JSON.stringify(installmentList));
       loadAllData(false);
     }
 
     function removeInstallmentRow() {
       if (installmentList.length > 1) {
         installmentList.pop();
-        localStorage.setItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentWeekIndex}`, JSON.stringify(installmentList));
+        localStorage.setItem(getWeeklyReportKey('INSTALLMENTS', currentWeekIndex, currentProjectID, currentReportMonth), JSON.stringify(installmentList));
         loadAllData(false);
       } else {
         alert("ต้องมีอย่างน้อย 1 งวดงานค่ะ");

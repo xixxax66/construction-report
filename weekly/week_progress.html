@@ -308,7 +308,7 @@
         try {
           const projectData = JSON.parse(basicRaw);
           if (projectData.contractNo) {
-            currentProjectID = `PROJ_${projectData.contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            currentProjectID = getActiveProjectId(projectData);
             currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
             STORAGE_KEY = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
           }
@@ -318,11 +318,11 @@
           if (projectData.projectName) {
             document.getElementById('lbl-project-name').textContent = `โครงการ: ${projectData.projectName} (งบประมาณ ${projectData.budgetAmount || '-'} บาท)`;
           }
-          if (projectData.durationWeeks) {
-            totalContractWeeks = parseInt(projectData.durationWeeks) || 20;
-          } else if (projectData.durationDays) {
-            totalContractWeeks = Math.ceil(parseInt(projectData.durationDays) / 7);
-          }
+          const durationDays = getContractDurationDays({
+            ...projectData,
+            extensionDays: projectData.extensionDays || projectData.totalExtendedDays
+          });
+          if (durationDays > 0) totalContractWeeks = Math.ceil(durationDays / 7);
           if (projectData.tasks && Array.isArray(projectData.tasks) && projectData.tasks.length > 0) {
             currentTasks = projectData.tasks.map(t => ({
               name: t.name || t.taskName || "",
@@ -849,11 +849,14 @@
         
         const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
         if (centralUrl) {
-          await fetch(centralUrl, {
+          const response = await fetch(centralUrl, {
             method: 'POST', mode: 'cors', redirect: 'follow',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action: 'save_week_progress', ...payload })
           });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const result = await response.json();
+          if (result && result.status && result.status !== 'success') throw new Error(result.message || 'Cloud save failed');
         }
         alert(`บันทึกผลการดำเนินงานเรียบร้อยแล้วค่ะ`);
       } catch (err) {

@@ -297,6 +297,7 @@
   <script>
     lucide.createIcons();
     const WEEKLY_REF_KEY = 'CONSTRUCTION_WEEKLY_REF_DB';
+    const MONTHLY_STORAGE_KEY = 'MONTHLY_REPORT_INFO_DATA';
 
     let currentProjectID = 'DEFAULT_PROJECT';
 
@@ -308,7 +309,7 @@
           const projectData = JSON.parse(basicRaw);
           const pName = projectData.projectName || 'โครงการก่อสร้าง';
           const cNo = projectData.contractNo || 'NO_CONTRACT';
-          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          currentProjectID = getActiveProjectId(projectData);
           document.getElementById('lbl_current_project_name').textContent = `${pName} (สัญญาเลขที่ ${cNo})`;
         } catch(e) {
           document.getElementById('lbl_current_project_name').textContent = 'โครงการทั่วไป (ไม่ได้ระบุสัญญา)';
@@ -324,6 +325,17 @@
 
     function getProjectHistoryKey() {
       return `CONSTRUCTION_MONTHLY_HISTORY_DB_${currentProjectID}`;
+    }
+
+    function getSelectedReportMonthId() {
+      const monthCodes = {
+        'มกราคม': 'JAN', 'กุมภาพันธ์': 'FEB', 'มีนาคม': 'MAR', 'เมษายน': 'APR',
+        'พฤษภาคม': 'MAY', 'มิถุนายน': 'JUN', 'กรกฎาคม': 'JUL', 'สิงหาคม': 'AUG',
+        'กันยายน': 'SEP', 'ตุลาคม': 'OCT', 'พฤศจิกายน': 'NOV', 'ธันวาคม': 'DEC'
+      };
+      const month = document.getElementById('monthly_month').value;
+      const year = document.getElementById('monthly_year').value;
+      return `${monthCodes[month] || 'SEP'}_${year || '2569'}`;
     }
 
     function onDatePicked(picker) {
@@ -346,7 +358,10 @@
       const selectedWeek = parseInt(document.getElementById('select_plan_week').value);
       let planVal = 0;
 
-      const weeklyDataRaw = localStorage.getItem(WEEKLY_REF_KEY);
+      const reportMonth = getSelectedReportMonthId();
+      const weeklyDataRaw = localStorage.getItem(getWeeklyReferenceKey(currentProjectID, reportMonth)) ||
+        localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) ||
+        localStorage.getItem(WEEKLY_REF_KEY);
       if (weeklyDataRaw) {
         try {
           const weeksArray = JSON.parse(weeklyDataRaw);
@@ -363,7 +378,10 @@
       const selectedWeek = parseInt(document.getElementById('select_plan_week').value);
       let actualVal = 0;
 
-      const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${selectedWeek}`);
+      const reportMonth = getSelectedReportMonthId();
+      const progressRaw = localStorage.getItem(getWeeklyProgressKey(selectedWeek, currentProjectID, reportMonth)) ||
+        localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${selectedWeek}`) ||
+        localStorage.getItem(`WEEK_PROGRESS_DATA_${selectedWeek}`);
       if (progressRaw) {
         try {
           const progData = JSON.parse(progressRaw);
@@ -371,7 +389,9 @@
         } catch(e) {}
       } else {
         for (let w = 5; w >= 1; w--) {
-          const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+          const wRaw = localStorage.getItem(getWeeklyProgressKey(w, currentProjectID, reportMonth)) ||
+            localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) ||
+            localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
           if (wRaw) {
             try {
               const wData = JSON.parse(wRaw);
@@ -406,6 +426,7 @@
       // บันทึกแยกตามรหัสโครงการปัจจุบัน
       localStorage.setItem(getProjectMonthlyKey(), JSON.stringify(payload));
       localStorage.setItem('MONTHLY_REPORT_INFO_DATA', JSON.stringify(payload)); // สำรองไว้หน้าอื่นเรียกใช้
+      localStorage.setItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`, getSelectedReportMonthId());
       
       archiveMonthlyHistorySilent(payload);
       alert(`บันทึกข้อมูลรายงานประจำเดือน ${month} ${year} ของโครงการนี้เรียบร้อยแล้วค่ะ!`);
@@ -495,10 +516,10 @@
       historyList.forEach((item, index) => {
         tbody.innerHTML += `
           <tr class="bg-white border-b hover:bg-slate-50">
-            <td class="p-2 border font-medium text-slate-800">${item.monthYear}</td>
-            <td class="p-2 border">${item.reportDate}</td>
-            <td class="p-2 border text-center text-red-600 font-bold">${item.planPercent}%</td>
-            <td class="p-2 border text-center text-emerald-700 font-bold">${item.actualPercent}%</td>
+            <td class="p-2 border font-medium text-slate-800">${escapeHTML(item.monthYear)}</td>
+            <td class="p-2 border">${escapeHTML(item.reportDate)}</td>
+            <td class="p-2 border text-center text-red-600 font-bold">${escapeHTML(item.planPercent)}%</td>
+            <td class="p-2 border text-center text-emerald-700 font-bold">${escapeHTML(item.actualPercent)}%</td>
             <td class="p-2 border text-center">
               <button onclick="restoreHistory('${item.id}')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded text-xs font-bold mr-1 cursor-pointer" title="เรียกข้อมูลนี้">เรียกใช้</button>
               <button onclick="deleteHistory(${index})" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-2 py-1 rounded text-xs font-bold cursor-pointer" title="ลบประวัติ">ลบ</button>
