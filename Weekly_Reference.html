@@ -149,7 +149,7 @@
         </div>
       </div>
 
-      <!-- แผงเลือกเดือนประจำรายงาน (ครอบคลุมเดือนย้อนหลังถึงมิถุนายน/มกราคม 2569) -->
+      <!-- แผงเลือกเดือนประจำรายงาน -->
       <div class="flex items-center gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
         <div class="flex items-center gap-2">
           <i data-lucide="calendar-range" class="w-5 h-5 text-indigo-600"></i>
@@ -268,7 +268,7 @@
     }
 
     let currentProjectID = 'DEFAULT_PROJ';
-    let currentReportMonth = 'SEP_2569'; // เดือนเริ่มต้น
+    let currentReportMonth = 'SEP_2569';
 
     const thaiMonths = [
       "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", 
@@ -282,7 +282,6 @@
 
     function switchReportMonth(monthVal) {
       currentReportMonth = monthVal;
-      // 💡 บันทึกเดือนล่าสุดที่ใช้งานลงเครื่อง เพื่อให้จำค่าไว้เวลาเปิดกลับมาใหม่
       localStorage.setItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`, monthVal);
       loadSavedDataForCurrentMonth();
       updateLinksWithMonth();
@@ -302,7 +301,6 @@
       }
     }
 
-    // สร้างโครงสร้าง HTML สำหรับ 5 สัปดาห์
     function buildWeeksUI() {
       const container = document.getElementById('weeks_container');
       container.innerHTML = '';
@@ -446,31 +444,37 @@
       const sel = document.getElementById('modal_calc_sunday_choice');
       sel.innerHTML = '';
 
-      let firstDay = new Date(ceYear, mIdx, 1);
-      let dayOfWeek = firstDay.getDay(); 
+      // ล็อกเวลาไว้ที่ 12:00 น. เพื่อป้องกันปัญหา Timezone ปัดเศษวันผิดพลาด
+      let firstDayOfMonth = new Date(ceYear, mIdx, 1, 12, 0, 0);
+      let dayOfWeek = firstDayOfMonth.getDay(); // 0 = อาทิตย์, 1 = จันทร์, ...
 
       let sundays = [];
-      if (dayOfWeek !== 0) {
-        let prevSun = new Date(firstDay);
-        prevSun.setDate(firstDay.getDate() - dayOfWeek);
-        sundays.push({ date: prevSun, label: `วันอาทิตย์ที่ ${formatToThaiDate(prevSun)} (คาบเกี่ยวปลายเดือนก่อน)` });
+
+      let prevSunday = new Date(ceYear, mIdx, 1, 12, 0, 0);
+      prevSunday.setDate(firstDayOfMonth.getDate() - dayOfWeek);
+      if (prevSunday.getMonth() !== mIdx) {
+        sundays.push({ date: new Date(prevSunday), label: `วันอาทิตย์ที่ ${formatToThaiDate(prevSunday)} (คาบเกี่ยวปลายเดือนก่อน)` });
       }
 
-      let cur = new Date(firstDay);
+      let cur = new Date(firstDayOfMonth);
       if (dayOfWeek !== 0) {
-        cur.setDate(firstDay.getDate() + (7 - dayOfWeek));
+        cur.setDate(firstDayOfMonth.getDate() + (7 - dayOfWeek));
       }
 
-      while (cur.getMonth() === mIdx) {
-        sundays.push({ date: new Date(cur), label: `วันอาทิตย์ที่ ${formatToThaiDate(cur)} (ในเดือน${thaiMonths[mIdx]})` });
+      while (cur.getMonth() === mIdx || (cur.getMonth() === (mIdx + 1) % 12 && sundays.length < 1)) {
+        sundays.push({ date: new Date(cur), label: `วันอาทิตย์ที่ ${formatToThaiDate(cur)}` });
         cur.setDate(cur.getDate() + 7);
+        if (sundays.length >= 6) break;
       }
 
       sundays.forEach((item, idx) => {
         const opt = document.createElement('option');
-        opt.value = item.date.toISOString().slice(0, 10);
+        const y = item.date.getFullYear();
+        const m = String(item.date.getMonth() + 1).padStart(2, '0');
+        const d = String(item.date.getDate()).padStart(2, '0');
+        opt.value = `${y}-${m}-${d}`;
         opt.textContent = item.label;
-        if (dayOfWeek !== 0 && idx === 1) opt.selected = true;
+        if (idx === (sundays.length > 5 && item.label.includes('คาบเกี่ยว') ? 1 : 0)) opt.selected = true;
         sel.appendChild(opt);
       });
     }
@@ -480,7 +484,8 @@
       if (!chosenDateStr) return;
 
       const parts = chosenDateStr.split('-');
-      let chosenSunday = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      // ล็อกเวลา 12:00 น. ตอนสร้าง Date Object เพื่อความเสถียรของวันที่ ไม่ให้ปัดถอยหลัง
+      let chosenSunday = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 12, 0, 0);
 
       const startSeq = parseInt(document.getElementById('modal_start_seq').value) || 1;
       let durationWeeks = 20;
@@ -497,12 +502,12 @@
       let runningSunday = new Date(chosenSunday);
 
       for (let i = 1; i <= 5; i++) {
-        let wStart = new Date(runningSunday); 
+        let wStart = new Date(runningSunday); // วันอาทิตย์
         let wEnd = new Date(runningSunday);
-        wEnd.setDate(wEnd.getDate() + 6); 
+        wEnd.setDate(wEnd.getDate() + 6); // วันเสาร์ (อาทิตย์ + 6 วัน)
 
         let wRep = new Date(wEnd);
-        wRep.setDate(wRep.getDate() + 2); 
+        wRep.setDate(wRep.getDate() + 2); // วันรายงาน
 
         const startTh = formatToThaiDate(wStart);
         const endTh = formatToThaiDate(wEnd);
@@ -526,7 +531,7 @@
       }
 
       closeDateCalcModal();
-      alert(`คำนวณช่วงวันที่ทั้ง 5 สัปดาห์สำหรับรอบเดือนนี้เรียบร้อยแล้วค่ะ!`);
+      alert(`คำนวณช่วงวันที่ตั้งแต่วันอาทิตย์ถึงวันเสาร์ ทั้ง 5 สัปดาห์ถูกต้องแม่นยำแล้วค่ะ!`);
     }
 
     function exportProjectJSON() {
@@ -671,10 +676,10 @@
           populateData(JSON.parse(local));
         } catch(e){}
       } else {
-        // ถ้ายังไม่มีข้อมูลของเดือนนี้ ให้เคลียร์ช่องว่างหรือตั้งค่าเริ่มต้น
         for (let i = 1; i <= 5; i++) {
           if (document.getElementById(`w${i}_seq`)) document.getElementById(`w${i}_seq`).value = i;
           if (document.getElementById(`w${i}_week`)) document.getElementById(`w${i}_week`).value = i;
+          if (document.getElementById(`w${i}_year`)) document.getElementById(`w${i}_year`).value = '2569';
           if (document.getElementById(`w${i}_startDate`)) document.getElementById(`w${i}_startDate`).value = '';
           if (document.getElementById(`w${i}_endDate`)) document.getElementById(`w${i}_endDate`).value = '';
           if (document.getElementById(`w${i}_repDate`)) document.getElementById(`w${i}_repDate`).value = '';
@@ -751,7 +756,6 @@
    window.addEventListener('DOMContentLoaded', () => {
       initProjectContext();
       
-      // 💡 ตรวจสอบว่าเคยเลือกเดือนไหนค้างไว้ไหม ถ้ามีให้ดึงเดือนนั้นมาแสดงทันที
       const lastSavedMonth = localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`);
       if (lastSavedMonth) {
         currentReportMonth = lastSavedMonth;
@@ -760,7 +764,6 @@
           selMonth.value = lastSavedMonth;
         }
       } else {
-        // ถ้ายังไม่มีการเลือก ให้เช็คจากวันเริ่มสัญญาโปรเจกต์เป็นค่าเริ่มต้น
         const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
         if (basicRaw) {
           try {
