@@ -554,7 +554,7 @@
           inspHTML += `
             <div class="space-y-0.5 text-center min-w-[220px] mb-2">
               <p class="whitespace-nowrap">(ลงชื่อ)........................................................... ${inspPos}</p>
-              <p class="font-medium">(${inspName})</p>
+              <p class="font-medium -translate-x-4">(${inspName})</p>
             </div>`;
         }
       });
@@ -562,7 +562,7 @@
         inspHTML = `
           <div class="space-y-0.5 text-center min-w-[220px]">
             <p class="whitespace-nowrap">(ลงชื่อ)........................................................... ผู้ควบคุมงาน</p>
-            <p class="font-medium">(นายพัทธิยะ วงษาซ้าย)</p>
+            <p class="font-medium -translate-x-4">(นายพัทธิยะ วงษาซ้าย)</p>
           </div>`;
       }
       document.getElementById('inspectorSignatureArea').innerHTML = inspHTML;
@@ -576,13 +576,13 @@
           <div class="col-span-2 flex justify-center mb-3">
             <div class="text-center">
               <p class="whitespace-nowrap">(ลงชื่อ).................................................... ประธานกรรมการฯ</p>
-              <p class="font-medium mt-1">(นางสาวถนอมนวล วะทวีก้านตรงฯ)</p>
+              <p class="font-medium mt-1 -translate-x-10">(นางสาวถนอมนวล วะทวีก้านตรงฯ)</p>
             </div>
           </div>
           <div class="flex justify-center mb-3">
             <div class="text-center">
               <p class="whitespace-nowrap">(ลงชื่อ).................................................... กรรมการฯ</p>
-              <p class="font-medium mt-1">(จ่าเอกธีรพงษ์ ดรชานนท์)</p>
+              <p class="font-medium mt-1 -translate-x-4">(จ่าเอกธีรพงษ์ ดรชานนท์)</p>
             </div>
           </div>`;
         return;
@@ -601,7 +601,7 @@
             <div class="col-span-2 flex justify-center mb-3">
               <div class="text-center">
                 <p class="whitespace-nowrap">(ลงชื่อ).................................................... ${roleLabel}</p>
-                <p class="font-medium mt-1">(${cName})</p>
+                <p class="font-medium mt-1 -translate-x-10">(${cName})</p>
               </div>
             </div>`;
         } else {
@@ -609,7 +609,7 @@
             <div class="flex justify-center mb-3">
               <div class="text-center">
                 <p class="whitespace-nowrap">(ลงชื่อ).................................................... ${roleLabel}</p>
-                <p class="font-medium mt-1">(${cName})</p>
+                <p class="font-medium mt-1 -translate-x-4">(${cName})</p>
               </div>
             </div>`;
         }
