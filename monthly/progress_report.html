@@ -158,7 +158,9 @@
 
   <script>
     lucide.createIcons();
-    const STORAGE_KEY_REPORT = 'MONTHLY_PROGRESS_REPORT_DB';
+    function getReportStorageKey() {
+      return getMonthlySectionKey('PROGRESS_REPORT_DB');
+    }
 
     let globalProjectData = {};
     let globalMonthlyData = {};
@@ -243,8 +245,10 @@
     }
 
     function loadMonthlyProgressData(isManual = false) {
+      const projectId = getActiveProjectId();
+      const reportMonth = getActiveReportMonth(projectId);
       let targetWeek = 5;
-      const monthlyRaw = localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+      const monthlyRaw = localStorage.getItem(getMonthlyInfoKey(projectId)) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
       if (monthlyRaw) {
         try {
           globalMonthlyData = JSON.parse(monthlyRaw);
@@ -254,17 +258,17 @@
         } catch(e){}
       }
 
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${projectId}`) || localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
           globalProjectData = JSON.parse(basicRaw);
         } catch(e) {}
       }
 
-      let totalDaysNum = globalProjectData && globalProjectData.durationDays ? parseInt(globalProjectData.durationDays) : 140;
-      if (globalProjectData && globalProjectData.totalExtendedDays && parseInt(globalProjectData.totalExtendedDays) > 0) {
-        totalDaysNum = parseInt(globalProjectData.totalExtendedDays);
-      }
+      let totalDaysNum = getContractDurationDays({
+        ...globalProjectData,
+        extensionDays: globalProjectData.extensionDays || globalProjectData.totalExtendedDays
+      }) || parseInt(globalProjectData.manualDays) || 140;
 
       let passedDays = targetWeek * 7;
       if (globalProjectData && globalProjectData.startDate && globalMonthlyData && globalMonthlyData.reportDate) {
@@ -283,7 +287,8 @@
 
       let planProg = parseFloat(globalMonthlyData.planPercent) || 0;
       if (planProg === 0) {
-        const weeklyRefRaw = localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+        const weeklyRefRaw = localStorage.getItem(getWeeklyReferenceKey(projectId, reportMonth)) ||
+          localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${projectId}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
         if (weeklyRefRaw) {
           try {
             const weeksArray = JSON.parse(weeklyRefRaw);
@@ -300,7 +305,8 @@
 
       let actualProg = parseFloat(globalMonthlyData.actualPercent) || 0;
       if (actualProg === 0) {
-        const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
+        const progressRaw = localStorage.getItem(getWeeklyProgressKey(targetWeek, projectId, reportMonth)) ||
+          localStorage.getItem(`WEEK_PROGRESS_DATA_${projectId}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
         if (progressRaw) {
           try {
             const progData = JSON.parse(progressRaw);
@@ -321,7 +327,7 @@
         diffProg: diffProg
       };
 
-      const saved = localStorage.getItem(STORAGE_KEY_REPORT);
+      const saved = localStorage.getItem(getReportStorageKey()) || localStorage.getItem('MONTHLY_PROGRESS_REPORT_DB');
       if (saved) {
         try {
           const s = JSON.parse(saved);
@@ -390,7 +396,7 @@
       const reportDateText = customDateInput ? customDateInput.value : thaiDateText(mData.reportDate || '๑ กรกฎาคม ๒๕๖๙');
 
       let savedState = {};
-      const saved = localStorage.getItem(STORAGE_KEY_REPORT);
+      const saved = localStorage.getItem(getReportStorageKey()) || localStorage.getItem('MONTHLY_PROGRESS_REPORT_DB');
       if (saved) {
         try { savedState = JSON.parse(saved); } catch(e){}
       }
@@ -663,12 +669,12 @@
         extraSigners: extraSigners,
         updatedAt: new Date().toLocaleString('th-TH')
       };
-      localStorage.setItem(STORAGE_KEY_REPORT, JSON.stringify(data));
+      localStorage.setItem(getReportStorageKey(), JSON.stringify(data));
       alert("บันทึกข้อมูลรายงานความคืบหน้าประจำเดือนเรียบร้อยแล้วค่ะ");
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      const saved = localStorage.getItem(STORAGE_KEY_REPORT);
+      const saved = localStorage.getItem(getReportStorageKey()) || localStorage.getItem('MONTHLY_PROGRESS_REPORT_DB');
       if (saved) {
         try {
           const s = JSON.parse(saved);

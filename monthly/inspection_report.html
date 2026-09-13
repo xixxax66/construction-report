@@ -97,7 +97,7 @@
 </head>
 <body class="p-2 sm:p-4 min-h-screen flex flex-col items-center">
 
-  <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ)[cite: 5] -->
+  <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
   <div class="max-w-[210mm] w-full mb-4 bg-white p-5 rounded-2xl shadow-lg border border-slate-300 flex flex-wrap items-center justify-between gap-4 no-print">
     <div class="flex items-center gap-3">
       <a href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-2xl font-bold border border-slate-300 shadow-sm">
@@ -115,7 +115,7 @@
     </div>
   </div>
 
-  <!-- แผ่นกระดาษ A4 Workspace[cite: 5] -->
+  <!-- แผ่นกระดาษ A4 Workspace -->
   <div class="sheet-workspace" id="doc-print">
     <div class="sheet-top-content">
       <div class="header-row">
@@ -123,7 +123,7 @@
         <span id="lbl_org_name">องค์การบริหารส่วนตำบลโพนงาม</span>
       </div>
 
-      <!-- ตารางรายละเอียดงวดงาน[cite: 5] -->
+      <!-- ตารางรายละเอียดงวดงาน -->
       <table class="table-inspection">
         <thead>
           <tr>
@@ -135,11 +135,11 @@
           </tr>
         </thead>
         <tbody id="inspection_table_body">
-          <!-- เติมแถวตามจำนวนงวดงาน[cite: 5] -->
+          <!-- เติมแถวตามจำนวนงวดงาน -->
         </tbody>
       </table>
 
-      <!-- ส่วนหมายเหตุ[cite: 5] -->
+      <!-- ส่วนหมายเหตุ -->
       <div class="note-section">
         <p class="font-bold mb-1">หมายเหตุ</p>
         <div class="dotted-line"></div>
@@ -149,13 +149,15 @@
       </div>
     </div>
 
-    <!-- ส่วนท้ายกระดาษ[cite: 5] -->
+    <!-- ส่วนท้ายกระดาษ -->
     <div></div>
   </div>
 
   <script>
     lucide.createIcons();
-    const STORAGE_KEY_INSPECTION = 'MONTHLY_INSPECTION_DATES_DB';
+    function getInspectionStorageKey() {
+      return getMonthlySectionKey('INSPECTION_DATES_DB');
+    }
 
     function toThaiNumber(numStr) {
       if (numStr === null || numStr === undefined) return '';
@@ -206,8 +208,10 @@
         let installments = [];
         let orgName = "องค์การบริหารส่วนตำบลโพนงาม";
 
-        // 1. โหลดข้อมูลจาก LOCAL_BASIC_INFO[cite: 5]
-        const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+        // 1. โหลดข้อมูลจาก LOCAL_BASIC_INFO
+        const projectData = getActiveProjectData();
+        const projectId = getActiveProjectId(projectData);
+        const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${projectId}`) || localStorage.getItem('LOCAL_BASIC_INFO');
         if (basicRaw) {
           const data = JSON.parse(basicRaw);
           if (data.organizationName) {
@@ -220,9 +224,9 @@
 
         document.getElementById('lbl_org_name').textContent = orgName;
 
-        // 2. โหลดข้อมูลวันที่ที่เคยบันทึกไว้[cite: 5]
+        // 2. โหลดข้อมูลวันที่ที่เคยบันทึกไว้
         let savedDates = {};
-        const savedDatesRaw = localStorage.getItem(STORAGE_KEY_INSPECTION);
+        const savedDatesRaw = localStorage.getItem(getInspectionStorageKey()) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
         if (savedDatesRaw) {
           try { savedDates = JSON.parse(savedDatesRaw); } catch(e){}
         }
@@ -231,12 +235,11 @@
         if (!tbody) return;
         tbody.innerHTML = '';
 
-        // ถ้าไม่มีข้อมืองวดงาน ให้สร้างค่าเริ่มต้น 1 งวด[cite: 5]
+        // ถ้าไม่มีข้อมืองวดงาน ให้สร้างค่าเริ่มต้น 1 งวด
         if (installments.length === 0) {
           installments = [{ amount: "2,849,260.00" }];
         }
 
-        installments.installments = installments || [];
         installments.forEach((inst, idx) => {
           const periodTh = toThaiNumber(idx + 1);
           const amountTh = formatThaiCurrency(inst.amount || '0.00');
@@ -250,28 +253,28 @@
               <td class="text-right pr-3">${amountTh}</td>
               <td>
                 <div class="flex items-center justify-center gap-1">
-                  <input type="text" class="editable-input text-center" value="${endDateVal}" onchange="saveInspectionData(${idx})" id="end_date_${idx}">
+                  <input type="text" class="editable-input text-center" value="${escapeHTML(endDateVal)}" onchange="saveInspectionData(${idx})" id="end_date_${idx}">
                   <input type="date" class="no-print cursor-pointer text-xs p-0.5 rounded border border-slate-300 bg-slate-50" onchange="onDateSelected(${idx}, 'end', this.value)" title="เลือกจากปฏิทิน">
                 </div>
               </td>
               <td>
                 <div class="flex items-center justify-center gap-1">
-                  <input type="text" class="editable-input text-center" value="${acceptDateVal}" onchange="saveInspectionData(${idx})" id="accept_date_${idx}">
+                  <input type="text" class="editable-input text-center" value="${escapeHTML(acceptDateVal)}" onchange="saveInspectionData(${idx})" id="accept_date_${idx}">
                   <input type="date" class="no-print cursor-pointer text-xs p-0.5 rounded border border-slate-300 bg-slate-50" onchange="onDateSelected(${idx}, 'accept', this.value)" title="เลือกจากปฏิทิน">
                 </div>
               </td>
-              <td><input type="text" class="editable-input text-center" value="${noteVal}" onchange="saveInspectionData(${idx})" id="note_${idx}"></td>
+              <td><input type="text" class="editable-input text-center" value="${escapeHTML(noteVal)}" onchange="saveInspectionData(${idx})" id="note_${idx}"></td>
             </tr>
           `;
         });
       } catch (err) {
-        console.error("Error loading inspection data:", err);[cite: 5]
+        console.error("Error loading inspection data:", err);
       }
     }
 
     function saveInspectionData(idx) {
       let savedDates = {};
-      const savedDatesRaw = localStorage.getItem(STORAGE_KEY_INSPECTION);
+      const savedDatesRaw = localStorage.getItem(getInspectionStorageKey()) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
       if (savedDatesRaw) {
         try { savedDates = JSON.parse(savedDatesRaw); } catch(e){}
       }
@@ -280,10 +283,10 @@
       savedDates[`accept_${idx}`] = document.getElementById(`accept_date_${idx}`).value;
       savedDates[`note_${idx}`] = document.getElementById(`note_${idx}`).value;
 
-      localStorage.setItem(STORAGE_KEY_INSPECTION, JSON.stringify(savedDates));[cite: 5]
+      localStorage.setItem(getInspectionStorageKey(), JSON.stringify(savedDates));
     }
 
-    window.addEventListener('DOMContentLoaded', loadInspectionData);[cite: 5]
+    window.addEventListener('DOMContentLoaded', loadInspectionData);
   </script>
 </body>
 </html>

@@ -167,7 +167,9 @@
 
   <script>
     lucide.createIcons();
-    const LOGO_STORAGE_KEY = 'PROJECT_CUSTOM_LOGO_DATA';
+    function getLogoStorageKey() {
+      return getMonthlySectionKey('CUSTOM_LOGO_DATA');
+    }
 
     function toThaiNumber(numStr) {
       if (numStr === null || numStr === undefined) return '';
@@ -201,7 +203,7 @@
       const reader = new FileReader();
       reader.onload = function(evt) {
         const base64Img = evt.target.result;
-        localStorage.setItem(LOGO_STORAGE_KEY, base64Img);
+        localStorage.setItem(getLogoStorageKey(), base64Img);
         document.getElementById('img_logo').src = base64Img;
         alert("เปลี่ยนโลโก้หน่วยงานสำเร็จแล้วค่ะ!");
       };
@@ -209,7 +211,9 @@
     }
 
     function loadProjectData() {
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      const projectData = getActiveProjectData();
+      const projectId = getActiveProjectId(projectData);
+      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${projectId}`) || localStorage.getItem('LOCAL_BASIC_INFO');
       let orgName = "องค์การบริหารส่วนตำบลโพนงาม";
       let district = "โกสุมพิสัย";
       let province = "มหาสารคาม";
@@ -234,7 +238,7 @@
 
       const orgSub = `อำเภอ${district} จังหวัด${province}`;
 
-      const monthlyRaw = localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+      const monthlyRaw = localStorage.getItem(getMonthlyInfoKey(projectId)) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
       let monthStr = "มิถุนายน ๒๕๖๙";
       if (monthlyRaw) {
         try {
@@ -246,12 +250,12 @@
       }
 
       return {
-        orgName: toThaiNumber(orgName),
-        orgSub: toThaiNumber(orgSub),
-        projectName: toThaiNumber(projectName),
-        projectLocation: toThaiNumber(projectLocation),
-        contractNo: contractNo,
-        monthStr: monthStr
+        orgName: escapeHTML(toThaiNumber(orgName)),
+        orgSub: escapeHTML(toThaiNumber(orgSub)),
+        projectName: escapeHTML(toThaiNumber(projectName)),
+        projectLocation: escapeHTML(toThaiNumber(projectLocation)),
+        contractNo: escapeHTML(contractNo),
+        monthStr: escapeHTML(monthStr)
       };
     }
 
@@ -311,7 +315,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      const savedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
+      const savedLogo = safeImageUrl(localStorage.getItem(getLogoStorageKey()) || localStorage.getItem('PROJECT_CUSTOM_LOGO_DATA'));
       if (savedLogo) document.getElementById('img_logo').src = savedLogo;
 
       switchCoverType('main');

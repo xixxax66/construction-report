@@ -14,15 +14,13 @@
   <style>
     @font-face {
       font-family: 'THSarabunPSK';
-      src: url('../assets/THSarabun.ttf') format('truetype'),
-           url('assets/THSarabun.ttf') format('truetype');
+      src: url('assets/THSarabun.ttf') format('truetype');
       font-weight: normal;
       font-style: normal;
     }
     @font-face {
       font-family: 'THSarabunPSK';
-      src: url('../assets/THSarabun Bold.ttf') format('truetype'),
-           url('assets/THSarabun Bold.ttf') format('truetype');
+      src: url('assets/THSarabun Bold.ttf') format('truetype');
       font-weight: bold;
       font-style: normal;
     }
@@ -218,7 +216,7 @@
       <!-- 1. ส่วนหัวที่ถูกควบคุมด้วย Absolute Position (ตราครุฑ / ที่ / ที่อยู่) -->
       <div class="header-section">
         <div class="garuda-box">
-          <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img" onerror="this.src='assets/Krut.png';">
+          <img src="assets/Krut.png" alt="ตราครุฑ" class="garuda-img">
         </div>
         
         <div class="header-left">
@@ -299,7 +297,7 @@
         try {
           const projectData = JSON.parse(basicRaw);
           const cNo = projectData.contractNo || 'E2/2569';
-          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          currentProjectID = getActiveProjectId(projectData);
         } catch(e) {}
       }
     }

@@ -222,7 +222,7 @@
     let currentProjectID = 'DEFAULT_PROJ';
 
     function getStorageKeyMaterial() {
-      return `MONTHLY_MATERIAL_REPORT_DB_${currentProjectID}`;
+      return getMonthlySectionKey('MATERIAL_REPORT_DB', currentProjectID);
     }
 
     function initProjectContext() {
@@ -231,7 +231,7 @@
         try {
           const projectData = JSON.parse(basicRaw);
           const cNo = projectData.contractNo || 'NO_CONTRACT';
-          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          currentProjectID = getActiveProjectId(projectData);
         } catch(e) {}
       }
     }
@@ -302,18 +302,18 @@
         testTbody.innerHTML += `
           <tr>
             <td class="p-1 align-middle">
-              <textarea rows="1" class="auto-expand-area" oninput="autoExpandTextarea(this)" onchange="updateTestData(${idx}, 'name', this.value)">${item.name || ''}</textarea>
+              <textarea rows="1" class="auto-expand-area" oninput="autoExpandTextarea(this)" onchange="updateTestData(${idx}, 'name', this.value)">${escapeHTML(item.name || '')}</textarea>
             </td>
-            <td><input type="text" class="editable-input text-center" value="${item.qty || ''}" onchange="updateTestData(${idx}, 'qty', this.value)"></td>
+            <td><input type="text" class="editable-input text-center" value="${escapeHTML(item.qty || '')}" onchange="updateTestData(${idx}, 'qty', this.value)"></td>
             <td>
               <div class="flex items-center justify-center gap-0.5">
-                <input type="text" class="editable-input text-center text-xs" value="${item.date || ''}" onchange="updateTestData(${idx}, 'date', this.value)" id="test_date_${idx}">
+                <input type="text" class="editable-input text-center text-xs" value="${escapeHTML(item.date || '')}" onchange="updateTestData(${idx}, 'date', this.value)" id="test_date_${idx}">
                 <input type="date" class="no-print cursor-pointer text-xs p-0.5 rounded border border-slate-300 bg-slate-50" onchange="onDateSelected(${idx}, 'test', this.value)" title="เลือกจากปฏิทิน">
               </div>
             </td>
-            <td><input type="text" class="editable-input text-center" value="${item.agency || ''}" onchange="updateTestData(${idx}, 'agency', this.value)"></td>
-            <td><input type="text" class="editable-input text-center" value="${item.pos || ''}" onchange="updateTestData(${idx}, 'pos', this.value)"></td>
-            <td><input type="text" class="editable-input text-center font-bold" value="${item.result || ''}" onchange="updateTestData(${idx}, 'result', this.value)"></td>
+            <td><input type="text" class="editable-input text-center" value="${escapeHTML(item.agency || '')}" onchange="updateTestData(${idx}, 'agency', this.value)"></td>
+            <td><input type="text" class="editable-input text-center" value="${escapeHTML(item.pos || '')}" onchange="updateTestData(${idx}, 'pos', this.value)"></td>
+            <td><input type="text" class="editable-input text-center font-bold" value="${escapeHTML(item.result || '')}" onchange="updateTestData(${idx}, 'result', this.value)"></td>
           </tr>
         `;
       });
@@ -325,16 +325,16 @@
         appTbody.innerHTML += `
           <tr>
             <td class="p-1 align-middle">
-              <textarea rows="1" class="auto-expand-area" oninput="autoExpandTextarea(this)" onchange="updateApproveData(${idx}, 'name', this.value)">${item.name || ''}</textarea>
+              <textarea rows="1" class="auto-expand-area" oninput="autoExpandTextarea(this)" onchange="updateApproveData(${idx}, 'name', this.value)">${escapeHTML(item.name || '')}</textarea>
             </td>
             <td>
               <div class="flex items-center justify-center gap-0.5">
-                <input type="text" class="editable-input text-center text-xs" value="${item.date || ''}" onchange="updateApproveData(${idx}, 'date', this.value)" id="approve_date_${idx}">
+                <input type="text" class="editable-input text-center text-xs" value="${escapeHTML(item.date || '')}" onchange="updateApproveData(${idx}, 'date', this.value)" id="approve_date_${idx}">
                 <input type="date" class="no-print cursor-pointer text-xs p-0.5 rounded border border-slate-300 bg-slate-50" onchange="onDateSelected(${idx}, 'approve', this.value)" title="เลือกจากปฏิทิน">
               </div>
             </td>
-            <td><input type="text" class="editable-input text-center" value="${item.approver || ''}" onchange="updateApproveData(${idx}, 'approver', this.value)"></td>
-            <td><input type="text" class="editable-input text-center font-bold" value="${item.result || ''}" onchange="updateApproveData(${idx}, 'result', this.value)"></td>
+            <td><input type="text" class="editable-input text-center" value="${escapeHTML(item.approver || '')}" onchange="updateApproveData(${idx}, 'approver', this.value)"></td>
+            <td><input type="text" class="editable-input text-center font-bold" value="${escapeHTML(item.result || '')}" onchange="updateApproveData(${idx}, 'result', this.value)"></td>
           </tr>
         `;
       });
@@ -370,7 +370,6 @@
 
     function saveMaterialData() {
       localStorage.setItem(getStorageKeyMaterial(), JSON.stringify(materialData));
-      localStorage.setItem('MONTHLY_MATERIAL_REPORT_DB', JSON.stringify(materialData));
     }
 
     function addTestRow() {

@@ -244,6 +244,26 @@
       'LOCAL_START_DATE_RECORD', 'LOCAL_EXPEDITE_RECORD', 'LOCAL_DELIVERY_RECORD'
     ];
 
+    const SAFE_GLOBAL_KEYS = new Set([
+      'CONSTRUCTION_GAS_URL', 'SELECTED_DRIVE_FOLDER_ID', 'LAST_CLOUD_SYNC_TIME'
+    ]);
+
+    function activeProjectId() {
+      return getActiveProjectId(getActiveProjectData());
+    }
+
+    function isActiveProjectKey(key, projectId = activeProjectId()) {
+      if (SAFE_GLOBAL_KEYS.has(key) || key === 'LOCAL_BASIC_INFO') return true;
+      if (key === `LOCAL_BASIC_INFO_${projectId}` || key.includes(`_${projectId}_`) || key.endsWith(`_${projectId}`)) return true;
+      return ALL_SYSTEM_KEYS.includes(key);
+    }
+
+    function clearActiveProjectStorage(projectId = activeProjectId()) {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+      keys.filter(key => key && isActiveProjectKey(key, projectId) && !SAFE_GLOBAL_KEYS.has(key)).forEach(key => localStorage.removeItem(key));
+    }
+
     function getActiveUrl() {
       return localStorage.getItem('CONSTRUCTION_GAS_URL') || DEFAULT_URL;
     }
@@ -423,15 +443,19 @@
           grid.innerHTML = '';
           if (result.folders && result.folders.length > 0) {
             result.folders.forEach(f => {
-              grid.innerHTML += `
-                <div class="flex items-center justify-between p-3 border border-slate-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer group transition-colors rounded-lg bg-white shadow-sm" onclick="navigateToFolder('${f.id}', '${f.name}')">
-                  <div class="flex items-center gap-3 overflow-hidden">
-                    <i data-lucide="folder" class="w-6 h-6 text-amber-500 fill-amber-200 shrink-0"></i>
-                    <span class="text-slate-700 font-medium truncate">${f.name}</span>
-                  </div>
-                  <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-blue-500 shrink-0"></i>
-                </div>
-              `;
+              const card = document.createElement('div');
+              card.className = 'flex items-center justify-between p-3 border border-slate-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer group transition-colors rounded-lg bg-white shadow-sm';
+              const left = document.createElement('div');
+              left.className = 'flex items-center gap-3 overflow-hidden';
+              left.innerHTML = '<i data-lucide="folder" class="w-6 h-6 text-amber-500 fill-amber-200 shrink-0"></i>';
+              const name = document.createElement('span');
+              name.className = 'text-slate-700 font-medium truncate';
+              name.textContent = String(f.name || 'โฟลเดอร์');
+              left.appendChild(name);
+              card.appendChild(left);
+              card.insertAdjacentHTML('beforeend', '<i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-blue-500 shrink-0"></i>');
+              card.addEventListener('click', () => navigateToFolder(String(f.id || ''), String(f.name || 'โฟลเดอร์')));
+              grid.appendChild(card);
             });
             lucide.createIcons();
           } else {
@@ -439,10 +463,10 @@
             lucide.createIcons();
           }
         } else {
-          grid.innerHTML = `<div class="text-center text-rose-500 py-6">ข้อผิดพลาด: ${result ? result.message : 'ไม่ทราบสาเหตุ'}</div>`;
+          grid.innerHTML = `<div class="text-center text-rose-500 py-6">ข้อผิดพลาด: ${escapeHTML(result ? result.message : 'ไม่ทราบสาเหตุ')}</div>`;
         }
       } catch (err) {
-        grid.innerHTML = `<div class="text-center text-rose-500 py-6">${err.message}</div>`;
+        grid.innerHTML = `<div class="text-center text-rose-500 py-6">${escapeHTML(err.message)}</div>`;
       }
     }
 
@@ -499,10 +523,6 @@
             count++;
           });
 
-          if (activeProj.projectID) {
-            localStorage.setItem(`LOCAL_BASIC_INFO_${activeProj.projectID}`, JSON.stringify(db));
-          }
-
           await loadLogsOnly();
 
           const syncTime = new Date().toLocaleString('th-TH');
@@ -533,13 +553,25 @@
           let count = 0;
           const db = result.database;
           
-          ALL_SYSTEM_KEYS.forEach(key => localStorage.removeItem(key));
+          const previousList = JSON.parse(localStorage.getItem(PROJECT_LIST_KEY) || '[]');
+          clearActiveProjectStorage();
           
           Object.keys(db).forEach(key => {
             const val = typeof db[key] === 'object' ? JSON.stringify(db[key]) : String(db[key]);
             localStorage.setItem(key, val);
             count++;
           });
+
+          const restoredBasic = db.LOCAL_BASIC_INFO || {};
+          const restoredId = restoredBasic.projectID || result.projectID || getActiveProjectId(restoredBasic);
+          if (restoredBasic && Object.keys(restoredBasic).length) {
+            localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(restoredBasic));
+            localStorage.setItem(`LOCAL_BASIC_INFO_${restoredId}`, JSON.stringify(restoredBasic));
+            const restoredEntry = { id: restoredId, name: restoredBasic.projectName || 'โครงการก่อสร้าง', contractNo: restoredBasic.contractNo || '-' };
+            const mergedList = previousList.filter(item => item.id !== restoredId);
+            mergedList.push(restoredEntry);
+            localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(mergedList));
+          }
           
           const syncTime = new Date().toLocaleString('th-TH');
           localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
@@ -557,40 +589,20 @@
 
     function exportAllProjectData() {
       const projectDatabase = {};
-      
-      ALL_SYSTEM_KEYS.forEach(key => {
-        const val = localStorage.getItem(key);
-        if (val) { 
-          try { projectDatabase[key] = JSON.parse(val); } 
-          catch (e) { projectDatabase[key] = val; } 
-        }
-      });
-      
+      const projectId = activeProjectId();
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (k.startsWith('WEEK_PROGRESS_DATA_') || k.startsWith('WEEK_REPORT_INSTALLMENTS_') || 
-            k.startsWith('WEEK_REPORT_ACCEPTED_') || k.startsWith('WEEK_LOG_DATA_') || 
-            k.startsWith('LATEST_PROGRESS_SUMMARY_') || k.startsWith('MONTHLY_')) {
-          const val = localStorage.getItem(k);
-          if (val) { 
-            try { projectDatabase[k] = JSON.parse(val); } 
-            catch (e) { projectDatabase[k] = val; } 
+        if (!k || !isActiveProjectKey(k, projectId)) continue;
+        const val = localStorage.getItem(k);
+        if (val === null) continue;
+        try {
+          const parsed = JSON.parse(val);
+          if (k.startsWith('WEEK_PHOTO_DATA_') && parsed.photos && Array.isArray(parsed.photos)) {
+            parsed.photos = parsed.photos.map(photo => ({ ...photo, rawSrc: '' }));
           }
-        }
-        
-        if (k.startsWith('WEEK_PHOTO_DATA_')) {
-          const val = localStorage.getItem(k);
-          if (val) { 
-            try { 
-              let photoData = JSON.parse(val);
-              if (photoData.photos && Array.isArray(photoData.photos)) {
-                photoData.photos.forEach(p => { p.rawSrc = ""; });
-              }
-              projectDatabase[k] = photoData; 
-            } catch (e) { 
-              projectDatabase[k] = val; 
-            } 
-          }
+          projectDatabase[k] = parsed;
+        } catch (e) {
+          projectDatabase[k] = val;
         }
       }
       return projectDatabase;
@@ -626,7 +638,7 @@
             const bInfo = JSON.parse(basicInfoRaw);
             if (bInfo.contractNo) {
               currentContractNo = bInfo.contractNo;
-              currentProjId = `PROJ_${currentContractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+              currentProjId = getActiveProjectId(bInfo);
             } else if (bInfo.projectID) {
               currentProjId = bInfo.projectID;
             }
@@ -678,6 +690,8 @@
           body: JSON.stringify(payload)
         });
 
+        if (!response.ok) throw new Error(`Cloud returned HTTP ${response.status}`);
+
         const result = await response.json();
         
         if (result && result.status === 'success') {
@@ -724,9 +738,19 @@
       reader.onload = function(e) {
         try {
           const importedData = JSON.parse(e.target.result);
+          if (!importedData || typeof importedData !== 'object' || Array.isArray(importedData)) throw new Error('Invalid backup');
           for (const [key, value] of Object.entries(importedData)) {
+            if (!/^[A-Z0-9_]+$/.test(key) && !SAFE_GLOBAL_KEYS.has(key)) continue;
             const valueToStore = typeof value === 'object' ? JSON.stringify(value) : value;
             localStorage.setItem(key, valueToStore);
+          }
+          const restoredBasic = importedData.LOCAL_BASIC_INFO;
+          if (restoredBasic && typeof restoredBasic === 'object') {
+            const restoredId = getActiveProjectId(restoredBasic);
+            localStorage.setItem(`LOCAL_BASIC_INFO_${restoredId}`, JSON.stringify(restoredBasic));
+            const list = JSON.parse(localStorage.getItem(PROJECT_LIST_KEY) || '[]').filter(item => item.id !== restoredId);
+            list.push({ id: restoredId, name: restoredBasic.projectName || 'โครงการก่อสร้าง', contractNo: restoredBasic.contractNo || '-' });
+            localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
           }
           alert('นำเข้าฐานข้อมูลโครงการสำเร็จ!');
           location.reload();
@@ -739,7 +763,14 @@
 
     function clearCurrentProjectData() {
       if (confirm('คุณต้องการล้างข้อมูลโครงการปัจจุบันทั้งหมดใช่ไหมคะ?')) {
-        ALL_SYSTEM_KEYS.forEach(key => localStorage.removeItem(key));
+        const projectId = activeProjectId();
+        clearActiveProjectStorage(projectId);
+        const list = JSON.parse(localStorage.getItem(PROJECT_LIST_KEY) || '[]').filter(item => item.id !== projectId);
+        localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
+        if (list.length > 0) {
+          const nextProject = localStorage.getItem(`LOCAL_BASIC_INFO_${list[0].id}`);
+          if (nextProject) localStorage.setItem('LOCAL_BASIC_INFO', nextProject);
+        }
         alert('ล้างข้อมูลเรียบร้อย');
         location.reload();
       }
@@ -766,24 +797,34 @@
 
       logs.forEach(log => {
         let statusHtml = '';
-        let restoreBtn = '';
 
         if (log.status.success) {
           statusHtml = `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold whitespace-nowrap">✔️ สำเร็จ</span>`;
-          if (log.fileName) {
-            restoreBtn = `<button onclick="restoreFromCloud('${log.fileName}')" class="px-2.5 py-1 bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white rounded text-xs font-bold whitespace-nowrap transition shadow-sm flex items-center gap-1 cursor-pointer mt-1"><i data-lucide="cloud-download" class="w-3 h-3"></i> กู้คืน</button>`;
-          }
         } else {
           statusHtml = `<span class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-xs font-bold whitespace-nowrap">❌ ล้มเหลว</span>`;
         }
 
-        tbody.innerHTML += `
-          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-            <td class="text-slate-600 whitespace-nowrap text-xs py-2">${log.time}</td>
-            <td class="font-medium text-slate-800 break-words text-sm py-2">${log.fileName || '-'}</td>
-            <td class="text-slate-500 text-xs break-words py-2">${log.desc || '-'}</td>
-            <td class="text-center py-2 flex flex-col items-center justify-center gap-1">${statusHtml} ${restoreBtn}</td>
-          </tr>`;
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+        const values = [log.time || '-', log.fileName || '-', log.desc || '-'];
+        values.forEach((value, index) => {
+          const cell = document.createElement('td');
+          cell.className = index === 0 ? 'text-slate-600 whitespace-nowrap text-xs py-2' : (index === 1 ? 'font-medium text-slate-800 break-words text-sm py-2' : 'text-slate-500 text-xs break-words py-2');
+          cell.textContent = String(value);
+          row.appendChild(cell);
+        });
+        const actionCell = document.createElement('td');
+        actionCell.className = 'text-center py-2 flex flex-col items-center justify-center gap-1';
+        actionCell.innerHTML = statusHtml;
+        if (log.status.success && log.fileName) {
+          const button = document.createElement('button');
+          button.className = 'px-2.5 py-1 bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white rounded text-xs font-bold whitespace-nowrap transition shadow-sm flex items-center gap-1 cursor-pointer mt-1';
+          button.innerHTML = '<i data-lucide="cloud-download" class="w-3 h-3"></i> กู้คืน';
+          button.addEventListener('click', () => restoreFromCloud(String(log.fileName)));
+          actionCell.appendChild(button);
+        }
+        row.appendChild(actionCell);
+        tbody.appendChild(row);
       });
       lucide.createIcons();
     }

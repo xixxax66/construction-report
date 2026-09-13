@@ -6,7 +6,7 @@
   <title>ข้อมูลรายงานรายสัปดาห์ - กำหนดข้อมูลเบื้องต้น</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="../assets/gas-sync.js"></script>
+  <script src="assets/gas-sync.js"></script>
   <style>
     @font-face {
       font-family: 'THSarabunPSK';
@@ -261,7 +261,7 @@
     lucide.createIcons();
 
     const STORAGE_KEY_GAS_URL = 'CONSTRUCTION_GAS_URL';
-    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
+    const DEFAULT_GAS_URL = GAS_SYNC_CONFIG.defaultUrl;
     
     function getActiveUrl() {
       return localStorage.getItem(STORAGE_KEY_GAS_URL) || DEFAULT_GAS_URL;
@@ -410,7 +410,7 @@
           const projectData = JSON.parse(basicRaw);
           const pName = projectData.projectName || 'โครงการก่อสร้าง';
           const cNo = projectData.contractNo || 'NO_CONTRACT';
-          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          currentProjectID = getActiveProjectId(projectData);
           document.getElementById('lbl_current_project_title').textContent = `${pName} (สัญญาเลขที่ ${cNo})`;
         } catch(e) {
           document.getElementById('lbl_current_project_title').textContent = 'โครงการทั่วไป (ไม่ได้ระบุสัญญา)';
@@ -489,8 +489,8 @@
       if (basicRaw) {
         try {
           const pData = JSON.parse(basicRaw);
-          if (pData.durationWeeks) durationWeeks = parseInt(pData.durationWeeks) || 20;
-          else if (pData.durationDays) durationWeeks = Math.ceil(parseInt(pData.durationDays) / 7);
+          const durationDays = getContractDurationDays(pData);
+          if (durationDays > 0) durationWeeks = Math.ceil(durationDays / 7);
         } catch(e){}
       }
 
@@ -663,7 +663,9 @@
     }
 
     function loadSavedDataForCurrentMonth() {
-      const local = localStorage.getItem(getProjectWeeklyKey());
+      const local = localStorage.getItem(getProjectWeeklyKey()) ||
+        localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) ||
+        localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
       if (local) {
         try {
           populateData(JSON.parse(local));
@@ -700,6 +702,7 @@
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const result = await res.json();
         if (result.status === 'success') {
           statusEl.textContent = 'บันทึกสำเร็จ (ซิงค์ชีตแล้ว)';

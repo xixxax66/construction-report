@@ -247,6 +247,9 @@
             <input type="checkbox" id="status_delayed" disabled class="custom-checkbox"> ช้า
           </div>
           <div class="flex items-center gap-2">
+            <input type="checkbox" id="status_on_plan" disabled class="custom-checkbox"> ตามแผน
+          </div>
+          <div class="flex items-center gap-2">
             <input type="checkbox" id="status_ahead" disabled class="custom-checkbox"> เร็ว
           </div>
         </div>
@@ -289,7 +292,7 @@
     };
 
     function getStorageKeyProblem() {
-      return `MONTHLY_PROBLEM_SUMMARY_DB_${currentProjectID}`;
+      return getMonthlySectionKey('PROBLEM_SUMMARY_DB', currentProjectID);
     }
 
     function initProjectContext() {
@@ -298,7 +301,7 @@
         try {
           const projectData = JSON.parse(basicRaw);
           const cNo = projectData.contractNo || 'NO_CONTRACT';
-          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          currentProjectID = getActiveProjectId(projectData);
         } catch(e) {}
       }
     }
@@ -337,9 +340,10 @@
     // ฟังก์ชันดึงปัญหา-อุปสรรคจากหน้ารายงานประจำสัปดาห์ (1-5) อัตโนมัติ
     function pullWeeklyProblems() {
       const pulledList = [];
+      const reportMonth = getActiveReportMonth(currentProjectID);
       for (let w = 1; w <= 5; w++) {
-        const key = `WEEK_PROGRESS_DATA_${currentProjectID}_${w}`;
-        const raw = localStorage.getItem(key) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+        const raw = localStorage.getItem(getWeeklyProgressKey(w, currentProjectID, reportMonth)) ||
+          localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
         if (raw) {
           try {
             const data = JSON.parse(raw);
@@ -373,6 +377,7 @@
       try {
         let orgName = "องค์การบริหารส่วนตำบลโพนงาม";
         let targetWeek = 5;
+        const reportMonth = getActiveReportMonth(currentProjectID);
 
         const monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
         let monthlyData = {};
@@ -400,12 +405,10 @@
           if (data.budgetAmount) {
             totalBudget = parseFloat(data.budgetAmount.toString().replace(/,/g, '').replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
           }
-          if (data.durationDays || data.manualDays) {
-            totalDaysNum = parseInt(data.durationDays || data.manualDays) || 140;
-          }
-          if (data.totalExtendedDays && parseInt(data.totalExtendedDays) > 0) {
-            totalDaysNum = parseInt(data.totalExtendedDays);
-          }
+          totalDaysNum = getContractDurationDays({
+            ...data,
+            extensionDays: data.extensionDays || data.totalExtendedDays
+          }) || parseInt(data.manualDays) || 140;
           if (data.startDate) startDateStr = data.startDate;
           if (data.installments && Array.isArray(data.installments)) {
             installments = data.installments;
@@ -425,7 +428,8 @@
         }
         document.getElementById('val_remaining_days').textContent = toThaiNumber(remainDays);
 
-        const savedWeekInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${targetWeek}`);
+        const savedWeekInst = localStorage.getItem(getWeeklyReportKey('INSTALLMENTS', targetWeek, currentProjectID, reportMonth)) ||
+          localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${targetWeek}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${targetWeek}`);
         if (savedWeekInst) {
           try { installments = JSON.parse(savedWeekInst); } catch(e){}
         }
@@ -433,13 +437,14 @@
         let completedCount = 0;
         let completedAmountSum = 0;
 
-        const savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${targetWeek}`);
+        const savedAccepted = localStorage.getItem(getWeeklyReportKey('ACCEPTED', targetWeek, currentProjectID, reportMonth)) ||
+          localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${targetWeek}`) || localStorage.getItem(`WEEK_REPORT_ACCEPTED_${targetWeek}`);
         if (savedAccepted && savedAccepted !== '-' && savedAccepted.trim() !== '') {
           completedCount = parseInt(savedAccepted.toString().replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
         }
 
         let savedDates = {};
-        const savedDatesRaw = localStorage.getItem(`MONTHLY_INSPECTION_DATES_DB_${currentProjectID}`) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
+        const savedDatesRaw = localStorage.getItem(getMonthlySectionKey('INSPECTION_DATES_DB', currentProjectID, reportMonth)) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
         if (savedDatesRaw) {
           try { savedDates = JSON.parse(savedDatesRaw); } catch(e){}
         }
@@ -470,7 +475,8 @@
 
         let planProg = parseFloat(monthlyData.planPercent) || 0;
         if (planProg === 0) {
-          const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+          const weeklyRefRaw = localStorage.getItem(getWeeklyReferenceKey(currentProjectID, reportMonth)) ||
+            localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
           if (weeklyRefRaw) {
             try {
               const weeksArray = JSON.parse(weeklyRefRaw);
@@ -484,7 +490,8 @@
 
         let actualProg = parseFloat(monthlyData.actualPercent) || 0;
         if (actualProg === 0) {
-          const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
+          const progressRaw = localStorage.getItem(getWeeklyProgressKey(targetWeek, currentProjectID, reportMonth)) ||
+            localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
           if (progressRaw) {
             try {
               const progData = JSON.parse(progressRaw);
@@ -495,7 +502,8 @@
 
         if (actualProg === 0) {
           for (let w = 5; w >= 1; w--) {
-            const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
+            const wRaw = localStorage.getItem(getWeeklyProgressKey(w, currentProjectID, reportMonth)) ||
+              localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${w}`);
             if (wRaw) {
               const wData = JSON.parse(wRaw);
               actualProg = parseFloat(wData.totalWeightPercent) || 0;
@@ -511,17 +519,18 @@
         document.getElementById('val_total_prog').textContent = actTh;
         document.getElementById('val_plan_prog').textContent = planTh;
 
-        let statusType = 'ahead';
+        let statusType = 'on_plan';
         if (actualProg <= 0) {
           statusType = 'not_started';
-        } else if (actualProg < planProg) {
+        } else if (getProgressStatus(actualProg, planProg) === 'ช้ากว่าแผน') {
           statusType = 'delayed';
-        } else {
+        } else if (getProgressStatus(actualProg, planProg) === 'เร็วกว่าแผน') {
           statusType = 'ahead';
         }
 
         document.getElementById('status_not_started').checked = (statusType === 'not_started');
         document.getElementById('status_delayed').checked = (statusType === 'delayed');
+        document.getElementById('status_on_plan').checked = (statusType === 'on_plan');
         document.getElementById('status_ahead').checked = (statusType === 'ahead');
 
         renderUI();
