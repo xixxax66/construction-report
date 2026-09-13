@@ -133,6 +133,10 @@
         background-color: #fef08a;
       }
 
+      #txt_actionDetails:not(:placeholder-shown) {
+        border-bottom: 1px dotted #000;
+      }
+
       .btn-3d {
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.6);
       }
@@ -224,7 +228,6 @@
           <p class="indent-16">
             โดยผู้รับจ้างได้ดำเนินการ <textarea id="txt_actionDetails" class="auto-expand-area" rows="1" oninput="autoExpand(this); autoThaiNum(this); updateDoc();" placeholder="พิมพ์รายละเอียดการดำเนินงานของผู้รับจ้าง">ส่งหนังสือแต่งตั้งผู้แทนและขอรับมอบพื้นที่ พร้อมแจ้งแผนการดำเนินงานการใช้วัสดุในการก่อสร้าง</textarea>
           </p>
-          <p class="text-xs text-slate-600 pl-6 dotted-line pb-0.5"></p>
           <p class="indent-16 pt-0.5">
             จึงเรียนมาเพื่อโปรดทราบและพิจารณา
           </p>
