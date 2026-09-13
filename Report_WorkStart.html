@@ -82,7 +82,6 @@
         border-bottom: 1px dotted #000;
       }
 
-      /* 💡 ปรับสไตล์ Checkbox ให้เป็นพื้นหลังขาว เครื่องหมายสีดำ */
       input[type="checkbox"] {
         appearance: none;
         -webkit-appearance: none;
@@ -112,6 +111,28 @@
         line-height: 1;
       }
 
+      /* 💡 สไตล์สำหรับ Textarea แบบไดนามิก (ตัดคำและขยายอัตโนมัติ) ในย่อหน้าที่ต้องการ */
+      .auto-expand-area {
+        width: 100%;
+        background: transparent;
+        border: none;
+        outline: none;
+        font-family: inherit;
+        font-size: inherit;
+        color: inherit;
+        padding: 0;
+        line-height: inherit;
+        resize: none;
+        overflow: hidden;
+        display: block;
+        box-sizing: border-box;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .auto-expand-area:focus {
+        background-color: #fef08a;
+      }
+
       .btn-3d {
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.6);
       }
@@ -135,6 +156,9 @@
           padding: 15mm 20mm 15mm 25mm !important;
           page-break-after: avoid;
           page-break-inside: avoid;
+        }
+        .auto-expand-area {
+          background: transparent !important;
         }
       }
     </style>
@@ -173,7 +197,6 @@
           <p><span class="font-bold">เรียน</span> ประธานกรรมการตรวจรับพัสดุ</p>
         </div>
         <div class="mt-2 text-base leading-relaxed text-justify space-y-2">
-          <!-- 💡 ปรับความหนาเนื้อความให้เป็นปกติทั้งหมด -->
           <p class="indent-16">
             ตามคำสั่งองค์การบริหารส่วนตำบลโพนงาม ที่ <span id="p_orderNo">๑๐๒/๒๕๖๙</span> ลงวันที่ <span id="p_orderDate">๑๑ พฤษภาคม ๒๕๖๙</span> แต่งตั้งข้าพเจ้า เป็นผู้ควบคุมงาน และสัญญาจ้างเลขที่ <span id="p_contractNo">E๑/๒๕๖๙</span> ลงวันที่ <span id="p_contractDate">๕ มิถุนายน ๒๕๖๙</span> ว่าจ้าง <span id="p_contractor">ห้างหุ้นส่วนจำกัด เค.เค.มุกดาหารก่อสร้าง</span> ทำงาน<span id="p_projectTitle">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายบ้านหนองแวง-หนองขาม หมู่ที่ ๑๒ กว้าง ๔.๐๐ ม. ยาว ๘๕๐ ม. หนา ๐.๑๕ ม. หรือมีพื้นที่คอนกรีตไม่น้อยกว่า ๓,๔๐0 ตร.ม. องค์การบริหารส่วนตำบลโพนงาม อำเภอโกสุมพิสัย จังหวัดมหาสารคาม</span> สถานที่ก่อสร้าง <span id="p_location">หมู่ที่ ๑๒ ต.โพนงาม อ.โกสุมพิสัย จ.มหาสารคาม</span> นั้น
           </p>
@@ -199,22 +222,19 @@
             </div>
           </div>
           <p class="indent-16">
-            โดยผู้รับจ้างได้ดำเนินการ ส่งหนังสือแต่งตั้งผู้แทนและขอรับมอบพื้นที่ หนังสือลงวันที่ <span id="txt_bookDate">๑๒ มิถุนายน ๒๕๖๙</span> พร้อมแจ้งแผนการดำเนินงานการใช้วัสดุในการก่อสร้าง
+            โดยผู้รับจ้างได้ดำเนินการ <textarea id="txt_actionDetails" class="auto-expand-area" rows="1" oninput="autoExpand(this); autoThaiNum(this); updateDoc();" placeholder="พิมพ์รายละเอียดการดำเนินงานของผู้รับจ้าง">ส่งหนังสือแต่งตั้งผู้แทนและขอรับมอบพื้นที่ พร้อมแจ้งแผนการดำเนินงานการใช้วัสดุในการก่อสร้าง</textarea>
           </p>
-          <p class="text-xs text-slate-600 pl-8 dotted-line pb-0.5"></p>
+          <p class="text-xs text-slate-600 pl-6 dotted-line pb-0.5"></p>
           <p class="indent-16 pt-0.5">
             จึงเรียนมาเพื่อโปรดทราบและพิจารณา
           </p>
         </div>
 
-        <!-- 💡 ขยับชื่อผู้ควบคุมงานมาทางซ้าย 12px -->
-        <div id="inspectorSignatureArea" class="mt-3 flex flex-wrap justify-end gap-x-8 gap-y-3 pr-6 text-center text-base"></div>
+        <div id="inspectorSignatureArea" class="mt-3 flex flex-wrap justify-end gap-x-6 gap-y-3 pr-6 text-center text-base"></div>
 
         <div class="mt-3 pt-2 border-t border-slate-300">
           <p class="text-base font-semibold mb-1">- ทราบ</p>
           <p class="text-xs text-slate-400 mb-2">.........................................................................................................................................................................</p>
-          
-          <!-- 💡 ขยับชื่อประธานฯ มาทางซ้าย 24px -->
           <div id="committeeSignatureArea" class="grid grid-cols-2 gap-y-4 gap-x-4 text-center text-base"></div>
         </div>
       </div>
@@ -234,7 +254,7 @@
       </div>
       <div class="bg-white rounded-xl border-2 border-purple-800 shadow-md overflow-hidden">
         <div class="bg-purple-800 text-white text-xs font-bold px-3 py-1.5 flex justify-between items-center">
-          <span>กำหนดวันที่ในเอกสาร</span>
+          <span>กำหนดวันที่และข้อความในเอกสาร</span>
           <i data-lucide="calendar" class="w-4 h-4"></i>
         </div>
         <table class="w-full text-sm purple-table">
@@ -287,6 +307,11 @@
       el.value = toThaiNumber(el.value);
     }
 
+    function autoExpand(ta) {
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    }
+
     function renderSignatures(data) {
       const inspArea = document.getElementById('inspectorSignatureArea');
       if (inspArea) {
@@ -313,7 +338,7 @@
           if (!name) return;
           const isPresident = (idx === 0);
           const roleText = isPresident ? 'ประธานกรรมการฯ' : 'กรรมการฯ';
-          const colSpanClass = isPresident ? 'col-span-2 flex justify-center mb-0.5' : '';
+          const colSpanClass = isPresident ? 'col-span-2 flex justify-center mb-0.5 pt-4' : '';
           const nameStyle = isPresident ? 'style="position: relative; right: 24px; font-weight: normal;"' : 'style="font-weight: normal;"';
           commArea.innerHTML += `
             <div class="${colSpanClass}">
@@ -359,7 +384,8 @@
         reportDate: document.getElementById('in_reportDate').value,
         knowDate: document.getElementById('in_knowDate').value,
         checkDate: document.getElementById('in_checkDate').value,
-        actionDate: document.getElementById('in_actionDate').value
+        actionDate: document.getElementById('in_actionDate').value,
+        actionDetails: document.getElementById('txt_actionDetails').value
       };
       localStorage.setItem(getStorageKeyStartDate(), JSON.stringify(payload));
       localStorage.setItem('LOCAL_START_DATE_RECORD', JSON.stringify(payload));
@@ -377,7 +403,11 @@
         if (item.knowDate) document.getElementById('in_knowDate').value = toThaiNumber(item.knowDate);
         if (item.checkDate) document.getElementById('in_checkDate').value = toThaiNumber(item.checkDate);
         if (item.actionDate) document.getElementById('in_actionDate').value = toThaiNumber(item.actionDate);
+        if (item.actionDetails) document.getElementById('txt_actionDetails').value = toThaiNumber(item.actionDetails);
       }
+      
+      // กำหนดความสูงเริ่มต้นของ textarea
+      document.querySelectorAll('textarea.auto-expand-area').forEach(ta => autoExpand(ta));
       updateDoc();
     });
   </script>
