@@ -4,14 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>หน้าปกรายงานประจำเดือน - ระบบรายงานผลการก่อสร้าง</title>
+  
+  <!-- โหลดฟอนต์ Sarabun จาก Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="../assets/gas-sync.js"></script>
+  <script src="../../assets/gas-sync.js"></script>
+  
   <style>
-    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
-    @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
     @page { size: A4 portrait; margin: 0; }
-    body { font-family: 'THSarabunPSK', sans-serif; background-color: #94a3b8; margin: 0; padding: 0; font-size: 18pt; color: #000; }
+    
+    body { 
+      font-family: 'Sarabun', sans-serif; 
+      background-color: #94a3b8; 
+      margin: 0; 
+      padding: 0; 
+      color: #000; 
+      font-weight: 400;
+    }
     
     .sheet-doc {
       width: 210mm;
@@ -32,15 +45,15 @@
       justify-content: center !important;
     }
     .appendix-title {
-      font-size: 26pt !important;
-      font-weight: bold;
+      font-size: 22pt !important;
+      font-weight: 700;
     }
 
     .logo-container {
       position: relative;
       cursor: pointer;
       display: inline-block;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
     }
     .logo-container:hover .logo-overlay { opacity: 1; }
     .logo-overlay {
@@ -58,33 +71,43 @@
     }
 
     .logo-img {
-      width: 3.8cm;
-      height: 3.8cm;
+      width: 3.2cm; 
+      height: 3.2cm;
       object-fit: contain;
       border-radius: 50%;
     }
 
-    .org-title { font-size: 22pt !important; font-weight: bold; line-height: 1.2; }
-    .org-sub { font-size: 20pt !important; font-weight: bold; margin-bottom: 4px; }
-    .divider-line { width: 85%; border-bottom: 2.5px solid #000; margin: 8px auto 15px auto; }
-    .section-tag { font-size: 18pt !important; font-weight: bold; margin-bottom: 20px; }
+    .org-title { font-size: 18pt !important; font-weight: 700; line-height: 1.3; margin-top: 5px; }
+    .org-sub { font-size: 16pt !important; font-weight: 700; margin-bottom: 2px; }
     
-    /* ควบคุมฟอนต์ในส่วนเนื้อหากลางให้มีขนาดเท่ากันและสวยงาม */
+    .divider-line { width: 65%; border-bottom: 1.5px solid #000; margin: 12px auto 16px auto; }
+    .section-tag { font-size: 16pt !important; font-weight: 700; margin-bottom: 20px; }
+    
+    /* 💡 ปรับขนาดฟอนต์ให้เล็กลง และตั้งค่าความหนาเป็นปกติ (400) */
     .project-info-box {
-      font-size: 18pt !important;
-      line-height: 1.5;
+      font-size: 14pt !important;
+      font-weight: 400 !important;
+      line-height: 1.45;
       text-align: center;
-      padding: 0 10mm;
+      padding: 0 15mm;
       width: 100%;
     }
     .project-info-box div {
-      font-size: 18pt !important;
+      font-size: 12pt !important;
+      font-weight: 400 !important;
+      margin-bottom: 8px;
+    }
+    /* หัวข้อสำหรับหน้าปกภาพถ่ายยังคงให้หนาอยู่เพื่อแยกสัดส่วน */
+    .project-info-box .photo-title {
+      font-weight: 400 !important;
+      font-size: 14pt !important;
       margin-bottom: 12px;
     }
     
-    .report-title-box { font-size: 20pt !important; font-weight: bold; margin-top: 15px; line-height: 1.4; }
-    .author-section { font-size: 18pt !important; line-height: 1.3; margin-top: 15px; }
-    .author-section p { font-size: 18pt !important; }
+    .report-title-box { font-size: 12pt !important; font-weight: 400; margin-top: 20px; line-height: 1.4; }
+    .author-section { font-size: 12pt !important; line-height: 1.4; margin-top: 15px; }
+    .author-section p { font-size: 12pt !important; margin: 0; }
+    .author-section .font-bold { font-weight: 400; font-size: 12pt !important; margin-top: 4px; }
 
     @media print {
       body { background: white !important; padding: 0 !important; }
@@ -101,22 +124,22 @@
   <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
   <div class="max-w-5xl w-full mb-4 bg-white p-5 rounded-2xl shadow-lg border border-slate-300 flex flex-wrap items-center justify-between gap-4 no-print">
     <div class="flex items-center gap-3">
-      <a href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-2xl font-bold border border-slate-300 shadow-sm">
+      <a href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-xl font-bold border border-slate-300 shadow-sm">
         <i data-lucide="arrow-left" class="w-6 h-6"></i> กลับเมนู
       </a>
       <span class="font-bold text-slate-800 text-2xl">เลือกรูปแบบหน้าปก</span>
     </div>
     
     <div class="flex items-center gap-3 flex-wrap">
-      <select id="select_cover_type" onchange="switchCoverType(this.value)" class="border-2 border-slate-300 rounded-xl px-4 py-2.5 text-2xl font-bold bg-slate-50 outline-none cursor-pointer">
+      <select id="select_cover_type" onchange="switchCoverType(this.value)" class="border-2 border-slate-300 rounded-xl px-4 py-2.5 text-xl font-bold bg-slate-50 outline-none cursor-pointer">
         <option value="main">1. หน้าปกรายงานประจำเดือน</option>
         <option value="photo">2. หน้าปกภาพถ่ายการดำเนินโครงการ</option>
         <option value="appendix">3. หน้าปกภาคผนวก</option>
       </select>
-      <button onclick="document.getElementById('logo_file_input').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-2xl font-bold flex items-center gap-2 shadow">
+      <button onclick="document.getElementById('logo_file_input').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow cursor-pointer">
         <i data-lucide="image-plus" class="w-6 h-6"></i> เปลี่ยนโลโก้
       </button>
-      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-2xl font-bold flex items-center gap-2 shadow">
+      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow cursor-pointer">
         <i data-lucide="printer" class="w-6 h-6"></i> พิมพ์หน้าปก
       </button>
     </div>
@@ -128,7 +151,7 @@
     <!-- 1. ส่วนหัว -->
     <div class="w-full flex flex-col items-center" id="cover_header">
       <div class="logo-container" onclick="document.getElementById('logo_file_input').click()" title="คลิกเพื่อเปลี่ยนโลโก้">
-        <img src="../assets/Krut.png" alt="ตราสัญลักษณ์หน่วยงาน" class="logo-img" id="img_logo">
+        <img src="../../assets/Krut.png" alt="ตราสัญลักษณ์หน่วยงาน" class="logo-img" id="img_logo" onerror="this.src='../assets/Krut.png'">
         <div class="logo-overlay no-print">เปลี่ยนโลโก้</div>
       </div>
       
@@ -143,7 +166,7 @@
 
     <!-- 2. ส่วนกลาง -->
     <div class="w-full my-auto flex flex-col items-center justify-center space-y-4" id="cover_body">
-      <div class="project-info-box space-y-3">
+      <div class="project-info-box">
         <div id="lbl_project_name"></div>
         <div id="lbl_project_location"></div>
         <div id="lbl_contract_info"></div>
@@ -156,7 +179,7 @@
         รายงานความก้าวหน้าประจำเดือน <span id="lbl_report_month">มิถุนายน ๒๕๖๙</span>
       </div>
 
-      <div class="author-section space-y-0.5">
+      <div class="author-section">
         <p>จัดทำโดย</p>
         <p class="font-bold" id="lbl_footer_org">องค์การบริหารส่วนตำบลโพนงาม</p>
         <p id="lbl_footer_sub">อำเภอโกสุมพิสัย จังหวัดมหาสารคาม</p>
@@ -167,8 +190,21 @@
 
   <script>
     lucide.createIcons();
-    function getLogoStorageKey() {
-      return getMonthlySectionKey('CUSTOM_LOGO_DATA');
+    const LOGO_STORAGE_KEY = 'PROJECT_CUSTOM_LOGO_DATA';
+    
+    let currentProjectID = 'DEFAULT_PROJ';
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlMonthCode = urlParams.get('month');
+
+    function initProjectContext() {
+      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          const projectData = JSON.parse(basicRaw);
+          const cNo = projectData.contractNo || 'NO_CONTRACT';
+          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        } catch(e) {}
+      }
     }
 
     function toThaiNumber(numStr) {
@@ -203,7 +239,7 @@
       const reader = new FileReader();
       reader.onload = function(evt) {
         const base64Img = evt.target.result;
-        localStorage.setItem(getLogoStorageKey(), base64Img);
+        localStorage.setItem(LOGO_STORAGE_KEY, base64Img);
         document.getElementById('img_logo').src = base64Img;
         alert("เปลี่ยนโลโก้หน่วยงานสำเร็จแล้วค่ะ!");
       };
@@ -211,9 +247,9 @@
     }
 
     function loadProjectData() {
-      const projectData = getActiveProjectData();
-      const projectId = getActiveProjectId(projectData);
-      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${projectId}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+      initProjectContext();
+      
+      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
       let orgName = "องค์การบริหารส่วนตำบลโพนงาม";
       let district = "โกสุมพิสัย";
       let province = "มหาสารคาม";
@@ -238,8 +274,8 @@
 
       const orgSub = `อำเภอ${district} จังหวัด${province}`;
 
-      const monthlyRaw = localStorage.getItem(getMonthlyInfoKey(projectId)) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
       let monthStr = "มิถุนายน ๒๕๖๙";
+      const monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
       if (monthlyRaw) {
         try {
           const m = JSON.parse(monthlyRaw);
@@ -250,12 +286,12 @@
       }
 
       return {
-        orgName: escapeHTML(toThaiNumber(orgName)),
-        orgSub: escapeHTML(toThaiNumber(orgSub)),
-        projectName: escapeHTML(toThaiNumber(projectName)),
-        projectLocation: escapeHTML(toThaiNumber(projectLocation)),
-        contractNo: escapeHTML(contractNo),
-        monthStr: escapeHTML(monthStr)
+        orgName: toThaiNumber(orgName),
+        orgSub: toThaiNumber(orgSub),
+        projectName: toThaiNumber(projectName),
+        projectLocation: toThaiNumber(projectLocation),
+        contractNo: contractNo,
+        monthStr: monthStr
       };
     }
 
@@ -282,7 +318,7 @@
         document.getElementById('cover_section_tag').textContent = "งานควบคุมงานก่อสร้าง";
         
         body.innerHTML = `
-          <div class="project-info-box space-y-4">
+          <div class="project-info-box">
             <div>${data.projectName}</div>
             <div>${data.projectLocation}</div>
             <div>${data.contractNo}</div>
@@ -298,8 +334,8 @@
         document.getElementById('cover_section_tag').style.display = "none";
         
         body.innerHTML = `
-          <div class="project-info-box space-y-4">
-            <div style="font-weight: bold;">ภาพถ่ายการดำเนินโครงการ</div>
+          <div class="project-info-box">
+            <div class="photo-title">ภาพถ่ายการดำเนินโครงการ</div>
             <div>${data.projectName}</div>
             <div>${data.projectLocation}</div>
           </div>
@@ -315,7 +351,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      const savedLogo = safeImageUrl(localStorage.getItem(getLogoStorageKey()) || localStorage.getItem('PROJECT_CUSTOM_LOGO_DATA'));
+      const savedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
       if (savedLogo) document.getElementById('img_logo').src = savedLogo;
 
       switchCoverType('main');
