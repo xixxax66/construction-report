@@ -50,9 +50,19 @@
       justify-content: space-between;
     }
 
-    .sheet-doc p, .sheet-doc span, .sheet-doc div, .sheet-doc td, .sheet-doc th {
-      font-size: 15pt;
+    /* 💡 ยกเว้นหัวข้อหลักไม่ให้โดนบังคับขนาด 15pt */
+    .sheet-doc p, .sheet-doc span, .sheet-doc div:not(.doc-main-title), .sheet-doc td, .sheet-doc th {
+      font-size: 13.5pt;
       line-height: 1.18;
+    }
+
+    /* 💡 กำหนดขนาดหัวข้อหลักให้ใหญ่ชัดเจนตามมาตรฐาน */
+    .doc-main-title {
+      font-size: 20pt !important;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
     }
 
     .table-job {
@@ -242,15 +252,14 @@
     </div>
   </div>
 
-  <!-- หน้าที่ 1 -->
+  <!-- หน้าที่ 1 (บรรจุเฉพาะตารางบันทึกการปฏิบัติงานประจำวัน 7 วัน) -->
   <div class="sheet-doc" id="doc-page-1">
     <div>
-      <div class="text-center font-bold text-xl mb-2 tracking-wide">
+      <div class="doc-main-title">
         บันทึกการปฏิบัติงานของผู้รับจ้าง
       </div>
 
-      <!-- 1. ตารางบันทึกการปฏิบัติงานประจำวัน 7 วัน -->
-      <table class="table-job mb-4">
+      <table class="table-job mb-2">
         <thead>
           <tr>
             <th style="width: 24%;">วัน เดือน ปี</th>
@@ -262,6 +271,19 @@
           <!-- แถวจะถูกสร้างอัตโนมัติ -->
         </tbody>
       </table>
+    </div>
+
+    <div class="text-center text-xs text-slate-400 pb-1">
+      - แผ่นที่ 1 / 2 -
+    </div>
+  </div>
+
+  <!-- หน้าที่ 2 (บัญชีแรงงาน, สภาพอากาศ, เครื่องจักร และส่วนลงชื่อ) -->
+  <div class="sheet-doc" id="doc-page-2">
+    <div>
+      <div class="text-center text-xs text-slate-600 font-normal pb-3">
+        - ๒ -
+      </div>
 
       <!-- 2. บัญชีแสดงจำนวนแรงงาน -->
       <div class="mb-3">
@@ -319,22 +341,9 @@
           </tbody>
         </table>
       </div>
-    </div>
-
-    <div class="text-center text-xs text-slate-400 pb-1">
-      - แผ่นที่ 1 / 2 -
-    </div>
-  </div>
-
-  <!-- หน้าที่ 2 -->
-  <div class="sheet-doc" id="doc-page-2">
-    <div>
-      <div class="text-center text-xs text-slate-600 font-normal pb-3">
-        - ๒ -
-      </div>
 
       <!-- 3. ตารางสภาพอากาศ -->
-      <div class="mb-4">
+      <div class="mb-3">
         <table class="table-job text-center">
           <thead>
             <tr>
