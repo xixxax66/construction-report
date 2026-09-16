@@ -37,13 +37,22 @@
     .sheet-doc {
       width: 210mm;
       min-height: 297mm;
-      padding: 10mm 15mm 8mm 20mm;
+      padding: 12mm 15mm 10mm 20mm;
       margin: 15px auto;
       background: white;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
       box-sizing: border-box;
       line-height: 1.15;
       color: #000;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .sheet-doc p, .sheet-doc span, .sheet-doc div, .sheet-doc td, .sheet-doc th {
+      font-size: 15pt;
+      line-height: 1.18;
     }
 
     .table-job {
@@ -164,12 +173,14 @@
       }
       .sheet-doc {
         box-shadow: none !important;
-        margin: 0 !important;
+        margin: 0 auto !important;
         width: 210mm !important;
         height: 297mm !important;
-        padding: 8mm 15mm 8mm 20mm !important;
-        page-break-after: avoid;
-        page-break-inside: avoid;
+        padding: 10mm 15mm 10mm 20mm !important;
+        page-break-after: always;
+      }
+      .sheet-doc:last-child {
+        page-break-after: auto;
       }
       .auto-expand-area {
         overflow: visible !important;
@@ -231,247 +242,266 @@
     </div>
   </div>
 
-  <!-- หน้าเอกสาร A4 -->
-  <div class="sheet-doc" id="doc-print">
-    
-    <div class="text-center font-bold text-xl mb-1 tracking-wide">
-      บันทึกการปฏิบัติงานของผู้รับจ้าง
-    </div>
+  <!-- หน้าที่ 1 -->
+  <div class="sheet-doc" id="doc-page-1">
+    <div>
+      <div class="text-center font-bold text-xl mb-2 tracking-wide">
+        บันทึกการปฏิบัติงานของผู้รับจ้าง
+      </div>
 
-    <!-- 1. ตารางบันทึกการปฏิบัติงานประจำวัน 7 วัน -->
-    <table class="table-job mb-3">
-      <thead>
-        <tr>
-          <th style="width: 24%;">วัน เดือน ปี</th>
-          <th style="width: 58%;">รายละเอียด</th>
-          <th style="width: 18%;">หมายเหตุ</th>
-        </tr>
-      </thead>
-      <tbody id="daily-log-rows">
-        <!-- แถวจะถูกสร้างอัตโนมัติ -->
-      </tbody>
-    </table>
-
-    <!-- 2. บัญชีแสดงจำนวนแรงงาน -->
-    <div class="mb-3">
-      <table class="table-job text-center">
+      <!-- 1. ตารางบันทึกการปฏิบัติงานประจำวัน 7 วัน -->
+      <table class="table-job mb-4">
         <thead>
           <tr>
-            <th colspan="9" class="text-center py-0.5 font-bold">บัญชีแสดงจำนวนแรงงาน</th>
-          </tr>
-          <tr class="bg-slate-50 text-[12pt]">
-            <th class="w-48 text-left pl-2">ประเภทแรงงาน</th>
-            <th class="w-10 header-day-0">-</th>
-            <th class="w-10 header-day-1">-</th>
-            <th class="w-10 header-day-2">-</th>
-            <th class="w-10 header-day-3">-</th>
-            <th class="w-10 header-day-4">-</th>
-            <th class="w-10 header-day-5">-</th>
-            <th class="w-10 header-day-6">-</th>
-            <th class="w-24">หมายเหตุ</th>
+            <th style="width: 24%;">วัน เดือน ปี</th>
+            <th style="width: 58%;">รายละเอียด</th>
+            <th style="width: 18%;">หมายเหตุ</th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
-            <td class="text-left pl-2">หัวหน้าคนงาน/ช่าง</td>
-            <td><input type="text" id="lead_0" class="cell-input-num labor-lead" oninput="calcLaborSum(0)"></td>
-            <td><input type="text" id="lead_1" class="cell-input-num labor-lead" oninput="calcLaborSum(1)"></td>
-            <td><input type="text" id="lead_2" class="cell-input-num labor-lead" oninput="calcLaborSum(2)"></td>
-            <td><input type="text" id="lead_3" class="cell-input-num labor-lead" oninput="calcLaborSum(3)"></td>
-            <td><input type="text" id="lead_4" class="cell-input-num labor-lead" oninput="calcLaborSum(4)"></td>
-            <td><input type="text" id="lead_5" class="cell-input-num labor-lead" oninput="calcLaborSum(5)"></td>
-            <td><input type="text" id="lead_6" class="cell-input-num labor-lead" oninput="calcLaborSum(6)"></td>
-            <td><input type="text" id="lead_note" class="cell-input-text text-center text-xs"></td>
-          </tr>
-          <tr>
-            <td class="text-left pl-2">คนงาน</td>
-            <td><input type="text" id="worker_0" class="cell-input-num labor-worker" oninput="calcLaborSum(0)"></td>
-            <td><input type="text" id="worker_1" class="cell-input-num labor-worker" oninput="calcLaborSum(1)"></td>
-            <td><input type="text" id="worker_2" class="cell-input-num labor-worker" oninput="calcLaborSum(2)"></td>
-            <td><input type="text" id="worker_3" class="cell-input-num labor-worker" oninput="calcLaborSum(3)"></td>
-            <td><input type="text" id="worker_4" class="cell-input-num labor-worker" oninput="calcLaborSum(4)"></td>
-            <td><input type="text" id="worker_5" class="cell-input-num labor-worker" oninput="calcLaborSum(5)"></td>
-            <td><input type="text" id="worker_6" class="cell-input-num labor-worker" oninput="calcLaborSum(6)"></td>
-            <td><input type="text" id="worker_note" class="cell-input-text text-center text-xs"></td>
-          </tr>
-          <tr class="font-bold bg-slate-50">
-            <td class="text-center font-bold">รวม (คน)</td>
-            <td id="labor_sum_0">-</td>
-            <td id="labor_sum_1">-</td>
-            <td id="labor_sum_2">-</td>
-            <td id="labor_sum_3">-</td>
-            <td id="labor_sum_4">-</td>
-            <td id="labor_sum_5">-</td>
-            <td id="labor_sum_6">-</td>
-            <td></td>
-          </tr>
+        <tbody id="daily-log-rows">
+          <!-- แถวจะถูกสร้างอัตโนมัติ -->
         </tbody>
       </table>
+
+      <!-- 2. บัญชีแสดงจำนวนแรงงาน -->
+      <div class="mb-3">
+        <table class="table-job text-center">
+          <thead>
+            <tr>
+              <th colspan="9" class="text-center py-0.5 font-bold">บัญชีแสดงจำนวนแรงงาน</th>
+            </tr>
+            <tr class="bg-slate-50 text-[12pt]">
+              <th class="w-48 text-left pl-2">ประเภทแรงงาน</th>
+              <th class="w-10 header-day-0">-</th>
+              <th class="w-10 header-day-1">-</th>
+              <th class="w-10 header-day-2">-</th>
+              <th class="w-10 header-day-3">-</th>
+              <th class="w-10 header-day-4">-</th>
+              <th class="w-10 header-day-5">-</th>
+              <th class="w-10 header-day-6">-</th>
+              <th class="w-24">หมายเหตุ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left pl-2">หัวหน้าคนงาน/ช่าง</td>
+              <td><input type="text" id="lead_0" class="cell-input-num labor-lead" oninput="calcLaborSum(0)"></td>
+              <td><input type="text" id="lead_1" class="cell-input-num labor-lead" oninput="calcLaborSum(1)"></td>
+              <td><input type="text" id="lead_2" class="cell-input-num labor-lead" oninput="calcLaborSum(2)"></td>
+              <td><input type="text" id="lead_3" class="cell-input-num labor-lead" oninput="calcLaborSum(3)"></td>
+              <td><input type="text" id="lead_4" class="cell-input-num labor-lead" oninput="calcLaborSum(4)"></td>
+              <td><input type="text" id="lead_5" class="cell-input-num labor-lead" oninput="calcLaborSum(5)"></td>
+              <td><input type="text" id="lead_6" class="cell-input-num labor-lead" oninput="calcLaborSum(6)"></td>
+              <td><input type="text" id="lead_note" class="cell-input-text text-center text-xs"></td>
+            </tr>
+            <tr>
+              <td class="text-left pl-2">คนงาน</td>
+              <td><input type="text" id="worker_0" class="cell-input-num labor-worker" oninput="calcLaborSum(0)"></td>
+              <td><input type="text" id="worker_1" class="cell-input-num labor-worker" oninput="calcLaborSum(1)"></td>
+              <td><input type="text" id="worker_2" class="cell-input-num labor-worker" oninput="calcLaborSum(2)"></td>
+              <td><input type="text" id="worker_3" class="cell-input-num labor-worker" oninput="calcLaborSum(3)"></td>
+              <td><input type="text" id="worker_4" class="cell-input-num labor-worker" oninput="calcLaborSum(4)"></td>
+              <td><input type="text" id="worker_5" class="cell-input-num labor-worker" oninput="calcLaborSum(5)"></td>
+              <td><input type="text" id="worker_6" class="cell-input-num labor-worker" oninput="calcLaborSum(6)"></td>
+              <td><input type="text" id="worker_note" class="cell-input-text text-center text-xs"></td>
+            </tr>
+            <tr class="font-bold bg-slate-50">
+              <td class="text-center font-bold">รวม (คน)</td>
+              <td id="labor_sum_0">-</td>
+              <td id="labor_sum_1">-</td>
+              <td id="labor_sum_2">-</td>
+              <td id="labor_sum_3">-</td>
+              <td id="labor_sum_4">-</td>
+              <td id="labor_sum_5">-</td>
+              <td id="labor_sum_6">-</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- 3. ตารางสภาพอากาศ -->
-    <div class="mb-3">
-      <table class="table-job text-center">
-        <thead>
-          <tr>
-            <th colspan="10" class="text-center py-0.5 font-bold">ตารางสภาพอากาศ</th>
-          </tr>
-          <tr class="bg-slate-50 text-[12pt]">
-            <th colspan="2" class="w-48 text-left pl-2">สภาพอากาศ / วันที่</th>
-            <th class="w-10 header-day-0">-</th>
-            <th class="w-10 header-day-1">-</th>
-            <th class="w-10 header-day-2">-</th>
-            <th class="w-10 header-day-3">-</th>
-            <th class="w-10 header-day-4">-</th>
-            <th class="w-10 header-day-5">-</th>
-            <th class="w-10 header-day-6">-</th>
-            <th class="w-24">หมายเหตุ</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- สภาพท้องฟ้า -->
-          <tr>
-            <td rowspan="2" class="w-20 bg-slate-50 text-center">สภาพท้องฟ้า</td>
-            <td class="text-left pl-2">แจ่มใส</td>
-            <td><input type="checkbox" id="chk_clear_0" class="custom-chk" onchange="handleSkyCheck('clear', 0)"></td>
-            <td><input type="checkbox" id="chk_clear_1" class="custom-chk" onchange="handleSkyCheck('clear', 1)"></td>
-            <td><input type="checkbox" id="chk_clear_2" class="custom-chk" onchange="handleSkyCheck('clear', 2)"></td>
-            <td><input type="checkbox" id="chk_clear_3" class="custom-chk" onchange="handleSkyCheck('clear', 3)"></td>
-            <td><input type="checkbox" id="chk_clear_4" class="custom-chk" onchange="handleSkyCheck('clear', 4)"></td>
-            <td><input type="checkbox" id="chk_clear_5" class="custom-chk" onchange="handleSkyCheck('clear', 5)"></td>
-            <td><input type="checkbox" id="chk_clear_6" class="custom-chk" onchange="handleSkyCheck('clear', 6)"></td>
-            <td><input type="text" id="sky_note_1" class="cell-input-text text-center text-xs"></td>
-          </tr>
-          <tr>
-            <td class="text-left pl-2">มีเมฆมาก</td>
-            <td><input type="checkbox" id="chk_cloudy_0" class="custom-chk" onchange="handleSkyCheck('cloudy', 0)"></td>
-            <td><input type="checkbox" id="chk_cloudy_1" class="custom-chk" onchange="handleSkyCheck('cloudy', 1)"></td>
-            <td><input type="checkbox" id="chk_cloudy_2" class="custom-chk" onchange="handleSkyCheck('cloudy', 2)"></td>
-            <td><input type="checkbox" id="chk_cloudy_3" class="custom-chk" onchange="handleSkyCheck('cloudy', 3)"></td>
-            <td><input type="checkbox" id="chk_cloudy_4" class="custom-chk" onchange="handleSkyCheck('cloudy', 4)"></td>
-            <td><input type="checkbox" id="chk_cloudy_5" class="custom-chk" onchange="handleSkyCheck('cloudy', 5)"></td>
-            <td><input type="checkbox" id="chk_cloudy_6" class="custom-chk" onchange="handleSkyCheck('cloudy', 6)"></td>
-            <td><input type="text" id="sky_note_2" class="cell-input-text text-center text-xs"></td>
-          </tr>
+    <div class="text-center text-xs text-slate-400 pb-1">
+      - แผ่นที่ 1 / 2 -
+    </div>
+  </div>
 
-          <!-- สภาพฝนตก -->
-          <tr>
-            <td rowspan="3" class="w-20 bg-slate-50 text-center">ฝนตก</td>
-            <td class="text-left pl-2 text-[12pt]">เล็กน้อย</td>
-            <td><input type="checkbox" id="chk_light_0" class="custom-chk" onchange="handleRainCheck('light', 0)"></td>
-            <td><input type="checkbox" id="chk_light_1" class="custom-chk" onchange="handleRainCheck('light', 1)"></td>
-            <td><input type="checkbox" id="chk_light_2" class="custom-chk" onchange="handleRainCheck('light', 2)"></td>
-            <td><input type="checkbox" id="chk_light_3" class="custom-chk" onchange="handleRainCheck('light', 3)"></td>
-            <td><input type="checkbox" id="chk_light_4" class="custom-chk" onchange="handleRainCheck('light', 4)"></td>
-            <td><input type="checkbox" id="chk_light_5" class="custom-chk" onchange="handleRainCheck('light', 5)"></td>
-            <td><input type="checkbox" id="chk_light_6" class="custom-chk" onchange="handleRainCheck('light', 6)"></td>
-            <td><input type="text" id="rain_note_1" class="cell-input-text text-center text-xs"></td>
-          </tr>
-          <tr>
-            <td class="text-left pl-2 text-[12pt]">ปานกลาง</td>
-            <td><input type="checkbox" id="chk_med_0" class="custom-chk" onchange="handleRainCheck('med', 0)"></td>
-            <td><input type="checkbox" id="chk_med_1" class="custom-chk" onchange="handleRainCheck('med', 1)"></td>
-            <td><input type="checkbox" id="chk_med_2" class="custom-chk" onchange="handleRainCheck('med', 2)"></td>
-            <td><input type="checkbox" id="chk_med_3" class="custom-chk" onchange="handleRainCheck('med', 3)"></td>
-            <td><input type="checkbox" id="chk_med_4" class="custom-chk" onchange="handleRainCheck('med', 4)"></td>
-            <td><input type="checkbox" id="chk_med_5" class="custom-chk" onchange="handleRainCheck('med', 5)"></td>
-            <td><input type="checkbox" id="chk_med_6" class="custom-chk" onchange="handleRainCheck('med', 6)"></td>
-            <td><input type="text" id="rain_note_2" class="cell-input-text text-center text-xs"></td>
-          </tr>
-          <tr>
-            <td class="text-left pl-2 text-[12pt]">หนัก</td>
-            <td><input type="checkbox" id="chk_heavy_0" class="custom-chk" onchange="handleRainCheck('heavy', 0)"></td>
-            <td><input type="checkbox" id="chk_heavy_1" class="custom-chk" onchange="handleRainCheck('heavy', 1)"></td>
-            <td><input type="checkbox" id="chk_heavy_2" class="custom-chk" onchange="handleRainCheck('heavy', 2)"></td>
-            <td><input type="checkbox" id="chk_heavy_3" class="custom-chk" onchange="handleRainCheck('heavy', 3)"></td>
-            <td><input type="checkbox" id="chk_heavy_4" class="custom-chk" onchange="handleRainCheck('heavy', 4)"></td>
-            <td><input type="checkbox" id="chk_heavy_5" class="custom-chk" onchange="handleRainCheck('heavy', 5)"></td>
-            <td><input type="checkbox" id="chk_heavy_6" class="custom-chk" onchange="handleRainCheck('heavy', 6)"></td>
-            <td><input type="text" id="rain_note_3" class="cell-input-text text-center text-xs"></td>
-          </tr>
-          <tr>
-            <td colspan="2" class="text-left pl-2 text-[12pt]">ฝนตกเวลา (เช่น เช้า/บ่าย หรือ ตลอดวัน)</td>
-            <td><input type="text" id="w_time_0" class="cell-input-text" placeholder="ระบุ..."></td>
-            <td><input type="text" id="w_time_1" class="cell-input-text" placeholder="ระบุ..."></td>
-            <td><input type="text" id="w_time_2" class="cell-input-text" placeholder="ระบุ..."></td>
-            <td><input type="text" id="w_time_3" class="cell-input-text" placeholder="ระบุ..."></td>
-            <td><input type="text" id="w_time_4" class="cell-input-text" placeholder="ระบุ..."></td>
-            <td><input type="text" id="w_time_5" class="cell-input-text" placeholder="ระบุ..."></td>
-            <td><input type="text" id="w_time_6" class="cell-input-text" placeholder="ระบุ..."></td>
-            <td></td>
-          </tr>
-        </tbody>
-      </table>
+  <!-- หน้าที่ 2 -->
+  <div class="sheet-doc" id="doc-page-2">
+    <div>
+      <div class="text-center text-xs text-slate-600 font-normal pb-3">
+        - ๒ -
+      </div>
+
+      <!-- 3. ตารางสภาพอากาศ -->
+      <div class="mb-4">
+        <table class="table-job text-center">
+          <thead>
+            <tr>
+              <th colspan="10" class="text-center py-0.5 font-bold">ตารางสภาพอากาศ</th>
+            </tr>
+            <tr class="bg-slate-50 text-[12pt]">
+              <th colspan="2" class="w-48 text-left pl-2">สภาพอากาศ / วันที่</th>
+              <th class="w-10 header-day-0">-</th>
+              <th class="w-10 header-day-1">-</th>
+              <th class="w-10 header-day-2">-</th>
+              <th class="w-10 header-day-3">-</th>
+              <th class="w-10 header-day-4">-</th>
+              <th class="w-10 header-day-5">-</th>
+              <th class="w-10 header-day-6">-</th>
+              <th class="w-24">หมายเหตุ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- สภาพท้องฟ้า -->
+            <tr>
+              <td rowspan="2" class="w-20 bg-slate-50 text-center">สภาพท้องฟ้า</td>
+              <td class="text-left pl-2">แจ่มใส</td>
+              <td><input type="checkbox" id="chk_clear_0" class="custom-chk" onchange="handleSkyCheck('clear', 0)"></td>
+              <td><input type="checkbox" id="chk_clear_1" class="custom-chk" onchange="handleSkyCheck('clear', 1)"></td>
+              <td><input type="checkbox" id="chk_clear_2" class="custom-chk" onchange="handleSkyCheck('clear', 2)"></td>
+              <td><input type="checkbox" id="chk_clear_3" class="custom-chk" onchange="handleSkyCheck('clear', 3)"></td>
+              <td><input type="checkbox" id="chk_clear_4" class="custom-chk" onchange="handleSkyCheck('clear', 4)"></td>
+              <td><input type="checkbox" id="chk_clear_5" class="custom-chk" onchange="handleSkyCheck('clear', 5)"></td>
+              <td><input type="checkbox" id="chk_clear_6" class="custom-chk" onchange="handleSkyCheck('clear', 6)"></td>
+              <td><input type="text" id="sky_note_1" class="cell-input-text text-center text-xs"></td>
+            </tr>
+            <tr>
+              <td class="text-left pl-2">มีเมฆมาก</td>
+              <td><input type="checkbox" id="chk_cloudy_0" class="custom-chk" onchange="handleSkyCheck('cloudy', 0)"></td>
+              <td><input type="checkbox" id="chk_cloudy_1" class="custom-chk" onchange="handleSkyCheck('cloudy', 1)"></td>
+              <td><input type="checkbox" id="chk_cloudy_2" class="custom-chk" onchange="handleSkyCheck('cloudy', 2)"></td>
+              <td><input type="checkbox" id="chk_cloudy_3" class="custom-chk" onchange="handleSkyCheck('cloudy', 3)"></td>
+              <td><input type="checkbox" id="chk_cloudy_4" class="custom-chk" onchange="handleSkyCheck('cloudy', 4)"></td>
+              <td><input type="checkbox" id="chk_cloudy_5" class="custom-chk" onchange="handleSkyCheck('cloudy', 5)"></td>
+              <td><input type="checkbox" id="chk_cloudy_6" class="custom-chk" onchange="handleSkyCheck('cloudy', 6)"></td>
+              <td><input type="text" id="sky_note_2" class="cell-input-text text-center text-xs"></td>
+            </tr>
+
+            <!-- สภาพฝนตก -->
+            <tr>
+              <td rowspan="3" class="w-20 bg-slate-50 text-center">ฝนตก</td>
+              <td class="text-left pl-2 text-[12pt]">เล็กน้อย</td>
+              <td><input type="checkbox" id="chk_light_0" class="custom-chk" onchange="handleRainCheck('light', 0)"></td>
+              <td><input type="checkbox" id="chk_light_1" class="custom-chk" onchange="handleRainCheck('light', 1)"></td>
+              <td><input type="checkbox" id="chk_light_2" class="custom-chk" onchange="handleRainCheck('light', 2)"></td>
+              <td><input type="checkbox" id="chk_light_3" class="custom-chk" onchange="handleRainCheck('light', 3)"></td>
+              <td><input type="checkbox" id="chk_light_4" class="custom-chk" onchange="handleRainCheck('light', 4)"></td>
+              <td><input type="checkbox" id="chk_light_5" class="custom-chk" onchange="handleRainCheck('light', 5)"></td>
+              <td><input type="checkbox" id="chk_light_6" class="custom-chk" onchange="handleRainCheck('light', 6)"></td>
+              <td><input type="text" id="rain_note_1" class="cell-input-text text-center text-xs"></td>
+            </tr>
+            <tr>
+              <td class="text-left pl-2 text-[12pt]">ปานกลาง</td>
+              <td><input type="checkbox" id="chk_med_0" class="custom-chk" onchange="handleRainCheck('med', 0)"></td>
+              <td><input type="checkbox" id="chk_med_1" class="custom-chk" onchange="handleRainCheck('med', 1)"></td>
+              <td><input type="checkbox" id="chk_med_2" class="custom-chk" onchange="handleRainCheck('med', 2)"></td>
+              <td><input type="checkbox" id="chk_med_3" class="custom-chk" onchange="handleRainCheck('med', 3)"></td>
+              <td><input type="checkbox" id="chk_med_4" class="custom-chk" onchange="handleRainCheck('med', 4)"></td>
+              <td><input type="checkbox" id="chk_med_5" class="custom-chk" onchange="handleRainCheck('med', 5)"></td>
+              <td><input type="checkbox" id="chk_med_6" class="custom-chk" onchange="handleRainCheck('med', 6)"></td>
+              <td><input type="text" id="rain_note_2" class="cell-input-text text-center text-xs"></td>
+            </tr>
+            <tr>
+              <td class="text-left pl-2 text-[12pt]">หนัก</td>
+              <td><input type="checkbox" id="chk_heavy_0" class="custom-chk" onchange="handleRainCheck('heavy', 0)"></td>
+              <td><input type="checkbox" id="chk_heavy_1" class="custom-chk" onchange="handleRainCheck('heavy', 1)"></td>
+              <td><input type="checkbox" id="chk_heavy_2" class="custom-chk" onchange="handleRainCheck('heavy', 2)"></td>
+              <td><input type="checkbox" id="chk_heavy_3" class="custom-chk" onchange="handleRainCheck('heavy', 3)"></td>
+              <td><input type="checkbox" id="chk_heavy_4" class="custom-chk" onchange="handleRainCheck('heavy', 4)"></td>
+              <td><input type="checkbox" id="chk_heavy_5" class="custom-chk" onchange="handleRainCheck('heavy', 5)"></td>
+              <td><input type="checkbox" id="chk_heavy_6" class="custom-chk" onchange="handleRainCheck('heavy', 6)"></td>
+              <td><input type="text" id="rain_note_3" class="cell-input-text text-center text-xs"></td>
+            </tr>
+            <tr>
+              <td colspan="2" class="text-left pl-2 text-[12pt]">ฝนตกเวลา (เช่น เช้า/บ่าย หรือ ตลอดวัน)</td>
+              <td><input type="text" id="w_time_0" class="cell-input-text" placeholder="ระบุ..."></td>
+              <td><input type="text" id="w_time_1" class="cell-input-text" placeholder="ระบุ..."></td>
+              <td><input type="text" id="w_time_2" class="cell-input-text" placeholder="ระบุ..."></td>
+              <td><input type="text" id="w_time_3" class="cell-input-text" placeholder="ระบุ..."></td>
+              <td><input type="text" id="w_time_4" class="cell-input-text" placeholder="ระบุ..."></td>
+              <td><input type="text" id="w_time_5" class="cell-input-text" placeholder="ระบุ..."></td>
+              <td><input type="text" id="w_time_6" class="cell-input-text" placeholder="ระบุ..."></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 4. ตารางบัญชีแสดงจำนวนเครื่องจักร -->
+      <div class="mb-2">
+        <div class="flex items-center justify-end mb-1 no-print">
+          <div class="flex items-center gap-1.5">
+            <select id="sel_standard_mach" class="text-xs p-1 border rounded bg-white text-slate-800">
+              <option value="รถเกรดเดอร์">รถเกรดเดอร์</option>
+              <option value="รถขุดดิน-ตักดิน">รถขุดดิน-ตักดิน</option>
+              <option value="รถไถ">รถไถ</option>
+              <option value="รถผสมปูน">รถผสมปูน</option>
+              <option value="รถบดอัดดิน">รถบดอัดดิน</option>
+              <option value="รถบรรทุกน้ำ">รถบรรทุกน้ำ</option>
+              <option value="รถบรรทุก 6 ล้อ">รถบรรทุก 6 ล้อ</option>
+              <option value="เครื่องตบดิน">เครื่องตบดิน</option>
+              <option value="เครื่องเขย่าคอนกรีต">เครื่องเขย่าคอนกรีต</option>
+              <option value="CUSTOM">-- อื่นๆ (พิมพ์เพิ่มเอง) --</option>
+            </select>
+            <button onclick="handleAddMachineryClick()" class="px-2.5 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold flex items-center gap-1 shadow cursor-pointer">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มเครื่องจักร
+            </button>
+          </div>
+        </div>
+
+        <table class="table-job text-center">
+          <thead>
+            <tr>
+              <th colspan="10" class="text-center py-0.5 font-bold">บัญชีแสดงจำนวนเครื่องจักร เครื่องมือ วัสดุและอุปกรณ์</th>
+            </tr>
+            <tr class="bg-slate-50 text-[12pt]">
+              <th class="w-48 text-left pl-2">รายการเครื่องจักร / เครื่องมือ</th>
+              <th class="w-10 header-day-0">-</th>
+              <th class="w-10 header-day-1">-</th>
+              <th class="w-10 header-day-2">-</th>
+              <th class="w-10 header-day-3">-</th>
+              <th class="w-10 header-day-4">-</th>
+              <th class="w-10 header-day-5">-</th>
+              <th class="w-10 header-day-6">-</th>
+              <th class="w-20">หมายเหตุ</th>
+              <th class="w-8 no-print">ลบ</th>
+            </tr>
+          </thead>
+          <tbody id="machinery-tbody">
+            <!-- รายการเครื่องจักรจะแสดงที่นี่ -->
+          </tbody>
+          <tfoot>
+            <tr class="font-bold bg-slate-50">
+              <td class="text-center font-bold">รวม (หน่วย)</td>
+              <td id="mach_sum_0">-</td>
+              <td id="mach_sum_1">-</td>
+              <td id="mach_sum_2">-</td>
+              <td id="mach_sum_3">-</td>
+              <td id="mach_sum_4">-</td>
+              <td id="mach_sum_5">-</td>
+              <td id="mach_sum_6">-</td>
+              <td></td>
+              <td class="no-print"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
 
-    <!-- 4. ตารางบัญชีแสดงจำนวนเครื่องจักร -->
-    <div class="mb-2">
-      <div class="flex items-center justify-end mb-1 no-print">
-        <div class="flex items-center gap-1.5">
-          <select id="sel_standard_mach" class="text-xs p-1 border rounded bg-white text-slate-800">
-            <option value="รถเกรดเดอร์">รถเกรดเดอร์</option>
-            <option value="รถขุดดิน-ตักดิน">รถขุดดิน-ตักดิน</option>
-            <option value="รถไถ">รถไถ</option>
-            <option value="รถผสมปูน">รถผสมปูน</option>
-            <option value="รถบดอัดดิน">รถบดอัดดิน</option>
-            <option value="รถบรรทุกน้ำ">รถบรรทุกน้ำ</option>
-            <option value="รถบรรทุก 6 ล้อ">รถบรรทุก 6 ล้อ</option>
-            <option value="เครื่องตบดิน">เครื่องตบดิน</option>
-            <option value="เครื่องเขย่าคอนกรีต">เครื่องเขย่าคอนกรีต</option>
-            <option value="CUSTOM">-- อื่นๆ (พิมพ์เพิ่มเอง) --</option>
-          </select>
-          <button onclick="handleAddMachineryClick()" class="px-2.5 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold flex items-center gap-1 shadow cursor-pointer">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มเครื่องจักร
-          </button>
+    <div>
+      <!-- ส่วนลงชื่อผู้ควบคุมงาน -->
+      <div class="flex justify-end pt-2 pr-8 text-center text-base">
+        <div class="space-y-0.5">
+          <p>(ลงชื่อ)........................................................... <span id="txt-inspector-pos">ผู้ควบคุมงาน</span></p>
+          <p class="font-medium">(<span id="txt-inspector-name">นายพัทธิยะ วงษาซ้าย</span>)</p>
         </div>
       </div>
 
-      <table class="table-job text-center">
-        <thead>
-          <tr>
-            <th colspan="10" class="text-center py-0.5 font-bold">บัญชีแสดงจำนวนเครื่องจักร เครื่องมือ วัสดุและอุปกรณ์</th>
-          </tr>
-          <tr class="bg-slate-50 text-[12pt]">
-            <th class="w-48 text-left pl-2">รายการเครื่องจักร / เครื่องมือ</th>
-            <th class="w-10 header-day-0">-</th>
-            <th class="w-10 header-day-1">-</th>
-            <th class="w-10 header-day-2">-</th>
-            <th class="w-10 header-day-3">-</th>
-            <th class="w-10 header-day-4">-</th>
-            <th class="w-10 header-day-5">-</th>
-            <th class="w-10 header-day-6">-</th>
-            <th class="w-20">หมายเหตุ</th>
-            <th class="w-8 no-print">ลบ</th>
-          </tr>
-        </thead>
-        <tbody id="machinery-tbody">
-          <!-- รายการเครื่องจักรจะแสดงที่นี่ -->
-        </tbody>
-        <tfoot>
-          <tr class="font-bold bg-slate-50">
-            <td class="text-center font-bold">รวม (หน่วย)</td>
-            <td id="mach_sum_0">-</td>
-            <td id="mach_sum_1">-</td>
-            <td id="mach_sum_2">-</td>
-            <td id="mach_sum_3">-</td>
-            <td id="mach_sum_4">-</td>
-            <td id="mach_sum_5">-</td>
-            <td id="mach_sum_6">-</td>
-            <td></td>
-            <td class="no-print"></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-
-    <!-- ส่วนลงชื่อผู้ควบคุมงาน -->
-    <div class="flex justify-end pt-1 pr-8 text-center text-base">
-      <div class="space-y-0.5">
-        <p>(ลงชื่อ)........................................................... <span id="txt-inspector-pos">ผู้ควบคุมงาน</span></p>
-        <p class="font-medium">(<span id="txt-inspector-name">นายพัทธิยะ วงษาซ้าย</span>)</p>
+      <div class="text-center text-xs text-slate-400 pt-2 pb-1">
+        - แผ่นที่ 2 / 2 -
       </div>
     </div>
-
   </div>
 
   <script>
@@ -488,7 +518,6 @@
     const urlParams = new URLSearchParams(window.location.search);
     const currentWeekIndex = parseInt(urlParams.get('week')) || 1;
     
-    // 💡 ปรับปรุงตัวแปรเก็บข้อมูลให้ยึดโยงกับ Contract และ Month
     let currentProjectID = 'DEFAULT_PROJ';
     let currentReportMonth = urlParams.get('month') || 'SEP_2569';
     let WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
@@ -839,7 +868,6 @@
       }
     }
 
-    // --- ระบบดึงข้อมูลจากไฟล์สำรอง (Restore from Google Drive) ---
     function openRestoreModal() {
       const sel = document.getElementById('sel_backup_history');
       sel.innerHTML = '';
@@ -920,16 +948,13 @@
       btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> บันทึก...`;
 
       try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
+        await fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
           mode: 'cors',
           redirect: 'follow',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'save_week_log', ...payload })
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const result = await response.json();
-        if (result && result.status && result.status !== 'success') throw new Error(result.message || 'Cloud save failed');
         alert(`บันทึกข้อมูลการปฏิบัติงานสัปดาห์ที่ ${currentWeekIndex} เรียบร้อยแล้วค่ะ`);
       } catch (err) {
         alert(`บันทึกลงในระบบเครื่องเรียบร้อยแล้วค่ะ (สัปดาห์ที่ ${currentWeekIndex})`);
@@ -946,7 +971,7 @@
         try {
           const projectData = JSON.parse(basicRaw);
           if (projectData.contractNo) {
-            currentProjectID = getActiveProjectId(projectData);
+            currentProjectID = `PROJ_${projectData.contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
             currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
             WEEK_STORAGE_KEY = `WEEK_LOG_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
           }
