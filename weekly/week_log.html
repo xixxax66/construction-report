@@ -50,19 +50,23 @@
       justify-content: space-between;
     }
 
-    /* 💡 ยกเว้นหัวข้อหลักไม่ให้โดนบังคับขนาด 15pt */
-    .sheet-doc p, .sheet-doc span, .sheet-doc div:not(.doc-main-title), .sheet-doc td, .sheet-doc th {
+    .sheet-doc p, .sheet-doc span, .sheet-doc div:not(.doc-main-title):not(.signature-area), .sheet-doc td, .sheet-doc th {
       font-size: 13.5pt;
       line-height: 1.18;
     }
 
-    /* 💡 กำหนดขนาดหัวข้อหลักให้ใหญ่ชัดเจนตามมาตรฐาน */
     .doc-main-title {
       font-size: 20pt !important;
       font-weight: bold;
       text-align: center;
       margin-bottom: 8px;
       letter-spacing: 0.5px;
+    }
+
+    /* 💡 ขยายส่วนลงชื่อให้ใหญ่ชัดเจน 16pt ตามแบบฟอร์มราชการ */
+    .signature-area, .signature-area p, .signature-area span {
+      font-size: 16pt !important;
+      line-height: 1.2;
     }
 
     .table-job {
@@ -74,7 +78,7 @@
     .table-job th, .table-job td {
       border: 1px solid #000;
       padding: 2px 4px;
-      font-size: 13.5pt;
+      font-size: 16pt;
       vertical-align: middle;
     }
 
@@ -92,7 +96,7 @@
       outline: none;
       background: transparent;
       font-family: inherit;
-      font-size: 13pt;
+      font-size: 15pt;
       line-height: 1.2;
       padding: 2px;
       resize: none;
@@ -113,7 +117,7 @@
       outline: none;
       background: transparent;
       font-family: inherit;
-      font-size: 12pt;
+      font-size: 15pt;
       padding: 0 1px;
       text-align: center;
     }
@@ -124,7 +128,7 @@
       outline: none;
       background: transparent;
       font-family: inherit;
-      font-size: 13.5pt;
+      font-size: 14pt;
       text-align: center;
       padding: 0;
     }
@@ -351,13 +355,13 @@
             </tr>
             <tr class="bg-slate-50 text-[12pt]">
               <th colspan="2" class="w-48 text-left pl-2">สภาพอากาศ / วันที่</th>
-              <th class="w-10 header-day-0">-</th>
-              <th class="w-10 header-day-1">-</th>
-              <th class="w-10 header-day-2">-</th>
-              <th class="w-10 header-day-3">-</th>
-              <th class="w-10 header-day-4">-</th>
-              <th class="w-10 header-day-5">-</th>
-              <th class="w-10 header-day-6">-</th>
+              <th class="w-13 header-day-0">-</th>
+              <th class="w-13 header-day-1">-</th>
+              <th class="w-13 header-day-2">-</th>
+              <th class="w-13 header-day-3">-</th>
+              <th class="w-13 header-day-4">-</th>
+              <th class="w-13 header-day-5">-</th>
+              <th class="w-13 header-day-6">-</th>
               <th class="w-24">หมายเหตุ</th>
             </tr>
           </thead>
@@ -441,7 +445,7 @@
       <div class="mb-2">
         <div class="flex items-center justify-end mb-1 no-print">
           <div class="flex items-center gap-1.5">
-            <select id="sel_standard_mach" class="text-xs p-1 border rounded bg-white text-slate-800">
+            <select id="sel_standard_mach" class="text-xl p-1 border rounded bg-white text-slate-800">
               <option value="รถเกรดเดอร์">รถเกรดเดอร์</option>
               <option value="รถขุดดิน-ตักดิน">รถขุดดิน-ตักดิน</option>
               <option value="รถไถ">รถไถ</option>
@@ -453,7 +457,7 @@
               <option value="เครื่องเขย่าคอนกรีต">เครื่องเขย่าคอนกรีต</option>
               <option value="CUSTOM">-- อื่นๆ (พิมพ์เพิ่มเอง) --</option>
             </select>
-            <button onclick="handleAddMachineryClick()" class="px-2.5 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold flex items-center gap-1 shadow cursor-pointer">
+            <button onclick="handleAddMachineryClick()" class="px-2.5 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xm font-bold flex items-center gap-1 shadow cursor-pointer">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มเครื่องจักร
             </button>
           </div>
@@ -499,8 +503,8 @@
     </div>
 
     <div>
-      <!-- ส่วนลงชื่อผู้ควบคุมงาน -->
-      <div class="flex justify-end pt-2 pr-8 text-center text-base">
+      <!-- ส่วนลงชื่อผู้ควบคุมงาน (เพิ่มคลาส signature-area เพื่อให้ขนาด 16pt เต็มตา) -->
+      <div class="signature-area flex justify-end pt-2 pr-8 text-center">
         <div class="space-y-0.5">
           <p>(ลงชื่อ)........................................................... <span id="txt-inspector-pos">ผู้ควบคุมงาน</span></p>
           <p class="font-medium">(<span id="txt-inspector-name">นายพัทธิยะ วงษาซ้าย</span>)</p>
@@ -714,9 +718,9 @@
 
       let titleHTML = '';
       if (isEditable || name === "") {
-        titleHTML = `<input type="text" class="cell-input-text text-slate-800 mach-name-input" placeholder="พิมพ์ชื่อเครื่องจักร..." value="${name}">`;
+        titleHTML = `<input type="text" class="mach-name-input" placeholder="พิมพ์ชื่อเครื่องจักร..." value="${name}">`;
       } else {
-        titleHTML = `<span class="text-slate-800 mach-name-label">${name}</span>`;
+        titleHTML = `<span class="mach-name-label">${name}</span>`;
       }
 
       let dayInputsHTML = '';
