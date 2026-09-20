@@ -52,9 +52,8 @@
         <div class="mt-2 text-base leading-relaxed text-justify space-y-1.5">
           <p class="indent-word">รายงานครั้งที่ <span id="lbl_seq_body" class="font-semibold">๑</span> สัปดาห์ที่ <span id="lbl_week_slash_year" class="font-semibold">๑/๒๕๖๙</span> ระหว่างวันที่ <span id="lbl_start_date">๗ มิถุนายน ๒๕๖๙</span> ถึงวันที่ <span id="lbl_end_date">๑๓ มิถุนายน ๒๕๖๙</span></p>
           
-          <!-- 💡 คืนโครงสร้าง HTML ข้อมูลรายละเอียดของโครงการให้ครบถ้วน -->
           <p class="indent-word">
-            งาน <span id="lbl_project_title">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากนานายราวี ดวงแสนพุฒ ถึงหนองหวาย หมู่ที่ ๑๒</span> 
+            งานก่อสร้าง <span id="lbl_project_title">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากนานายราวี ดวงแสนพุฒ ถึงหนองหวาย หมู่ที่ ๑๒</span> 
             โดยผู้ว่าจ้างคือ <span id="lbl_employer">องค์การบริหารส่วนตำบลโพนงาม</span> 
             ได้ทำสัญญาจ้างเลขที่ <span id="lbl_contract_no">E๑/๒๕๖๙</span> ลงวันที่ <span id="lbl_contract_date">๕ มิถุนายน ๒๕๖๙</span> 
             กับผู้รับจ้าง <span id="lbl_contractor">ห้างหุ้นส่วนจำกัด เค.เค.มุกดาหารก่อสร้าง</span> 
@@ -254,7 +253,6 @@
           projectData = JSON.parse(basicRaw);
           globalProjectData = projectData; 
 
-          // 💡 ตรวจจับและดึงค่าข้อมูลโครงการครบทุกจุด
           if (projectData.organizationName) {
             setElText('lbl_org', `กองช่าง ${projectData.organizationName}`);
             setElText('lbl_employer', toThaiNumber(projectData.organizationName));
@@ -288,7 +286,6 @@
             setElText('lbl_fine_per_day', formatThaiCurrency(projectData.finePerDay));
           }
 
-          // จัดการข้อความต่อสัญญา (เพิ่มความหนาตัวอักษรเพื่อเน้นย้ำ)
           const extInfoEl = document.getElementById('lbl_extension_info');
           if (extInfoEl) {
             if (projectData.extendContractDate && projectData.extendContractDate.trim() !== '') {
@@ -420,15 +417,22 @@
       let timePercentText = "(- %)";
 
       const rawStartDate = globalProjectData ? (globalProjectData.startDateTh || globalProjectData.startDate) : null;
-      const rawEndDate = globalCurrentWeekObj && globalCurrentWeekObj.endDate ? globalCurrentWeekObj.endDate : (globalProjectData ? (globalProjectData.endDateTh || globalProjectData.endDate) : null);
+      
+      // 💡 แก้ไข: ใช้ วันสิ้นสุดสัญญาจริงของโครงการ แทนการใช้วันที่สิ้นสุดของสัปดาห์
+      let rawEndDate = globalProjectData ? (globalProjectData.extendContractDate || globalProjectData.endDateTh || globalProjectData.endDate) : null;
 
       if (rawStartDate && rawEndDate && totalDaysNum > 0) {
         const sDate = parseThaiDateStr(rawStartDate);
         const eDate = parseThaiDateStr(rawEndDate);
         
         if (sDate && eDate && !isNaN(sDate.getTime()) && !isNaN(eDate.getTime())) {
-          const diffTime = eDate.getTime() - sDate.getTime();
+          // ดึงวันที่รายงานปัจจุบันของสัปดาห์มาคำนวณเวลาที่ผ่านไปจริงถึงสัปดาห์นี้
+          const currentRepDateStr = globalCurrentWeekObj && globalCurrentWeekObj.endDate ? globalCurrentWeekObj.endDate : rawEndDate;
+          const currentRepDate = parseThaiDateStr(currentRepDateStr) || eDate;
+
+          const diffTime = currentRepDate.getTime() - sDate.getTime();
           const passedDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
+          
           let remainDays = Math.max(0, totalDaysNum - passedDays);
           let timePercent = (passedDays / totalDaysNum) * 100;
           if (timePercent > 100) timePercent = 100;
