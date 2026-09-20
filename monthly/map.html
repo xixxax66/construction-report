@@ -92,13 +92,16 @@
   <!-- ซ่อน input สำหรับอัปโหลดภาพแผนที่ -->
   <input type="file" id="map_file_input" accept="image/*" class="hidden" onchange="processMapUpload(event)">
 
-  <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
+  <!-- แผงควบคุมด้านบน -->
   <div class="max-w-6xl w-full mb-4 bg-white p-5 rounded-2xl shadow-lg border border-slate-300 flex flex-wrap items-center justify-between gap-4 no-print">
     <div class="flex items-center gap-3">
       <a id="btn_back_menu" href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-2xl font-bold border border-slate-300 shadow-sm">
         <i data-lucide="arrow-left" class="w-6 h-6"></i> กลับเมนู
       </a>
-      <span class="font-bold text-slate-800 text-2xl">แผนที่แสดงที่ตั้งโครงการ</span>
+      <div>
+        <span class="font-bold text-slate-800 text-2xl block">แผนที่แสดงที่ตั้งโครงการ</span>
+        <span id="lbl_badge_contract" class="text-xs text-slate-500 font-bold">สัญญา: -</span>
+      </div>
     </div>
     
     <div class="flex items-center gap-3 flex-wrap">
@@ -149,28 +152,69 @@
     const GOOGLE_SCRIPT_URL = localStorage.getItem('CONSTRUCTION_GAS_URL') || 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
 
     function initProjectContext() {
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
-      if (basicRaw) {
-        try {
-          const projectData = JSON.parse(basicRaw);
-          currentContractNo = projectData.contractNo || 'NO_CONTRACT';
-          currentProjectID = `PROJ_${currentContractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
-          currentDriveFolderId = projectData.driveFolderId || '';
-          MAP_STORAGE_KEY = `PROJECT_MAP_IMAGE_DATA_${currentProjectID}`;
-        } catch(e) {}
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramProj = urlParams.get('projectID');
+      const paramContract = urlParams.get('contractNo');
+
+      let basicData = null;
+      if (paramProj) {
+        const raw = localStorage.getItem(`LOCAL_BASIC_INFO_${paramProj}`);
+        if (raw) { try { basicData = JSON.parse(raw); } catch(e){} }
       }
+
+      if (!basicData) {
+        const raw = localStorage.getItem('LOCAL_BASIC_INFO');
+        if (raw) { try { basicData = JSON.parse(raw); } catch(e){} }
+      }
+
+      if (basicData) {
+        currentContractNo = paramContract || basicData.contractNo || 'NO_CONTRACT';
+        const cleanCNo = currentContractNo.replace(/[^a-zA-Z0-9]/g, '_');
+        currentProjectID = paramProj || basicData.projectID || `PROJ_${cleanCNo}`;
+        currentDriveFolderId = basicData.driveFolderId || '';
+      } else {
+        currentContractNo = paramContract || 'DEFAULT';
+        currentProjectID = paramProj || `PROJ_${currentContractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      }
+
+      MAP_STORAGE_KEY = `PROJECT_MAP_IMAGE_DATA_${currentProjectID}`;
+      
+      const badgeEl = document.getElementById('lbl_badge_contract');
+      if (badgeEl) badgeEl.textContent = `สัญญา: ${currentContractNo} (ID: ${currentProjectID})`;
     }
 
-    // ฟังก์ชันลบรูปภาพแผนที่
     function deleteMapImage() {
-      if(confirm('คุณต้องการลบรูปภาพแผนที่ของโครงการนี้ใช่หรือไม่คะ?')) {
+      if (confirm('คุณต้องการลบรูปภาพแผนที่ของโครงการนี้ใช่หรือไม่คะ?')) {
         localStorage.removeItem(MAP_STORAGE_KEY);
         resetMapDisplay();
         alert('ลบรูปภาพแผนที่จากหน้าจอเรียบร้อยแล้วค่ะ');
       }
     }
 
-    // ฟังก์ชันอัปโหลดรูปร่วมกับ Google Drive API (แก้ไขลำดับใหม่)
+    function compressImage(img, maxWidth, maxHeight, quality) {
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height *= maxWidth / width;
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width *= maxHeight / height;
+          height = maxHeight;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(width);
+      canvas.height = Math.round(height);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', quality);
+    }
+
     function processMapUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -181,49 +225,35 @@
       btnUpload.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> กำลังอัปโหลด...`;
       lucide.createIcons();
 
-      // 1. นำไฟล์ต้นฉบับมาแปลงเป็นพรีวิวแสดงให้เห็นบนหน้าจอทันทีก่อน (ยังไม่กินพื้นที่เซฟ)
-      const tempUrl = URL.createObjectURL(file);
-      displayMapImage(tempUrl);
+      const objectUrl = URL.createObjectURL(file);
+      displayMapImage(objectUrl);
 
       const reader = new FileReader();
       reader.onload = function(evt) {
         const img = new Image();
         img.onload = async function() {
-          
-          // --- สร้างรูปภาพขนาดใหญ่สำหรับส่งขึ้น Google Drive ---
-          let uWidth = img.width;
-          let uHeight = img.height;
-          const MAX_U = 1200;
-          if (uWidth > uHeight) { if (uWidth > MAX_U) { uHeight *= MAX_U / uWidth; uWidth = MAX_U; } }
-          else { if (uHeight > MAX_U) { uWidth *= MAX_U / uHeight; uHeight = MAX_U; } }
-          
-          const canvasU = document.createElement('canvas');
-          canvasU.width = uWidth; canvasU.height = uHeight;
-          const ctxU = canvasU.getContext('2d');
-          ctxU.drawImage(img, 0, 0, uWidth, uHeight);
-          const uploadBase64 = canvasU.toDataURL('image/jpeg', 0.8); // คุณภาพดี
+          // 1. ภาพขนาดใหญ่สำหรับส่งขึ้น Google Drive (กว้างไม่เกิน 1200px คุณภาพ 0.75)
+          const uploadBase64 = compressImage(img, 1200, 1600, 0.75);
 
-          // --- สร้างรูปภาพขนาดจิ๋วสำหรับแคชลงเบราว์เซอร์ LocalStorage (ลดปัญหาพื้นที่เต็ม) ---
-          let pWidth = img.width;
-          let pHeight = img.height;
-          const MAX_P = 600;
-          if (pWidth > pHeight) { if (pWidth > MAX_P) { pHeight *= MAX_P / pWidth; pWidth = MAX_P; } }
-          else { if (pHeight > MAX_P) { pWidth *= MAX_P / pHeight; pHeight = MAX_P; } }
-          
-          const canvasP = document.createElement('canvas');
-          canvasP.width = pWidth; canvasP.height = pHeight;
-          const ctxP = canvasP.getContext('2d');
-          ctxP.drawImage(img, 0, 0, pWidth, pHeight);
-          const previewBase64 = canvasP.toDataURL('image/jpeg', 0.5); // บีบอัดสูง
+          // 2. ภาพขนาดเล็กสำหรับแคชใน LocalStorage ป้องกัน Quota Exceeded (กว้างไม่เกิน 800px คุณภาพ 0.6)
+          const previewBase64 = compressImage(img, 800, 1000, 0.6);
 
+          // บันทึกลง LocalStorage ก่อน
           try {
-            // 2. ส่งข้อมูลรูปภาพขนาดใหญ่ไปอัปโหลดขึ้น Google Drive "ให้สำเร็จก่อน"
+            localStorage.setItem(MAP_STORAGE_KEY, previewBase64);
+            displayMapImage(previewBase64);
+          } catch (storageErr) {
+            console.warn("LocalStorage เต็ม ไม่สามารถบันทึกภาพลงเครื่องได้:", storageErr);
+          }
+
+          // 3. ส่งไฟล์ขึ้น Google Drive ผ่าน Apps Script
+          try {
             const payload = {
               action: 'upload_original_photo',
               driveFolderId: currentDriveFolderId,
               contractNo: currentContractNo,
               imageB64: uploadBase64,
-              fileName: `Map_${currentContractNo}_${Date.now()}.jpg`
+              fileName: `Map_${currentContractNo.replace(/[/\\?%*:|"<>]/g, '_')}_${Date.now()}.jpg`
             };
 
             const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -236,39 +266,23 @@
 
             const result = await response.json();
             if (result && result.status === 'success') {
-              
-              // 3. พออัปโหลด Drive สำเร็จ ค่อยดึงภาพขนาดจิ๋วมาจำไว้ในเครื่อง
-              try {
-                localStorage.setItem(MAP_STORAGE_KEY, previewBase64);
-                // แสดงผลจากภาพเล็ก
-                displayMapImage(previewBase64);
-              } catch (localErr) {
-                console.warn("พื้นที่เบราว์เซอร์เต็ม ไม่สามารถแคชรูปขนาดย่อได้", localErr);
-              }
-
-              alert("อัปโหลดและบันทึกรูปภาพแผนที่ไปยัง Google Drive สำเร็จแล้วค่ะ!");
+              alert("อัปโหลดรูปภาพแผนที่ไปยัง Google Drive และบันทึกเรียบร้อยแล้วค่ะ!");
             } else {
-              throw new Error(result.message || "Unknown error from server");
+              throw new Error(result ? result.message : "การตอบกลับไม่ถูกต้อง");
             }
-          } catch (err) {
-            console.error(err);
-            alert("การอัปโหลดไป Google Drive ล้มเหลวค่ะ: " + err.message);
-            // ถ้าอัปโหลดไม่สำเร็จ ให้ล้างพรีวิวชั่วคราวออก แล้วดึงรูปเก่ามาแสดงแทน
-            const oldMap = localStorage.getItem(MAP_STORAGE_KEY);
-            if (oldMap) displayMapImage(oldMap);
-            else resetMapDisplay();
+          } catch (cloudErr) {
+            console.error("Cloud upload error:", cloudErr);
+            alert("บันทึกรูปลงในหน้าจอเรียบร้อยแล้วค่ะ (แต่การส่งขึ้น Google Drive แจ้งเตือน: " + cloudErr.message + ")");
           } finally {
-            // คืนค่าปุ่มกลับสู่สภาพเดิม
             btnUpload.disabled = false;
             btnUpload.innerHTML = originalBtnHtml;
             lucide.createIcons();
+            URL.revokeObjectURL(objectUrl);
           }
         };
         img.src = evt.target.result;
       };
       reader.readAsDataURL(file);
-      
-      // รีเซ็ตค่า input เพื่อให้สามารถเลือกไฟล์เดิมซ้ำได้
       e.target.value = '';
     }
 
@@ -297,26 +311,23 @@
         document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
       }
 
-      // โหลดข้อมูลชื่อและสถานที่โครงการ
-      const specificBasicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
-      if (specificBasicRaw) {
+      // โหลดข้อมูลโครงการเพื่อแสดงชื่อและหน่วยงาน
+      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
         try {
-          const projectData = JSON.parse(specificBasicRaw);
+          const projectData = JSON.parse(basicRaw);
           if (projectData.projectName) {
             document.getElementById('lbl_project_desc').textContent = projectData.projectName;
           }
           if (projectData.organizationName) {
             document.getElementById('lbl_footer_org').textContent = projectData.organizationName;
           }
-          if (projectData.driveFolderId && currentDriveFolderId === '') {
-            currentDriveFolderId = projectData.driveFolderId;
-          }
         } catch (e) {
           console.error("Error loading project info:", e);
         }
       }
 
-      // โหลดและดึงรูปภาพแผนที่ขึ้นมาแสดงตอนเปิดหน้า
+      // ดึงภาพแผนที่ที่เคยบันทึกไว้ของโครงการนี้
       const savedMap = localStorage.getItem(MAP_STORAGE_KEY);
       if (savedMap) {
         displayMapImage(savedMap);
