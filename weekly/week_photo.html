@@ -113,7 +113,7 @@
     </div>
   </div>
 
-  <!-- Modal ปรับแต่งรูปภาพ (Crop Tool ปรับปรุงใหม่) -->
+  <!-- Modal ปรับแต่งรูปภาพ (Crop Tool) -->
   <div id="image_editor_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
     <div class="bg-white rounded-2xl p-5 max-w-md w-full mx-4 shadow-2xl border border-slate-200 space-y-3">
       <div class="flex items-center justify-between border-b pb-2">
@@ -123,7 +123,7 @@
         <button onclick="closeImageEditor()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
 
-      <!-- พื้นที่ Cropper (ล็อกสัดส่วนตามที่เลือก) -->
+      <!-- พื้นที่ Cropper -->
       <div id="cropper_container" 
            style="aspect-ratio: 4/3;"
            onmousedown="startCropDrag(event)" onmousemove="onCropMove(event)" onmouseup="endCropDrag()" onmouseleave="endCropDrag()"
@@ -210,22 +210,16 @@
   </div>
 
   <script>
-  // 📐 ฟังก์ชันสลับสัดส่วนกรอบ Cropper ตามต้องการ
     function setCropAspect(ratioStr, btnEl) {
-      // เปลี่ยนสีปุ่มที่เลือก
       document.querySelectorAll('.aspect-btn').forEach(b => {
         b.className = "px-2.5 py-1 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded text-xs font-bold transition aspect-btn";
       });
       btnEl.className = "px-2.5 py-1 bg-blue-600 text-white rounded text-xs font-bold shadow-sm transition aspect-btn";
 
       const container = document.getElementById('cropper_container');
-      if (ratioStr === '4:3') {
-        container.style.aspectRatio = '4/3';
-      } else if (ratioStr === '1:1') {
-        container.style.aspectRatio = '1/1';
-      } else if (ratioStr === '16:9') {
-        container.style.aspectRatio = '16/9';
-      }
+      if (ratioStr === '4:3') container.style.aspectRatio = '4/3';
+      else if (ratioStr === '1:1') container.style.aspectRatio = '1/1';
+      else if (ratioStr === '16:9') container.style.aspectRatio = '16/9';
       lucide.createIcons();
     }
 
@@ -234,17 +228,18 @@
     const currentWeekIndex = parseInt(urlParams.get('week')) || 1;
     
     let currentProjectID = 'DEFAULT_PROJ';
-    let currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
+    let currentReportMonth = urlParams.get('month') || 'SEP_2569';
     let PHOTO_STORAGE_KEY = `WEEK_PHOTO_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
 
     let projectTitle = "โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก";
     let inspName = "นายพัทธิยะ วงษาซ้าย";
     let inspPos = "ผู้ควบคุมงาน";
-    let startDate = "-";
-    let endDate = "-";
+    
+    // 💡 ตัวแปรสำหรับแสดงผลรายงานครั้งที่, สัปดาห์ที่ และปี
     let weekSeq = currentWeekIndex;
     let weekNum = currentWeekIndex;
-    let weekYear = "2569";
+    let weekYear = "2569"; 
+    
     let commsList = ["นางสาวถนอมนวล วะทวีก้านตรงฯ", "จ่าเอกธีรพงษ์ ดรชานนท์", "นางสาวปนัดดา ภูอาษา", "นายวีระศักดิ์ ทับวิชร", "นายอรรถวัต อดทน"];
 
     let photosList = [{ src: "", desc: "" }, { src: "", desc: "" }];
@@ -259,7 +254,7 @@
 
     function thaiDateText(dateStr) {
       if (!dateStr) return '';
-      const thaiMonths = { "January": "มกราคม", "February": "กุมภาพันธ์", "March": "มีนาคม", "April": "เมษายน", "May": "พฤษภาคม", "June": "มิถุนายน", "July": "กรกฎาคม", "August": "สิงหาคม", "September": "กันยายน", "October": "ตุลาคม", "November": "พฤศจิกายน", "December": "ธันวาคม", "มกราคม": "มกราคม", "กุมภาพันธ์": "กุมภาพันธ์", "มีนาคม": "มีนาคม", "เมษายน": "เมษายน", "พฤษภาคม": "พฤษภาคม", "มิถุนายน": "มิถุนายน", "กรกฎาคม": "กรกฎาคม", "สิงหาคม": "สิงหาคม", "กันยายน": "กันยายน", "ตุลาคม": "ตุลาคม", "พฤศจิกายน": "พฤศจิกายน", "ธันวาคม": "ธันวาคม" };
+      const thaiMonths = { "January": "มกราคม", "February": "กุมภาพันธ์", "March": "มีนาคม", "April": "เมษายน", "May": "พฤษภาคม", "June": "มิถุนายน", "July": "กรกฎาคม", "August": "สิงหาคม", "September": "กันยายน", "October": "ตุลาคม", "November": "พฤศจิกายน", "December": "ธันวาคม" };
       let cleanStr = dateStr.toString().trim();
       for (const [enM, thM] of Object.entries(thaiMonths)) {
         if (cleanStr.toLowerCase().includes(enM.toLowerCase())) cleanStr = cleanStr.replace(new RegExp(enM, 'gi'), thM);
@@ -286,7 +281,7 @@
       commsList.forEach((name, idx) => {
         if (!name) return;
         const isPresident = (idx === 0);
-        commHtml += `<div class="${isPresident ? 'col-span-2 flex justify-center' : ''}"><div><p>(ลงชื่อ).................................................... ${isPresident ? 'ประธานกรรมการฯ' : 'กรรมการฯ'}</p><p class="mt-0.5">(${escapeHTML(name)})</p></div></div>`;
+        commHtml += `<div class="${isPresident ? 'col-span-2 flex justify-center' : ''}"><div><p>(ลงชื่อ).................................................... ${isPresident ? 'ประธานกรรมการฯ' : 'กรรมการฯ'}</p><p class="mt-0.5">(${name})</p></div></div>`;
       });
 
       chunks.forEach((chunk, pageIndex) => {
@@ -296,8 +291,7 @@
         
         chunk.forEach((item, localIdx) => {
           const globalIdx = pageIndex * 4 + localIdx;
-          const safeSrc = safeImageUrl(item.src);
-          const hasImg = safeSrc !== '';
+          const hasImg = item.src && item.src.trim() !== "";
           const emptyDescClass = (!item.desc || item.desc.trim() === '') ? 'empty-desc' : '';
 
           gridHtml += `
@@ -307,10 +301,10 @@
                   <i data-lucide="image-plus" class="w-8 h-8 mx-auto mb-1 text-blue-600"></i>
                   <span class="text-xs font-bold">คลิกเลือกภาพที่ ${globalIdx + 1} จากคลัง Drive</span>
                 </div>
-                <img src="${escapeHTML(safeSrc)}" class="${hasImg ? '' : 'hidden'}">
+                <img src="${item.src || ''}" class="${hasImg ? '' : 'hidden'}">
               </div>
               <div class="mt-2 flex items-center gap-1 desc-wrapper ${emptyDescClass}">
-                <input type="text" value="${escapeHTML(item.desc || '')}" oninput="updatePhotoDesc(${globalIdx}, this.value, this)" class="cell-input-text text-sm font-semibold" placeholder="คำอธิบายภาพ...">
+                <input type="text" value="${item.desc || ''}" oninput="updatePhotoDesc(${globalIdx}, this.value, this)" class="cell-input-text text-sm font-semibold" placeholder="คำอธิบายภาพ...">
                 <button onclick="event.stopPropagation(); removePhotoSlot(${globalIdx})" class="text-rose-500 hover:text-rose-700 p-1 cursor-pointer no-print"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
               </div>
             </div>`;
@@ -321,14 +315,14 @@
             <div>
               <div class="text-center mb-1">
                 <h2 class="doc-title">ภาพถ่ายสภาพการปฏิบัติงาน</h2>
-                <p class="font-bold text-slate-800 text-[16pt] leading-tight">${escapeHTML(toThaiNumber(projectTitle))}</p>
+                <p class="font-bold text-slate-800 text-[16pt] leading-tight">${toThaiNumber(projectTitle)}</p>
                 <p class="text-[15pt]">รายงานครั้งที่ <span class="font-bold">${toThaiNumber(weekSeq)}</span> สัปดาห์ที่ <span class="font-bold">${toThaiNumber(weekNum)}/${toThaiNumber(weekYear)}</span></p>
               </div>
               <div class="${gridClass}">${gridHtml}</div>
             </div>
             <div>
               <div class="mt-2 flex justify-end pr-8 text-center">
-                <div class="space-y-0.5"><p>(ลงชื่อ)........................................................... <span>${escapeHTML(inspPos)}</span></p><p>(<span>${escapeHTML(inspName)}</span>)</p></div>
+                <div class="space-y-0.5"><p>(ลงชื่อ)........................................................... <span>${inspPos}</span></p><p>(<span>${inspName}</span>)</p></div>
               </div>
               <div class="mt-2 pt-1 border-t border-slate-300">
                 <p class="text-[15pt] font-semibold mb-0.5">- ทราบ / ผลการตรวจสภาพงาน</p>
@@ -348,12 +342,7 @@
     }
 
     function savePhotosToLocalSafe() {
-      try {
-        localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList }));
-      } catch (err) {
-        console.error('Photo save failed:', err);
-        alert('พื้นที่จัดเก็บรูปภาพในเครื่องเต็ม กรุณาลบรูปที่ไม่ใช้หรืออัปโหลดต้นฉบับขึ้น Drive ก่อนค่ะ');
-      }
+      try { localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList })); } catch (err) {}
     }
 
     async function handleBatchUploadToDrive(e) {
@@ -383,15 +372,11 @@
           reader.onload = async function(evt) {
             try {
               const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
-              if (!centralUrl) throw new Error('ยังไม่ได้ตั้งค่า Cloud URL');
-              const response = await fetch(centralUrl, {
+              await fetch(centralUrl, {
                 method: 'POST', mode: 'cors', redirect: 'follow',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: 'upload_original_photo', contractNo: contractNo, folderId: imageFolderId, fileName: `Orig_${Date.now()}_${file.name}`, imageB64: evt.target.result })
               });
-              if (!response.ok) throw new Error(`HTTP ${response.status}`);
-              const uploadResult = await response.json();
-              if (uploadResult && uploadResult.status !== 'success') throw new Error(uploadResult.message || 'Upload failed');
               count++;
             } catch(err) {}
             resolve();
@@ -425,27 +410,20 @@
 
       try {
         const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
-        if (!centralUrl) throw new Error('ยังไม่ได้ตั้งค่า Cloud URL');
         const res = await fetch(`${centralUrl}?action=get_drive_photos&folderId=${imageFolderId}&contractNo=${encodeURIComponent(contractNo)}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const result = await res.json();
         
         if (result.status === 'success' && result.photos && result.photos.length > 0) {
           grid.innerHTML = '';
           result.photos.forEach(p => {
-            const previewUrl = safeImageUrl(p.thumbnailUrl || p.url);
-            const fullUrl = safeImageUrl(p.url);
-            if (!previewUrl || !fullUrl) return;
+            const previewUrl = p.thumbnailUrl || p.url;
             grid.innerHTML += `
-              <div class="drive-photo-card border rounded-xl p-2 cursor-pointer hover:border-blue-500 hover:shadow-md bg-white flex flex-col items-center transition" data-photo-url="${escapeHTML(fullUrl)}">
+              <div class="border rounded-xl p-2 cursor-pointer hover:border-blue-500 hover:shadow-md bg-white flex flex-col items-center transition" onclick="selectDrivePhotoForCrop('${p.url}')">
                 <div class="w-full aspect-4/3 bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center">
                   <img src="${previewUrl}" class="w-full h-full object-cover" crossorigin="anonymous">
                 </div>
-                <span class="text-[11px] text-slate-700 font-medium truncate w-full text-center mt-1.5">${escapeHTML(p.name)}</span>
+                <span class="text-[11px] text-slate-700 font-medium truncate w-full text-center mt-1.5">${p.name}</span>
               </div>`;
-          });
-          grid.querySelectorAll('.drive-photo-card').forEach(card => {
-            card.addEventListener('click', () => selectDrivePhotoForCrop(card.dataset.photoUrl));
           });
         } else {
           grid.innerHTML = '<p class="col-span-3 text-center text-slate-500 py-6">ไม่พบรูปในคลัง Drive ของสัญญานี้<br><span class="text-xs text-indigo-600">กรุณากดอัปโหลดรูปต้นฉบับก่อนค่ะ</span></p>';
@@ -521,12 +499,13 @@
     function saveReportMetadataOnly() { savePhotosToLocalSafe(); alert("บันทึกข้อมูลรายงานเรียบร้อยแล้วค่ะ!"); }
 
     function loadProjectAndPhotoData() {
+      // 1. ดึงข้อมูลโครงการเบื้องต้น
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
           let projectData = JSON.parse(basicRaw);
           if (projectData.contractNo) {
-            currentProjectID = getActiveProjectId(projectData);
+            currentProjectID = `PROJ_${projectData.contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
             currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
             PHOTO_STORAGE_KEY = `WEEK_PHOTO_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
           }
@@ -535,13 +514,35 @@
           if (projectData.committees && projectData.committees.length > 0) commsList = projectData.committees;
         } catch(e){}
       }
-      const cached = localStorage.getItem(PHOTO_STORAGE_KEY) || localStorage.getItem(`WEEK_PHOTO_DATA_${currentWeekIndex}`);
-      if (cached) {
+
+      // 2. 💡 ดึงข้อมูลสัปดาห์ (seq, week, year) จากฐานข้อมูลอ้างอิงให้ตรงกับความเป็นจริง
+      const refDataRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`) || 
+                         localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || 
+                         localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+
+      if (refDataRaw) {
         try {
-          const data = JSON.parse(cached);
-          if (Array.isArray(data.photos)) photosList = data.photos.map(p => ({ src: safeImageUrl(p.src), desc: String(p.desc || '') }));
-        } catch(e) {}
+          const weeks = JSON.parse(refDataRaw);
+          const wItem = weeks.find(w => parseInt(w.weekIndex) === currentWeekIndex);
+          if (wItem) {
+            if (wItem.seq) weekSeq = wItem.seq;
+            if (wItem.week) weekNum = wItem.week;
+            
+            // ดึงปี พ.ศ. จาก startDate (ตัวอย่าง format: "23 สิงหาคม 2569")
+            if (wItem.startDate) {
+               const parts = wItem.startDate.split(' ');
+               if (parts.length >= 3) {
+                 weekYear = parts[2];
+               }
+            }
+          }
+        } catch (e) {}
       }
+
+      // 3. โหลดภาพที่เคยบันทึก
+      const cached = localStorage.getItem(PHOTO_STORAGE_KEY) || localStorage.getItem(`WEEK_PHOTO_DATA_${currentWeekIndex}`);
+      if (cached) { try { const data = JSON.parse(cached); if (data.photos) photosList = data.photos; } catch(e) {} }
+      
       renderAllPages();
     }
 
