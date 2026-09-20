@@ -102,13 +102,13 @@
     </div>
     
     <div class="flex items-center gap-3 flex-wrap">
-      <button onclick="document.getElementById('map_file_input').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow cursor-pointer">
-        <i data-lucide="image-plus" class="w-5 h-5"></i> อัปโหลดรูปใหม่
+      <button id="btn_upload_map" onclick="document.getElementById('map_file_input').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow cursor-pointer transition">
+        <i data-lucide="cloud-upload" class="w-5 h-5"></i> อัปโหลดรูปขึ้น Drive
       </button>
-      <button onclick="deleteMapImage()" class="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow cursor-pointer">
+      <button onclick="deleteMapImage()" class="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow cursor-pointer transition">
         <i data-lucide="trash-2" class="w-5 h-5"></i> ลบรูปแผนที่
       </button>
-      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow cursor-pointer">
+      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow cursor-pointer transition">
         <i data-lucide="printer" class="w-5 h-5"></i> พิมพ์แผนที่
       </button>
     </div>
@@ -142,15 +142,20 @@
     lucide.createIcons();
     
     let currentProjectID = 'DEFAULT_PROJ';
+    let currentContractNo = 'DEFAULT';
+    let currentDriveFolderId = '';
     let MAP_STORAGE_KEY = `PROJECT_MAP_IMAGE_DATA_${currentProjectID}`;
+
+    const GOOGLE_SCRIPT_URL = localStorage.getItem('CONSTRUCTION_GAS_URL') || 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
 
     function initProjectContext() {
       const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
           const projectData = JSON.parse(basicRaw);
-          const cNo = projectData.contractNo || 'NO_CONTRACT';
-          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          currentContractNo = projectData.contractNo || 'NO_CONTRACT';
+          currentProjectID = `PROJ_${currentContractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          currentDriveFolderId = projectData.driveFolderId || '';
           MAP_STORAGE_KEY = `PROJECT_MAP_IMAGE_DATA_${currentProjectID}`;
         } catch(e) {}
       }
@@ -161,19 +166,25 @@
       if(confirm('คุณต้องการลบรูปภาพแผนที่ของโครงการนี้ใช่หรือไม่คะ?')) {
         localStorage.removeItem(MAP_STORAGE_KEY);
         resetMapDisplay();
-        alert('ลบรูปภาพแผนที่เรียบร้อยแล้วค่ะ');
+        alert('ลบรูปภาพแผนที่จากหน้าจอเรียบร้อยแล้วค่ะ');
       }
     }
 
-    // ฟังก์ชันอัปโหลดรูปภาพ พร้อมระบบบีบอัดขนาดไฟล์ก่อนจัดเก็บ (แก้ปัญหาเมมโมรี่เต็ม)
+    // ฟังก์ชันอัปโหลดรูปร่วมกับ Google Drive API
     function processMapUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
 
+      const btnUpload = document.getElementById('btn_upload_map');
+      const originalBtnHtml = btnUpload.innerHTML;
+      btnUpload.disabled = true;
+      btnUpload.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> กำลังอัปโหลด...`;
+      lucide.createIcons();
+
       const reader = new FileReader();
       reader.onload = function(evt) {
         const img = new Image();
-        img.onload = function() {
+        img.onload = async function() {
           // กำหนดขนาดสูงสุดของภาพเพื่อบีบอัด
           const MAX_WIDTH = 1200;
           const MAX_HEIGHT = 1600;
@@ -204,13 +215,41 @@
           const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
 
           try {
-            // ทำการบันทึกลงฐานข้อมูลก่อน
+            // 1. นำรูปภาพมาแสดงบนหน้าจอทันที เพื่อความรวดเร็ว
             localStorage.setItem(MAP_STORAGE_KEY, compressedBase64);
-            // ดึงไฟล์ที่บันทึกแล้วมาแสดงผล
             displayMapImage(compressedBase64);
-            alert("อัปโหลดและบันทึกรูปภาพแผนที่สำหรับโครงการนี้สำเร็จแล้วค่ะ!");
+
+            // 2. ส่งข้อมูลรูปภาพไปบันทึกลง Google Drive ผ่าน Google Apps Script
+            const payload = {
+              action: 'upload_original_photo',
+              driveFolderId: currentDriveFolderId,
+              contractNo: currentContractNo,
+              imageB64: compressedBase64,
+              fileName: `Map_${currentContractNo}_${Date.now()}.jpg`
+            };
+
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+              method: 'POST',
+              mode: 'cors',
+              redirect: 'follow',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (result && result.status === 'success') {
+              alert("อัปโหลดและบันทึกรูปภาพแผนที่ไปยัง Google Drive สำเร็จแล้วค่ะ!");
+            } else {
+              throw new Error(result.message || "Unknown error from server");
+            }
           } catch (err) {
-            alert("ข้อผิดพลาด: พื้นที่จัดเก็บรูปภาพในเบราว์เซอร์เต็ม ไม่สามารถบันทึกได้ค่ะ");
+            console.error(err);
+            alert("บันทึกรูปลงเครื่องสำเร็จ แต่การอัปโหลดไป Google Drive ล้มเหลวค่ะ: " + err.message);
+          } finally {
+            // คืนค่าปุ่มกลับสู่สภาพเดิม
+            btnUpload.disabled = false;
+            btnUpload.innerHTML = originalBtnHtml;
+            lucide.createIcons();
           }
         };
         img.src = evt.target.result;
@@ -247,15 +286,18 @@
       }
 
       // โหลดข้อมูลชื่อและสถานที่โครงการ
-      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
-      if (basicRaw) {
+      const specificBasicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+      if (specificBasicRaw) {
         try {
-          const projectData = JSON.parse(basicRaw);
+          const projectData = JSON.parse(specificBasicRaw);
           if (projectData.projectName) {
             document.getElementById('lbl_project_desc').textContent = projectData.projectName;
           }
           if (projectData.organizationName) {
             document.getElementById('lbl_footer_org').textContent = projectData.organizationName;
+          }
+          if (projectData.driveFolderId && currentDriveFolderId === '') {
+            currentDriveFolderId = projectData.driveFolderId;
           }
         } catch (e) {
           console.error("Error loading project info:", e);
