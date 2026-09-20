@@ -93,7 +93,7 @@
   <input type="file" id="map_file_input" accept="image/*" class="hidden" onchange="processMapUpload(event)">
 
   <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
-  <div class="max-w-5xl w-full mb-4 bg-white p-5 rounded-2xl shadow-lg border border-slate-300 flex flex-wrap items-center justify-between gap-4 no-print">
+  <div class="max-w-6xl w-full mb-4 bg-white p-5 rounded-2xl shadow-lg border border-slate-300 flex flex-wrap items-center justify-between gap-4 no-print">
     <div class="flex items-center gap-3">
       <a id="btn_back_menu" href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-2xl font-bold border border-slate-300 shadow-sm">
         <i data-lucide="arrow-left" class="w-6 h-6"></i> กลับเมนู
@@ -102,11 +102,14 @@
     </div>
     
     <div class="flex items-center gap-3 flex-wrap">
-      <button onclick="document.getElementById('map_file_input').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-2xl font-bold flex items-center gap-2 shadow cursor-pointer">
-        <i data-lucide="image-plus" class="w-6 h-6"></i> อัปโหลดรูปแผนที่
+      <button onclick="document.getElementById('map_file_input').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow cursor-pointer">
+        <i data-lucide="image-plus" class="w-5 h-5"></i> อัปโหลดรูปใหม่
       </button>
-      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-2xl font-bold flex items-center gap-2 shadow cursor-pointer">
-        <i data-lucide="printer" class="w-6 h-6"></i> พิมพ์แผนที่
+      <button onclick="deleteMapImage()" class="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow cursor-pointer">
+        <i data-lucide="trash-2" class="w-5 h-5"></i> ลบรูปแผนที่
+      </button>
+      <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xl font-bold flex items-center gap-2 shadow cursor-pointer">
+        <i data-lucide="printer" class="w-5 h-5"></i> พิมพ์แผนที่
       </button>
     </div>
   </div>
@@ -153,19 +156,69 @@
       }
     }
 
+    // ฟังก์ชันลบรูปภาพแผนที่
+    function deleteMapImage() {
+      if(confirm('คุณต้องการลบรูปภาพแผนที่ของโครงการนี้ใช่หรือไม่คะ?')) {
+        localStorage.removeItem(MAP_STORAGE_KEY);
+        resetMapDisplay();
+        alert('ลบรูปภาพแผนที่เรียบร้อยแล้วค่ะ');
+      }
+    }
+
+    // ฟังก์ชันอัปโหลดรูปภาพ พร้อมระบบบีบอัดขนาดไฟล์ก่อนจัดเก็บ (แก้ปัญหาเมมโมรี่เต็ม)
     function processMapUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(evt) {
-        const base64Img = evt.target.result;
-        // บันทึกภาพลงในคีย์ที่แยกตามรหัสโปรเจกต์โดยเฉพาะ
-        localStorage.setItem(MAP_STORAGE_KEY, base64Img);
-        displayMapImage(base64Img);
-        alert("อัปโหลดและบันทึกรูปภาพแผนที่สำหรับโครงการนี้เรียบร้อยแล้วค่ะ!");
+        const img = new Image();
+        img.onload = function() {
+          // กำหนดขนาดสูงสุดของภาพเพื่อบีบอัด
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 1600;
+          let width = img.width;
+          let height = img.height;
+
+          // คำนวณอัตราส่วนภาพใหม่
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          // สร้าง Canvas เพื่อใช้วาดและบีบอัดภาพ
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // แปลงกลับเป็น Base64 แบบ JPEG พร้อมบีบอัดคุณภาพ 75%
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+
+          try {
+            // ทำการบันทึกลงฐานข้อมูลก่อน
+            localStorage.setItem(MAP_STORAGE_KEY, compressedBase64);
+            // ดึงไฟล์ที่บันทึกแล้วมาแสดงผล
+            displayMapImage(compressedBase64);
+            alert("อัปโหลดและบันทึกรูปภาพแผนที่สำหรับโครงการนี้สำเร็จแล้วค่ะ!");
+          } catch (err) {
+            alert("ข้อผิดพลาด: พื้นที่จัดเก็บรูปภาพในเบราว์เซอร์เต็ม ไม่สามารถบันทึกได้ค่ะ");
+          }
+        };
+        img.src = evt.target.result;
       };
       reader.readAsDataURL(file);
+      
+      // รีเซ็ตค่า input เพื่อให้สามารถเลือกไฟล์เดิมซ้ำได้ในกรณีที่ต้องการแก้ไข
+      e.target.value = '';
     }
 
     function displayMapImage(src) {
@@ -185,7 +238,6 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      // 1. เรียกใช้งานการตั้งค่าบริบทโปรเจกต์ก่อนอันดับแรก
       initProjectContext();
 
       const urlParams = new URLSearchParams(window.location.search);
@@ -194,7 +246,7 @@
         document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
       }
 
-      // 2. โหลดข้อมูลโครงการเฉพาะของโปรเจกต์นั้นๆ
+      // โหลดข้อมูลชื่อและสถานที่โครงการ
       const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
@@ -210,7 +262,7 @@
         }
       }
 
-      // 3. โหลดรูปภาพแผนที่เฉพาะของโครงการปัจจุบัน
+      // โหลดและดึงรูปภาพแผนที่ขึ้นมาแสดงตอนเปิดหน้า
       const savedMap = localStorage.getItem(MAP_STORAGE_KEY);
       if (savedMap) {
         displayMapImage(savedMap);
