@@ -52,6 +52,7 @@
 
   <div class="max-w-5xl w-full bg-slate-100 p-5 sm:p-8 rounded-3xl shadow-2xl border border-slate-300 space-y-6">
     
+    <!-- Header Area -->
     <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-300 flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center gap-3.5">
         <div class="w-12 h-12 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md shrink-0">
@@ -76,6 +77,7 @@
       </div>
     </div>
 
+    <!-- Project Selector -->
     <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-300 flex items-center justify-between gap-3">
       <div class="flex items-center gap-2 flex-1">
         <i data-lucide="folder-kanban" class="w-5 h-5 text-emerald-600 shrink-0"></i>
@@ -84,6 +86,7 @@
       </div>
     </div>
 
+    <!-- Banner -->
     <div class="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-2xl p-5 sm:p-6 text-white shadow-lg relative overflow-hidden">
       <div class="relative z-10 flex flex-wrap justify-between items-center gap-4">
         <div class="space-y-1.5">
@@ -177,6 +180,7 @@
       </a>
     </div>
 
+    <!-- ส่วนตั้งค่าฐานข้อมูล และ Google Sheets -->
     <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-300 space-y-5">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
         <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
@@ -196,7 +200,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
         <div class="space-y-1.5 sm:col-span-2">
           <label class="text-sm font-semibold text-slate-700 flex items-center gap-1">
-            <i data-lucide="folder" class="w-4 h-4"></i> พื้นที่จัดเก็บ (Google Drive)
+            <i data-lucide="folder" class="w-4 h-4"></i> พื้นที่จัดเก็บรูปภาพ (Google Drive Folder ID)
           </label>
           <div class="flex items-center gap-2">
             <div class="flex-1 overflow-hidden relative">
@@ -210,10 +214,24 @@
             </button>
           </div>
         </div>
+
+        <!-- 💡 ช่องสำหรับใส่ Google Sheets ID -->
+        <div class="space-y-1.5 sm:col-span-2 pt-2 border-t border-slate-200">
+          <label class="text-sm font-semibold text-slate-700 flex items-center gap-1">
+            <i data-lucide="table" class="w-4 h-4"></i> พื้นที่จัดเก็บตารางฐานข้อมูล (Google Sheets ID)
+          </label>
+          <div class="flex items-center gap-2">
+            <input type="text" id="input_sheet_id" class="cell-input text-sm" placeholder="วาง Spreadsheet ID ที่นี่ (เช่น 1A2B3Cxyz...)">
+            <button onclick="saveSheetId()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap shadow cursor-pointer transition">
+              บันทึก Sheet ID
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-500">ก็อปปี้รหัสยาวๆ จาก URL ของ Google Sheets มาวางเพื่อใช้รับข้อมูลสรุปความคืบหน้า</p>
+        </div>
         
         <div class="space-y-1.5">
           <label class="text-sm font-semibold text-slate-700 flex items-center gap-1">
-            <i data-lucide="file-json" class="w-4 h-4"></i> ชื่อไฟล์สำรองข้อมูล
+            <i data-lucide="file-json" class="w-4 h-4"></i> ชื่อไฟล์สำรองข้อมูล (JSON)
           </label>
           <input type="text" id="backupFileName" class="cell-input" placeholder="เช่น Backup_งวดที่1_2569">
         </div>
@@ -225,7 +243,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 pt-2">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 pt-2">
         <button onclick="saveProjectToCloudAndLocal()" id="btn-cloud-backup" class="btn-3d bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer md:col-span-2">
           <i data-lucide="cloud-upload" class="w-4 h-4"></i> สำรองขึ้น Cloud (พร้อมเก็บประวัติ)
         </button>
@@ -234,13 +252,18 @@
           <i data-lucide="cloud-download" class="w-4 h-4"></i> ดึงจาก Cloud
         </button>
 
+        <!-- 💡 ปุ่มส่งข้อมูลความคืบหน้าเข้า Google Sheets -->
+        <button onclick="exportToGoogleSheets()" id="btn-export-sheet" class="btn-3d bg-green-600 hover:bg-green-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer">
+          <i data-lucide="table-properties" class="w-4 h-4"></i> ส่งเข้า Sheet
+        </button>
+
         <label class="btn-3d bg-amber-600 hover:bg-amber-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer">
-          <i data-lucide="upload" class="w-4 h-4"></i> นำเข้าไฟล์กู้คืน
+          <i data-lucide="upload" class="w-4 h-4"></i> นำเข้า JSON
           <input type="file" id="import-file-input" accept=".json" onchange="importProjectJSON(event)" class="hidden">
         </label>
 
         <button onclick="clearCurrentProjectData()" class="btn-3d bg-rose-600 hover:bg-rose-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer">
-          <i data-lucide="trash-2" class="w-4 h-4"></i> ล้างข้อมูลเครื่อง
+          <i data-lucide="trash-2" class="w-4 h-4"></i> ล้างเครื่อง
         </button>
       </div>
     </div>
@@ -302,6 +325,17 @@
       }
     }
 
+    // 💡 ฟังก์ชันบันทึก Sheet ID
+    function saveSheetId() {
+      const val = document.getElementById('input_sheet_id').value.trim();
+      if (val) {
+        localStorage.setItem('CENTRAL_SHEET_ID', val);
+        alert('บันทึกรหัส Google Sheets (Sheet ID) เรียบร้อยแล้วค่ะ');
+      } else {
+        alert('กรุณากรอกรหัส Sheet ID ก่อนกดบันทึกค่ะ');
+      }
+    }
+
     function requestJSONP(action, params = {}) {
       return new Promise((resolve, reject) => {
         let url = getActiveUrl();
@@ -360,7 +394,13 @@
 
       const lastSync = localStorage.getItem('LAST_CLOUD_SYNC_TIME');
       if (lastSync) document.getElementById('lbl_last_sync_time').textContent = lastSync;
+      
       document.getElementById('input_gas_url').value = getActiveUrl();
+      
+      // โหลดค่า Sheet ID มาแสดง
+      const savedSheetId = localStorage.getItem('CENTRAL_SHEET_ID');
+      if (savedSheetId) document.getElementById('input_sheet_id').value = savedSheetId;
+
       loadIndexProjectDropdown();
     }
 
@@ -735,6 +775,99 @@
       } finally {
         if (btnBottom) { btnBottom.disabled = false; btnBottom.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> สำรองขึ้น Cloud (พร้อมเก็บประวัติ)`; }
         if (btnTop) { btnTop.disabled = false; btnTop.innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i>`; }
+        lucide.createIcons();
+      }
+    }
+
+    // 💡 ฟังก์ชันใหม่สำหรับส่งข้อมูลเข้า Google Sheets
+    async function exportToGoogleSheets() {
+      const sheetId = localStorage.getItem('CENTRAL_SHEET_ID');
+      if (!sheetId) {
+        alert('กรุณากรอกรหัส Google Sheets (Sheet ID) ลงในช่องด้านบนและกด "บันทึก Sheet ID" ก่อนส่งข้อมูลนะคะ');
+        document.getElementById('input_sheet_id').focus();
+        return;
+      }
+
+      const btn = document.getElementById('btn-export-sheet');
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังส่งข้อมูล...`;
+      lucide.createIcons();
+
+      try {
+        // 1. ดึงข้อมูลโครงการเบื้องต้น
+        let basicData = {};
+        const raw = localStorage.getItem('LOCAL_BASIC_INFO');
+        if (raw) {
+          try { basicData = JSON.parse(raw); } catch(e){}
+        }
+        
+        const contractNo = basicData.contractNo || 'ไม่ระบุ';
+        const projId = basicData.projectID || 'PROJ_' + contractNo.replace(/[^a-zA-Z0-9]/g, '_');
+        const projName = basicData.projectName || 'ไม่ระบุชื่อโครงการ';
+
+        // 2. ค้นหาเปอร์เซ็นต์ผลงาน (Progress) ล่าสุดของโครงการนี้จาก LocalStorage
+        let latestWeek = 0;
+        let latestProgress = 0;
+        
+        for (let i = 0; i < localStorage.length; i++) {
+          let k = localStorage.key(i);
+          if (k.startsWith(`WEEK_PROGRESS_DATA_${projId}`)) {
+             try {
+               let pData = JSON.parse(localStorage.getItem(k));
+               if (pData && pData.weekIndex) {
+                 let wIdx = parseInt(pData.weekIndex);
+                 if (wIdx > latestWeek) {
+                   latestWeek = wIdx;
+                   latestProgress = parseFloat(pData.totalWeightPercent) || 0;
+                 }
+               }
+             } catch(e){}
+          }
+        }
+
+        // กำหนดสถานะ
+        let statusText = 'ยังไม่เริ่มงาน';
+        if (latestProgress > 0 && latestProgress < 100) statusText = 'กำลังดำเนินการ';
+        if (latestProgress >= 100) statusText = 'แล้วเสร็จ';
+
+        // 3. จัดเตรียมข้อมูลสำหรับส่งเข้า Sheet (ตามคอลัมน์ A - G ที่กำหนดไว้)
+        const timestamp = new Date().toLocaleString('th-TH');
+        const rowData = [
+          timestamp,
+          projId,
+          contractNo,
+          projName,
+          latestWeek > 0 ? latestWeek.toString() : '-',
+          latestProgress > 0 ? latestProgress.toFixed(2) : '0.00',
+          statusText
+        ];
+
+        const payload = {
+          action: 'append_to_sheet',
+          sheetId: sheetId,
+          rowData: rowData
+        };
+
+        const response = await fetch(getActiveUrl(), {
+          method: 'POST',
+          mode: 'cors',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result && result.status === 'success') {
+          alert('ส่งข้อมูลความคืบหน้าเข้า Google Sheets ส่วนกลาง สำเร็จเรียบร้อยแล้วค่ะ!');
+        } else {
+          throw new Error(result.message || 'พบข้อผิดพลาดจากเซิร์ฟเวอร์');
+        }
+      } catch(err) {
+        alert('เกิดข้อผิดพลาดในการส่งข้อมูลเข้า Sheet: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
         lucide.createIcons();
       }
     }
