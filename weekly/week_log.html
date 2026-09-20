@@ -175,10 +175,13 @@
       box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
     }
 
+    /* 💡 แก้ไขสไตล์ตอนสั่งพิมพ์ */
     @media print {
       body {
+        display: block !important; /* ป้องกันหน้ากระดาษหดตัวจากการใช้ Flex กึ่งกลาง */
         background: white !important;
         padding: 0 !important;
+        margin: 0 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -187,7 +190,7 @@
       }
       .sheet-doc {
         box-shadow: none !important;
-        margin: 0 auto !important;
+        margin: 0 !important;
         width: 210mm !important;
         height: 297mm !important;
         padding: 10mm 15mm 10mm 20mm !important;
@@ -197,8 +200,7 @@
         page-break-after: auto;
       }
       .auto-expand-area {
-        overflow: visible !important;
-        height: auto !important;
+        overflow: hidden !important; /* ซ่อน scrollbar ตอนพิมพ์ */
       }
       .custom-chk {
         border: 1.5px solid #000 !important;
@@ -505,7 +507,7 @@
     </div>
 
     <div>
-      <!-- ส่วนลงชื่อผู้ควบคุมงาน (เพิ่มคลาส signature-area เพื่อให้ขนาด 16pt เต็มตา) -->
+      <!-- ส่วนลงชื่อผู้ควบคุมงาน -->
       <div class="signature-area flex justify-end pt-2 pr-8 text-center">
         <div class="space-y-0.5">
           <p>(ลงชื่อ)........................................................... <span id="txt-inspector-pos">ผู้ควบคุมงาน</span></p>
@@ -626,23 +628,24 @@
           el.textContent = dNum;
         });
 
+        // 💡 แก้ไขส่วน Checkbox label เพื่อไม่ให้ตัดคำ (เพิ่ม flex-wrap และ whitespace-nowrap)
         dailyRowsTbody.innerHTML += `
           <tr>
             <td class="text-center bg-slate-50/60 align-top pt-2">${fullDateTh}</td>
-            <td class="p-1 align-top">
-              <div class="flex items-center gap-6 text-[12.5pt] mb-1">
-                <label class="flex items-center gap-1.5 cursor-pointer select-none">
+            <td class="p-1.5 align-top">
+              <div class="flex flex-wrap items-center gap-3 text-[13pt] mb-1">
+                <label class="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap">
                   <input type="checkbox" id="chk_no_work_${i}" class="custom-chk" onchange="handleWorkCheck('no', ${i})">
                   <span>ไม่มีการทำงานของผู้รับจ้าง</span>
                 </label>
-                <label class="flex items-center gap-1.5 cursor-pointer select-none">
+                <label class="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap">
                   <input type="checkbox" id="chk_has_work_${i}" class="custom-chk" onchange="handleWorkCheck('yes', ${i})">
                   <span>ผู้รับจ้างทำงานโดยมีรายละเอียด ดังนี้</span>
                 </label>
               </div>
               <textarea id="work_desc_${i}" rows="1" class="auto-expand-area" placeholder="ระบุงานที่ทำ (ถ้ามี)..." oninput="autoExpandTextarea(this)"></textarea>
             </td>
-            <td class="p-1 align-top">
+            <td class="p-1.5 align-top">
               <textarea id="work_note_${i}" rows="1" class="auto-expand-area text-center" placeholder="-" oninput="autoExpandTextarea(this)"></textarea>
             </td>
           </tr>
@@ -720,7 +723,7 @@
 
       let titleHTML = '';
       if (isEditable || name === "") {
-        titleHTML = `<input type="text" class="mach-name-input" placeholder="พิมพ์ชื่อเครื่องจักร..." value="${name}">`;
+        titleHTML = `<input type="text" class="cell-input-text text-left mach-name-input" placeholder="พิมพ์ชื่อเครื่องจักร..." value="${name}">`;
       } else {
         titleHTML = `<span class="mach-name-label">${name}</span>`;
       }
@@ -1013,6 +1016,11 @@
         addMachineryRow("รถไถ", ["","","","","","",""], "", false);
         addMachineryRow("รถบรรทุก 6 ล้อ", ["","","","","","",""], "", false);
       }
+    });
+
+    // 💡 เพิ่มฟังก์ชันขยายขนาด Textarea อัตโนมัติเมื่อกดสั่งพิมพ์
+    window.addEventListener('beforeprint', () => {
+      document.querySelectorAll('.auto-expand-area').forEach(el => autoExpandTextarea(el));
     });
   </script>
 </body>
