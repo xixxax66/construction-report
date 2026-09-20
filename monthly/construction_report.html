@@ -362,7 +362,7 @@
             const passedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
             remainDays = Math.max(0, totalDaysNum - passedDays);
             if (totalDaysNum > 0) {
-              timePercent = Math.min(100, (passedDays / totalDaysNum) * 100);
+              timePercent = Math.min(100, (totalDaysNum - passedDays) / totalDaysNum * 100);
             }
           }
         }
