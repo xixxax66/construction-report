@@ -434,7 +434,7 @@
           const passedDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
           
           let remainDays = Math.max(0, totalDaysNum - passedDays);
-          let timePercent = (passedDays / totalDaysNum) * 100;
+          let timePercent = (totalDaysNum - passedDays) / totalDaysNum * 100;
           if (timePercent > 100) timePercent = 100;
 
           remainDaysText = `${toThaiNumber(remainDays)} วัน`;
