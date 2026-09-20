@@ -170,7 +170,7 @@
       }
     }
 
-    // ฟังก์ชันอัปโหลดรูปร่วมกับ Google Drive API
+    // ฟังก์ชันอัปโหลดรูปร่วมกับ Google Drive API (แก้ไขลำดับใหม่)
     function processMapUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -181,50 +181,48 @@
       btnUpload.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> กำลังอัปโหลด...`;
       lucide.createIcons();
 
+      // 1. นำไฟล์ต้นฉบับมาแปลงเป็นพรีวิวแสดงให้เห็นบนหน้าจอทันทีก่อน (ยังไม่กินพื้นที่เซฟ)
+      const tempUrl = URL.createObjectURL(file);
+      displayMapImage(tempUrl);
+
       const reader = new FileReader();
       reader.onload = function(evt) {
         const img = new Image();
         img.onload = async function() {
-          // กำหนดขนาดสูงสุดของภาพเพื่อบีบอัด
-          const MAX_WIDTH = 1200;
-          const MAX_HEIGHT = 1600;
-          let width = img.width;
-          let height = img.height;
+          
+          // --- สร้างรูปภาพขนาดใหญ่สำหรับส่งขึ้น Google Drive ---
+          let uWidth = img.width;
+          let uHeight = img.height;
+          const MAX_U = 1200;
+          if (uWidth > uHeight) { if (uWidth > MAX_U) { uHeight *= MAX_U / uWidth; uWidth = MAX_U; } }
+          else { if (uHeight > MAX_U) { uWidth *= MAX_U / uHeight; uHeight = MAX_U; } }
+          
+          const canvasU = document.createElement('canvas');
+          canvasU.width = uWidth; canvasU.height = uHeight;
+          const ctxU = canvasU.getContext('2d');
+          ctxU.drawImage(img, 0, 0, uWidth, uHeight);
+          const uploadBase64 = canvasU.toDataURL('image/jpeg', 0.8); // คุณภาพดี
 
-          // คำนวณอัตราส่วนภาพใหม่
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
-          }
-
-          // สร้าง Canvas เพื่อใช้วาดและบีบอัดภาพ
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // แปลงกลับเป็น Base64 แบบ JPEG พร้อมบีบอัดคุณภาพ 75%
-          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+          // --- สร้างรูปภาพขนาดจิ๋วสำหรับแคชลงเบราว์เซอร์ LocalStorage (ลดปัญหาพื้นที่เต็ม) ---
+          let pWidth = img.width;
+          let pHeight = img.height;
+          const MAX_P = 600;
+          if (pWidth > pHeight) { if (pWidth > MAX_P) { pHeight *= MAX_P / pWidth; pWidth = MAX_P; } }
+          else { if (pHeight > MAX_P) { pWidth *= MAX_P / pHeight; pHeight = MAX_P; } }
+          
+          const canvasP = document.createElement('canvas');
+          canvasP.width = pWidth; canvasP.height = pHeight;
+          const ctxP = canvasP.getContext('2d');
+          ctxP.drawImage(img, 0, 0, pWidth, pHeight);
+          const previewBase64 = canvasP.toDataURL('image/jpeg', 0.5); // บีบอัดสูง
 
           try {
-            // 1. นำรูปภาพมาแสดงบนหน้าจอทันที เพื่อความรวดเร็ว
-            localStorage.setItem(MAP_STORAGE_KEY, compressedBase64);
-            displayMapImage(compressedBase64);
-
-            // 2. ส่งข้อมูลรูปภาพไปบันทึกลง Google Drive ผ่าน Google Apps Script
+            // 2. ส่งข้อมูลรูปภาพขนาดใหญ่ไปอัปโหลดขึ้น Google Drive "ให้สำเร็จก่อน"
             const payload = {
               action: 'upload_original_photo',
               driveFolderId: currentDriveFolderId,
               contractNo: currentContractNo,
-              imageB64: compressedBase64,
+              imageB64: uploadBase64,
               fileName: `Map_${currentContractNo}_${Date.now()}.jpg`
             };
 
@@ -238,13 +236,27 @@
 
             const result = await response.json();
             if (result && result.status === 'success') {
+              
+              // 3. พออัปโหลด Drive สำเร็จ ค่อยดึงภาพขนาดจิ๋วมาจำไว้ในเครื่อง
+              try {
+                localStorage.setItem(MAP_STORAGE_KEY, previewBase64);
+                // แสดงผลจากภาพเล็ก
+                displayMapImage(previewBase64);
+              } catch (localErr) {
+                console.warn("พื้นที่เบราว์เซอร์เต็ม ไม่สามารถแคชรูปขนาดย่อได้", localErr);
+              }
+
               alert("อัปโหลดและบันทึกรูปภาพแผนที่ไปยัง Google Drive สำเร็จแล้วค่ะ!");
             } else {
               throw new Error(result.message || "Unknown error from server");
             }
           } catch (err) {
             console.error(err);
-            alert("บันทึกรูปลงเครื่องสำเร็จ แต่การอัปโหลดไป Google Drive ล้มเหลวค่ะ: " + err.message);
+            alert("การอัปโหลดไป Google Drive ล้มเหลวค่ะ: " + err.message);
+            // ถ้าอัปโหลดไม่สำเร็จ ให้ล้างพรีวิวชั่วคราวออก แล้วดึงรูปเก่ามาแสดงแทน
+            const oldMap = localStorage.getItem(MAP_STORAGE_KEY);
+            if (oldMap) displayMapImage(oldMap);
+            else resetMapDisplay();
           } finally {
             // คืนค่าปุ่มกลับสู่สภาพเดิม
             btnUpload.disabled = false;
@@ -256,7 +268,7 @@
       };
       reader.readAsDataURL(file);
       
-      // รีเซ็ตค่า input เพื่อให้สามารถเลือกไฟล์เดิมซ้ำได้ในกรณีที่ต้องการแก้ไข
+      // รีเซ็ตค่า input เพื่อให้สามารถเลือกไฟล์เดิมซ้ำได้
       e.target.value = '';
     }
 
