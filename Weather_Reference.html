@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ศูนย์ข้อมูลสภาพอากาศกลาง - ระบบควบคุมงานก่อสร้าง</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="assets/gas-sync.js"></script>
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #cbd5e1; }
+    .btn-3d { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6); transition: all 0.15s ease-in-out; }
+    .btn-3d:active { transform: translateY(2px); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2); }
+    .cell-input { width: 100%; border: 1px solid #cbd5e1; outline: none; font-family: inherit; font-size: 14px; padding: 7px 12px; border-radius: 8px; color: #1e293b; background-color: #f8fafc; }
+    .cell-input:focus { background-color: #fff; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+    .custom-table th, .custom-table td { border: 1px solid #e2e8f0; padding: 10px 12px; font-size: 14px; }
+    .custom-table th { background-color: #f1f5f9; font-weight: 600; text-align: center; color: #475569; }
+  </style>
+</head>
+<body class="p-3 sm:p-6 min-h-screen flex items-center justify-center">
+
+  <div class="max-w-4xl w-full bg-slate-100 p-5 sm:p-8 rounded-3xl shadow-2xl border border-slate-300 space-y-6">
+    
+    <!-- ส่วนหัว -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-300 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-sky-600 flex items-center justify-center text-white shadow-md shrink-0">
+          <i data-lucide="cloud-sun" class="w-7 h-7"></i>
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold text-slate-800 leading-tight">ศูนย์ข้อมูลสภาพอากาศกลาง</h1>
+          <p class="text-xs sm:text-sm text-slate-500">ดึงข้อมูลสภาพอากาศย้อนหลัง/พยากรณ์ หรือบันทึกข้อมูลด้วยตนเอง</p>
+        </div>
+      </div>
+      <div>
+        <a href="index.html" class="btn-3d flex items-center gap-2 bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold shadow transition">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> กลับหน้าหลัก
+        </a>
+      </div>
+    </div>
+
+    <!-- ส่วนดึงข้อมูลสภาพอากาศอัตโนมัติจากพิกัด -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-300 space-y-4">
+      <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2 border-b pb-3">
+        <i data-lucide="cloud-download" class="w-5 h-5 text-sky-600"></i> ดึงข้อมูลสภาพอากาศอัตโนมัติ (ผ่านพิกัด GPS)
+      </h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">ละติจูด (Latitude)</label>
+          <input type="number" step="any" id="fetch_lat" class="cell-input text-center font-bold" value="16.3500">
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">ลองจิจูด (Longitude)</label>
+          <input type="number" step="any" id="fetch_lon" class="cell-input text-center font-bold" value="103.1500">
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">วันที่ต้องการตรวจสอบ</label>
+          <input type="date" id="fetch_date" class="cell-input text-center font-bold">
+        </div>
+      </div>
+
+      <div class="pt-2 flex justify-end">
+        <button onclick="fetchWeatherDataFromAPI()" id="btn_fetch_api" class="btn-3d bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow flex items-center gap-2 cursor-pointer">
+          <i data-lucide="search" class="w-4 h-4"></i> ดึงข้อมูลสภาพอากาศจากระบบออนไลน์
+        </button>
+      </div>
+    </div>
+
+    <!-- ฟอร์มบันทึก / แก้ไขสภาพอากาศด้วยตนเอง -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-300 space-y-4">
+      <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2 border-b pb-3">
+        <i data-lucide="edit-3" class="w-5 h-5 text-sky-600"></i> บันทึก / แก้ไขข้อมูลสภาพอากาศประจำวันด้วยตนเอง
+      </h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">วันที่บันทึก</label>
+          <input type="text" id="manual_date" class="cell-input text-center font-bold" placeholder="เช่น 21 กันยายน 2569">
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">สภาพท้องฟ้า</label>
+          <select id="manual_sky" class="cell-input font-bold text-slate-800">
+            <option value="แจ่มใส">แจ่มใส</option>
+            <option value="มีเมฆมาก">มีเมฆมาก</option>
+          </select>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">ลักษณะฝนตก</label>
+          <select id="manual_rain" class="cell-input font-bold text-slate-800">
+            <option value="ไม่มีฝน">ไม่มีฝน</option>
+            <option value="เล็กน้อย">เล็กน้อย</option>
+            <option value="ปานกลาง">ปานกลาง</option>
+            <option value="หนัก">หนัก</option>
+          </select>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">หมายเหตุ / ช่วงเวลาฝน</label>
+          <input type="text" id="manual_note" class="cell-input" placeholder="เช่น ตกช่วงบ่าย">
+        </div>
+      </div>
+
+      <div class="pt-3 flex justify-end">
+        <button onclick="saveManualWeather()" class="btn-3d bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow flex items-center gap-2 cursor-pointer">
+          <i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูลลงฐานข้อมูลกลาง
+        </button>
+      </div>
+    </div>
+
+    <!-- ตารางแสดงประวัติสภาพอากาศที่บันทึก -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-300 space-y-4">
+      <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2 border-b pb-3">
+        <i data-lucide="table" class="w-5 h-5 text-sky-600"></i> ประวัติบันทึกสภาพอากาศกลาง
+      </h3>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-200">
+        <table class="w-full custom-table text-left border-collapse">
+          <thead>
+            <tr>
+              <th class="w-1/4">วันที่</th>
+              <th class="w-1/4 text-center">สภาพท้องฟ้า</th>
+              <th class="w-1/4 text-center">ลักษณะฝน</th>
+              <th class="w-1/4 text-center">หมายเหตุ</th>
+            </tr>
+          </thead>
+          <tbody id="weather_log_tbody">
+            <tr>
+              <td colspan="4" class="text-center text-slate-400 py-4">ยังไม่มีประวัติการบันทึกสภาพอากาศ</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+    const STORAGE_KEY = 'CENTRAL_WEATHER_LOGS_DB';
+
+    // ตั้งค่าวันที่เริ่มต้นเป็นวันปัจจุบัน
+    document.getElementById('fetch_date').valueAsDate = new Date();
+
+    async function fetchWeatherDataFromAPI() {
+      const lat = document.getElementById('fetch_lat').value;
+      const lon = document.getElementById('fetch_lon').value;
+      const dateStr = document.getElementById('fetch_date').value;
+
+      if (!lat || !lon || !dateStr) {
+        alert('กรุณากรอกพิกัดและวันที่ให้ครบถ้วนค่ะ');
+        return;
+      }
+
+      const btn = document.getElementById('btn_fetch_api');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังดึงข้อมูล...`;
+      lucide.createIcons();
+
+      try {
+        // ใช้ Open-Meteo API (ฟรี ไม่ต้องใช้ Key) รองรับทั้งข้อมูลย้อนหลังและพยากรณ์
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum,weathercode&start_date=${dateStr}&end_date=${dateStr}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data && data.daily) {
+          const precipitation = data.daily.precipitation_sum[0] || 0;
+          let rainStatus = "ไม่มีฝน";
+          if (precipitation > 0 && precipitation <= 10) rainStatus = "เล็กน้อย";
+          else if (precipitation > 10 && precipitation <= 35) rainStatus = "ปานกลาง";
+          else if (precipitation > 35) rainStatus = "หนัก";
+
+          document.getElementById('manual_date').value = dateStr;
+          document.getElementById('manual_rain').value = rainStatus;
+          document.getElementById('manual_note').value = `ปริมาณฝนรวม: ${precipitation} มม.`;
+          alert('ดึงข้อมูลสภาพอากาศสำเร็จ! ระบบได้นำข้อมูลมาใส่ในฟอร์มบันทึกด้านล่างให้แล้วค่ะ');
+        } else {
+          alert('ไม่พบข้อมูลสภาพอากาศสำหรับวันที่เลือก');
+        }
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อดึงข้อมูลอากาศ: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="search" class="w-4 h-4"></i> ดึงข้อมูลสภาพอากาศจากระบบออนไลน์`;
+        lucide.createIcons();
+      }
+    }
+
+    function saveManualWeather() {
+      const date = document.getElementById('manual_date').value.trim();
+      const sky = document.getElementById('manual_sky').value;
+      const rain = document.getElementById('manual_rain').value;
+      const note = document.getElementById('manual_note').value.trim();
+
+      if (!date) {
+        alert('กรุณาระบุวันที่บันทึกค่ะ');
+        return;
+      }
+
+      let logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      logs.unshift({ date, sky, rain, note });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+
+      renderWeatherLogs();
+      alert('บันทึกข้อมูลสภาพอากาศเรียบร้อยแล้วค่ะ');
+    }
+
+    function renderWeatherLogs() {
+      const tbody = document.getElementById('weather_log_tbody');
+      const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+      if (logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-slate-400 py-4">ยังไม่มีประวัติการบันทึกสภาพอากาศ</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      logs.forEach(item => {
+        tbody.innerHTML += `
+          <tr>
+            <td class="font-medium text-slate-800">${item.date}</td>
+            <td class="text-center">${item.sky}</td>
+            <td class="text-center">${item.rain}</td>
+            <td class="text-center text-slate-600 text-xs">${item.note || '-'}</td>
+          </tr>
+        `;
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderWeatherLogs();
+    });
+  </script>
+</body>
+</html>
