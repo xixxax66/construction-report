@@ -40,7 +40,6 @@
         </div>
       </div>
       <div class="flex items-center gap-2 flex-wrap">
-        <!-- 💡 ปุ่มทางลัดเปิดหน้าจัดการทำเนียบรายชื่อบุคลากร -->
         <a href="Staff_Directory.html" target="_blank" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition">
           <i data-lucide="users" class="w-4 h-4"></i> จัดการทำเนียบรายชื่อ
         </a>
@@ -177,7 +176,7 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- คณะกรรมการตรวจรับพัสดุ -->
+          <!-- คณะกรรมการตรวจรับพัสดุ (รองรับทั้งกดเลือกและพิมพ์เอง) -->
           <div class="bg-white rounded-lg shadow border border-emerald-600 overflow-hidden">
             <table class="sheet-table">
               <thead><tr><th colspan="2" class="th-header-title">คณะกรรมการตรวจรับพัสดุ</th></tr></thead>
@@ -185,7 +184,7 @@
               <tbody id="committeeRows"></tbody>
             </table>
           </div>
-          <!-- ผู้ควบคุมงาน -->
+          <!-- ผู้ควบคุมงาน (รองรับทั้งกดเลือกและพิมพ์เอง) -->
           <div class="bg-white rounded-lg shadow border border-emerald-600 overflow-hidden">
             <table class="sheet-table">
               <thead><tr><th colspan="2" class="th-header-title">ผู้ควบคุมงาน</th></tr></thead>
@@ -241,7 +240,6 @@
     const PROJECT_LIST_KEY = 'CONSTRUCTION_ALL_PROJECTS_LIST';
     const STAFF_STORAGE_KEY = 'CONSTRUCTION_STAFF_DIRECTORY_DB';
 
-    // 💡 ฟังก์ชันดึงรายชื่อบุคลากรจากทำเนียบ
     function getStaffDirectory() {
       const raw = localStorage.getItem(STAFF_STORAGE_KEY);
       if (!raw) {
@@ -294,7 +292,21 @@
       calcFine();
     }
 
-    // 💡 ปรับปรุงฟังก์ชันสร้างช่องกรรมการ ให้เป็น Dropdown เลือกจากทำเนียบรายชื่อ
+    // 💡 ฟังก์ชันสลับโหมด (เลือกลิสต์ หรือ พิมพ์เอง) สำหรับคอมโบ้บ็อกซ์คณะกรรมการ
+    function handleStaffSelectChange(selectEl, customInputId) {
+      const customInput = document.getElementById(customInputId);
+      if (!customInput) return;
+      if (selectEl.value === "__CUSTOM__") {
+        customInput.classList.remove('hidden');
+        customInput.value = "";
+        customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+        customInput.value = selectEl.value;
+      }
+    }
+
+    // 💡 ปรับปรุงช่องกรรมการ ให้รองรับทั้งเลือกจากลิสต์และพิมพ์เอง
     function renderCommitteeFields(existingList = null) {
       const count = parseInt(document.getElementById('committeeCount').value) || 1;
       const tbody = document.getElementById('committeeRows');
@@ -305,25 +317,31 @@
       for (let i = 0; i < count; i++) {
         const currentVal = existingList && existingList[i] !== undefined ? existingList[i] : (defaultCommittees[i] || '');
         
+        let isCustomMatch = true;
         let optionsHtml = `<option value="">-- เลือกจากทำเนียบรายชื่อ --</option>`;
         staffList.forEach(staff => {
-          const isSelected = (staff.name === currentVal) ? 'selected' : '';
-          optionsHtml += `<option value="${staff.name}" ${isSelected}>${staff.name} (${staff.position})</option>`;
+          const isSelected = (staff.name === currentVal);
+          if (isSelected) isCustomMatch = false;
+          optionsHtml += `<option value="${staff.name}" ${isSelected ? 'selected' : ''}>${staff.name} (${staff.position})</option>`;
         });
+        optionsHtml += `<option value="__CUSTOM__" ${isCustomMatch && currentVal ? 'selected' : ''}>✏️ พิมพ์ชื่อระบุเอง...</option>`;
+
+        const customInputDisplay = (isCustomMatch && currentVal) ? '' : 'hidden';
 
         tbody.innerHTML += `
           <tr>
             <td class="th-green whitespace-nowrap font-medium">${(i === 0) ? 'ชื่อประธานกรรมการ' : 'ชื่อกรรมการ'}</td>
-            <td class="p-1 bg-white">
-              <select id="comm_${i}" class="cell-input font-medium cursor-pointer">
+            <td class="p-1 bg-white space-y-1">
+              <select id="comm_sel_${i}" class="cell-input font-medium cursor-pointer" onchange="handleStaffSelectChange(this, 'comm_custom_${i}')">
                 ${optionsHtml}
               </select>
+              <input type="text" id="comm_custom_${i}" class="cell-input font-medium border-t pt-1 ${customInputDisplay}" value="${currentVal}" placeholder="พิมพ์ชื่อ-นามสกุล...">
             </td>
           </tr>`;
       }
     }
 
-    // 💡 ปรับปรุงฟังก์ชันสร้างช่องผู้ควบคุมงาน ให้เป็น Dropdown เลือกจากทำเนียบรายชื่อ
+    // 💡 ปรับปรุงช่องผู้ควบคุมงาน ให้รองรับทั้งเลือกจากลิสต์และพิมพ์เอง
     function renderInspectorFields(existingList = null) {
       const count = parseInt(document.getElementById('inspectorCount').value) || 1;
       const tbody = document.getElementById('inspectorRows');
@@ -334,19 +352,25 @@
       for (let i = 0; i < count; i++) {
         const item = existingList && existingList[i] ? existingList[i] : defaultInspectors[i] || { name: '', pos: 'ผู้ควบคุมงาน' };
         
+        let isCustomMatch = true;
         let optionsHtml = `<option value="">-- เลือกจากทำเนียบรายชื่อ --</option>`;
         staffList.forEach(staff => {
-          const isSelected = (staff.name === item.name) ? 'selected' : '';
-          optionsHtml += `<option value="${staff.name}" ${isSelected}>${staff.name} (${staff.position})</option>`;
+          const isSelected = (staff.name === item.name);
+          if (isSelected) isCustomMatch = false;
+          optionsHtml += `<option value="${staff.name}" ${isSelected ? 'selected' : ''}>${staff.name} (${staff.position})</option>`;
         });
+        optionsHtml += `<option value="__CUSTOM__" ${isCustomMatch && item.name ? 'selected' : ''}>✏️ พิมพ์ชื่อระบุเอง...</option>`;
+
+        const customInputDisplay = (isCustomMatch && item.name) ? '' : 'hidden';
 
         tbody.innerHTML += `
           <tr>
             <td class="th-green whitespace-nowrap font-medium">ชื่อ-นามสกุล (${i+1})</td>
-            <td class="p-1 bg-white">
-              <select id="insp_name_${i}" class="cell-input font-medium cursor-pointer">
+            <td class="p-1 bg-white space-y-1">
+              <select id="insp_sel_${i}" class="cell-input font-medium cursor-pointer" onchange="handleStaffSelectChange(this, 'insp_custom_${i}')">
                 ${optionsHtml}
               </select>
+              <input type="text" id="insp_custom_${i}" class="cell-input font-medium border-t pt-1 ${customInputDisplay}" value="${item.name}" placeholder="พิมพ์ชื่อ-นามสกุล...">
             </td>
           </tr>
           <tr>
@@ -393,11 +417,21 @@
 
     function getFormData() {
       const commCount = parseInt(document.getElementById('committeeCount').value) || 1;
-      const committees = []; for (let i = 0; i < commCount; i++) committees.push(document.getElementById(`comm_${i}`)?.value || '');
+      const committees = []; 
+      for (let i = 0; i < commCount; i++) {
+        const selVal = document.getElementById(`comm_sel_${i}`)?.value;
+        const customVal = document.getElementById(`comm_custom_${i}`)?.value;
+        committees.push(selVal === "__CUSTOM__" ? (customVal || '') : (selVal || customVal || ''));
+      }
 
       const inspCount = parseInt(document.getElementById('inspectorCount').value) || 1;
       const inspectors = [];
-      for (let i = 0; i < inspCount; i++) inspectors.push({ name: document.getElementById(`insp_name_${i}`)?.value || '', pos: document.getElementById(`insp_pos_${i}`)?.value || 'ผู้ควบคุมงาน' });
+      for (let i = 0; i < inspCount; i++) {
+        const selVal = document.getElementById(`insp_sel_${i}`)?.value;
+        const customVal = document.getElementById(`insp_custom_${i}`)?.value;
+        const finalName = selVal === "__CUSTOM__" ? (customVal || '') : (selVal || customVal || '');
+        inspectors.push({ name: finalName, pos: document.getElementById(`insp_pos_${i}`)?.value || 'ผู้ควบคุมงาน' });
+      }
 
       installmentListData.forEach((_, idx) => {
         installmentListData[idx].amount = document.getElementById(`inst_amount_${idx}`)?.value;
