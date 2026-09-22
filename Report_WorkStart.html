@@ -111,7 +111,7 @@
         line-height: 1;
       }
 
-      /* 💡 สไตล์สำหรับ Textarea แบบไดนามิก (ตัดคำและขยายอัตโนมัติ) ในย่อหน้าที่ต้องการ */
+      /* 💡 สไตล์สำหรับ Textarea และ Input แบบไดนามิก */
       .auto-expand-area {
         width: 100%;
         background: transparent;
@@ -129,8 +129,25 @@
         white-space: pre-wrap;
         word-break: break-word;
       }
-      .auto-expand-area:focus {
+      .auto-expand-area:focus, .editable-doc-input:focus {
         background-color: #fef08a;
+      }
+
+      .editable-doc-input {
+        width: 100%;
+        background: transparent;
+        border: none;
+        outline: none;
+        font-family: inherit;
+        font-size: inherit;
+        color: inherit;
+        padding: 0 2px;
+      }
+      .no-print-border .editable-doc-input {
+        border-bottom: 1px dotted transparent;
+      }
+      .no-print-border:hover .editable-doc-input {
+        border-bottom: 1px dotted #94a3b8;
       }
 
       #txt_actionDetails:not(:placeholder-shown) {
@@ -161,8 +178,9 @@
           page-break-after: avoid;
           page-break-inside: avoid;
         }
-        .auto-expand-area {
+        .auto-expand-area, .editable-doc-input {
           background: transparent !important;
+          border-bottom: none !important;
         }
       }
     </style>
@@ -176,14 +194,20 @@
          <h2 class="doc-title pt-1">บันทึกข้อความ</h2>
         </div>
         <div class="space-y-1 text-base">
+          <!-- 💡 แก้ไขให้ช่อง "ส่วนราชการ" แก้ไขได้ -->
           <div class="flex flex-wrap items-baseline">
             <span class="font-bold w-24">ส่วนราชการ</span>
-            <span class="flex-1 font-medium" id="doc_org">กองช่าง องค์การบริหารส่วนตำบลโพนงาม</span>
+            <div class="flex-1 no-print-border">
+              <input type="text" id="in_docOrg" class="editable-doc-input font-medium" value="กองช่าง องค์การบริหารส่วนตำบลโพนงาม" oninput="updateDoc()">
+            </div>
           </div>
           <div class="flex justify-between items-baseline">
-            <div class="flex items-baseline flex-1">
+            <!-- 💡 แก้ไขให้ช่อง "ที่" แก้ไขได้ -->
+            <div class="flex items-baseline flex-1 no-print-border">
               <span class="font-bold w-12">ที่</span>
-              <span class="flex-1" id="doc_docNo">-</span>
+              <div class="flex-1">
+                <input type="text" id="in_docNo" class="editable-doc-input" value="-" oninput="autoThaiNum(this); updateDoc()">
+              </div>
             </div>
             <div class="flex-1 text-left">
               <span class="font-bold mr-2">วันที่</span>
@@ -261,8 +285,17 @@
           <i data-lucide="calendar" class="w-4 h-4"></i>
         </div>
         <table class="w-full text-sm purple-table">
+          <!-- 💡 เพิ่มช่องกรอกส่วนราชการและเลขที่หนังสือในแผงควบคุมด้านขวาด้วย -->
           <tr>
-            <td class="bg-purple-100 font-bold text-purple-900 w-44">วันที่รายงาน</td>
+            <td class="bg-purple-100 font-bold text-purple-900 w-44">ส่วนราชการ</td>
+            <td class="bg-white p-1"><input type="text" id="in_panelDocOrg" oninput="syncOrgInput(this)" class="w-full p-1 font-semibold border rounded text-xs" value="กองช่าง องค์การบริหารส่วนตำบลโพนงาม"></td>
+          </tr>
+          <tr>
+            <td class="bg-purple-100 font-bold text-purple-900">ที่ (เลขที่หนังสือ)</td>
+            <td class="bg-white p-1"><input type="text" id="in_panelDocNo" oninput="autoThaiNum(this); syncNoInput(this)" class="w-full p-1 text-center font-semibold border rounded text-xs" value="-"></td>
+          </tr>
+          <tr>
+            <td class="bg-purple-100 font-bold text-purple-900">วันที่รายงาน</td>
             <td class="bg-white p-1"><input type="text" id="in_reportDate" oninput="autoThaiNum(this); updateDoc()" class="w-full p-1 text-center font-semibold border rounded" value="๒๔ มิถุนายน ๒๕๖๙"></td>
           </tr>
           <tr>
@@ -313,6 +346,16 @@
     function autoExpand(ta) {
       ta.style.height = 'auto';
       ta.style.height = ta.scrollHeight + 'px';
+    }
+
+    function syncOrgInput(el) {
+      document.getElementById('in_docOrg').value = el.value;
+      updateDoc();
+    }
+
+    function syncNoInput(el) {
+      document.getElementById('in_docNo').value = el.value;
+      updateDoc();
     }
 
     function renderSignatures(data) {
@@ -384,6 +427,8 @@
     function saveStartDateRecord() {
       updateDoc();
       const payload = {
+        docOrg: document.getElementById('in_docOrg').value,
+        docNo: document.getElementById('in_docNo').value,
         reportDate: document.getElementById('in_reportDate').value,
         knowDate: document.getElementById('in_knowDate').value,
         checkDate: document.getElementById('in_checkDate').value,
@@ -402,6 +447,14 @@
       const cached = localStorage.getItem(getStorageKeyStartDate()) || localStorage.getItem('LOCAL_START_DATE_RECORD');
       if (cached) {
         const item = JSON.parse(cached);
+        if (item.docOrg) {
+          document.getElementById('in_docOrg').value = item.docOrg;
+          document.getElementById('in_panelDocOrg').value = item.docOrg;
+        }
+        if (item.docNo) {
+          document.getElementById('in_docNo').value = item.docNo;
+          document.getElementById('in_panelDocNo').value = item.docNo;
+        }
         if (item.reportDate) document.getElementById('in_reportDate').value = toThaiNumber(item.reportDate);
         if (item.knowDate) document.getElementById('in_knowDate').value = toThaiNumber(item.knowDate);
         if (item.checkDate) document.getElementById('in_checkDate').value = toThaiNumber(item.checkDate);
@@ -409,7 +462,6 @@
         if (item.actionDetails) document.getElementById('txt_actionDetails').value = toThaiNumber(item.actionDetails);
       }
       
-      // กำหนดความสูงเริ่มต้นของ textarea
       document.querySelectorAll('textarea.auto-expand-area').forEach(ta => autoExpand(ta));
       updateDoc();
     });
