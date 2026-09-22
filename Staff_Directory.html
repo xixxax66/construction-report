@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการทำเนียบรายชื่อบุคลากร - ระบบควบคุมงานก่อสร้าง</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #cbd5e1; }
+    .btn-3d { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6); transition: all 0.15s ease-in-out; }
+    .btn-3d:active { transform: translateY(2px); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2); }
+    .cell-input { width: 100%; border: 1px solid #cbd5e1; outline: none; font-family: inherit; font-size: 14px; padding: 8px 12px; border-radius: 8px; color: #1e293b; background-color: #f8fafc; }
+    .cell-input:focus { background-color: #fff; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+    .custom-table th, .custom-table td { border: 1px solid #e2e8f0; padding: 10px 12px; font-size: 14px; }
+    .custom-table th { background-color: #f1f5f9; font-weight: 600; color: #475569; }
+  </style>
+</head>
+<body class="p-3 sm:p-6 min-h-screen flex items-center justify-center">
+
+  <div class="max-w-3xl w-full bg-slate-100 p-5 sm:p-8 rounded-3xl shadow-2xl border border-slate-300 space-y-6">
+    
+    <!-- ส่วนหัว -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-300 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-md shrink-0">
+          <i data-lucide="users" class="w-7 h-7"></i>
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold text-slate-800 leading-tight">ทำเนียบรายชื่อบุคลากร</h1>
+          <p class="text-xs sm:text-sm text-slate-500">จัดการรายชื่อข้าราชการ/พนักงาน สำหรับใช้เป็นกรรมการตรวจรับและผู้ควบคุมงาน</p>
+        </div>
+      </div>
+      <div>
+        <a href="index.html" class="btn-3d flex items-center gap-2 bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold shadow transition">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> กลับหน้าหลัก
+        </a>
+      </div>
+    </div>
+
+    <!-- ฟอร์มเพิ่มบุคลากร -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-300 space-y-4">
+      <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2 border-b pb-3">
+        <i data-lucide="user-plus" class="w-5 h-5 text-indigo-600"></i> เพิ่มรายชื่อบุคลากรใหม่
+      </h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">ชื่อ - นามสกุล (พร้อมคำนำหน้า)</label>
+          <input type="text" id="staff_name" class="cell-input" placeholder="เช่น นายพัทธิยะ วงษาซ้าย">
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">ตำแหน่ง</label>
+          <input type="text" id="staff_position" class="cell-input" placeholder="เช่น นายช่างโยธาปฏิบัติงาน">
+        </div>
+      </div>
+
+      <div class="pt-2 flex justify-end">
+        <button onclick="addStaffMember()" class="btn-3d bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow flex items-center gap-2 cursor-pointer">
+          <i data-lucide="save" class="w-4 h-4"></i> บันทึกรายชื่อ
+        </button>
+      </div>
+    </div>
+
+    <!-- ตารางแสดงรายชื่อบุคลากรทั้งหมด -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-300 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+          <i data-lucide="contact" class="w-5 h-5 text-indigo-600"></i> รายชื่อบุคลากรในระบบ
+        </h3>
+        <span class="text-xs text-slate-500 font-semibold">ทั้งหมด <span id="staff_count" class="text-indigo-600">0</span> คน</span>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-200">
+        <table class="w-full custom-table text-left border-collapse">
+          <thead>
+            <tr>
+              <th class="w-16 text-center">ลำดับ</th>
+              <th class="w-1/3">ชื่อ - นามสกุล</th>
+              <th class="w-1/2">ตำแหน่ง</th>
+              <th class="w-20 text-center">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="staff_tbody">
+            <tr>
+              <td colspan="4" class="text-center text-slate-400 py-6">ยังไม่มีข้อมูลบุคลากรในระบบ</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+    const STAFF_STORAGE_KEY = 'CONSTRUCTION_STAFF_DIRECTORY_DB';
+
+    function getStaffList() {
+      const raw = localStorage.getItem(STAFF_STORAGE_KEY);
+      if (!raw) {
+        // ค่าเริ่มต้นตัวอย่าง
+        return [
+          { id: 1, name: "นายพัทธิยะ วงษาซ้าย", position: "นายช่างโยธาปฏิบัติงาน" },
+          { id: 2, name: "นายอรรถวัต อดทน", position: "เจ้าพนักงานธุรการปฏิบัติงาน" }
+        ];
+      }
+      try { return JSON.parse(raw); } catch(e) { return []; }
+    }
+
+    function saveStaffList(list) {
+      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(list));
+    }
+
+    function renderStaffTable() {
+      const tbody = document.getElementById('staff_tbody');
+      const countEl = document.getElementById('staff_count');
+      const staffList = getStaffList();
+      
+      countEl.textContent = staffList.length;
+
+      if (staffList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-slate-400 py-6">ยังไม่มีข้อมูลบุคลากรในระบบ</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      staffList.forEach((staff, index) => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="text-center font-bold text-slate-500">${index + 1}</td>
+            <td class="font-semibold text-slate-800">${staff.name}</td>
+            <td class="text-slate-600">${staff.position}</td>
+            <td class="text-center">
+              <button onclick="deleteStaff(${staff.id})" class="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 transition cursor-pointer" title="ลบรายชื่อ">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      lucide.createIcons();
+    }
+
+    function addStaffMember() {
+      const nameInput = document.getElementById('staff_name');
+      const posInput = document.getElementById('staff_position');
+      
+      const name = nameInput.value.trim();
+      const position = posInput.value.trim();
+
+      if (!name || !position) {
+        alert('กรุณากรอกทั้งชื่อ-นามสกุล และตำแหน่งให้ครบถ้วนค่ะ');
+        return;
+      }
+
+      const staffList = getStaffList();
+      const newStaff = {
+        id: Date.now(),
+        name: name,
+        position: position
+      };
+
+      staffList.push(newStaff);
+      saveStaffList(staffList);
+
+      nameInput.value = '';
+      posInput.value = '';
+      renderStaffTable();
+      alert('บันทึกรายชื่อบุคลากรเรียบร้อยแล้วค่ะ!');
+    }
+
+    function deleteStaff(id) {
+      if (!confirm('คุณต้องการลบรายชื่อนี้ออกจากระบบใช่ไหมคะ?')) return;
+      
+      let staffList = getStaffList();
+      staffList = staffList.filter(s => s.id !== id);
+      saveStaffList(staffList);
+      
+      renderStaffTable();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // บันทึกค่าเริ่มต้นถ้ายังไม่เคยมี
+      if (!localStorage.getItem(STAFF_STORAGE_KEY)) {
+        saveStaffList(getStaffList());
+      }
+      renderStaffTable();
+    });
+  </script>
+</body>
+</html>
