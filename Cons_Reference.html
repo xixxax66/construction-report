@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="assets/gas-sync.js"></script>
+  <script src="../assets/gas-sync.js"></script>
   <style>
     body { font-family: 'Sarabun', sans-serif; background-color: #d1d5db; }
     .sheet-table { border-collapse: collapse; width: 100%; }
@@ -27,7 +27,7 @@
 
   <div class="max-w-6xl mx-auto bg-slate-200/80 p-4 sm:p-6 rounded-xl shadow-lg border border-slate-300 space-y-4">
     
-    <!-- แถบเลือกโครงการ (Project Selector) -->
+    <!-- แถบเลือกโครงการ (Project Selector) และลิงก์ไปหน้าจัดการบุคลากร -->
     <div class="bg-white p-3 rounded-lg shadow-sm border border-emerald-600 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2 flex-1 min-w-[280px]">
         <div class="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
@@ -39,7 +39,11 @@
           </select>
         </div>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 flex-wrap">
+        <!-- 💡 ปุ่มทางลัดเปิดหน้าจัดการทำเนียบรายชื่อบุคลากร -->
+        <a href="Staff_Directory.html" target="_blank" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition">
+          <i data-lucide="users" class="w-4 h-4"></i> จัดการทำเนียบรายชื่อ
+        </a>
         <button onclick="createNewProject()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
           <i data-lucide="plus-circle" class="w-4 h-4"></i> เพิ่มโครงการใหม่
         </button>
@@ -173,6 +177,7 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- คณะกรรมการตรวจรับพัสดุ -->
           <div class="bg-white rounded-lg shadow border border-emerald-600 overflow-hidden">
             <table class="sheet-table">
               <thead><tr><th colspan="2" class="th-header-title">คณะกรรมการตรวจรับพัสดุ</th></tr></thead>
@@ -180,6 +185,7 @@
               <tbody id="committeeRows"></tbody>
             </table>
           </div>
+          <!-- ผู้ควบคุมงาน -->
           <div class="bg-white rounded-lg shadow border border-emerald-600 overflow-hidden">
             <table class="sheet-table">
               <thead><tr><th colspan="2" class="th-header-title">ผู้ควบคุมงาน</th></tr></thead>
@@ -225,7 +231,7 @@
   <script>
     lucide.createIcons();
     const STORAGE_KEY_GAS_URL = 'CONSTRUCTION_GAS_URL';
-    const DEFAULT_GAS_URL = GAS_SYNC_CONFIG.defaultUrl;
+    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
     let currentGasUrl = localStorage.getItem(STORAGE_KEY_GAS_URL) || DEFAULT_GAS_URL;
     let installmentListData = [{ amount: "2,849,260.00", year: "2569" }];
     const defaultCommittees = ["นางสาวถนอมนวล วะทวีก้านตรงฯ", "จ่าเอกธีรพงษ์ ดรชานนท์", "นางสาวปนัดดา ภูอาษา", "นายวีระศักดิ์ ทับวิชร", "นายอรรถวัต อดทน"];
@@ -233,6 +239,19 @@
     
     const thaiMonthsArr = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
     const PROJECT_LIST_KEY = 'CONSTRUCTION_ALL_PROJECTS_LIST';
+    const STAFF_STORAGE_KEY = 'CONSTRUCTION_STAFF_DIRECTORY_DB';
+
+    // 💡 ฟังก์ชันดึงรายชื่อบุคลากรจากทำเนียบ
+    function getStaffDirectory() {
+      const raw = localStorage.getItem(STAFF_STORAGE_KEY);
+      if (!raw) {
+        return [
+          { name: "นายพัทธิยะ วงษาซ้าย", position: "นายช่างโยธาปฏิบัติงาน" },
+          { name: "นายอรรถวัต อดทน", position: "เจ้าพนักงานธุรการปฏิบัติงาน" }
+        ];
+      }
+      try { return JSON.parse(raw); } catch(e) { return []; }
+    }
 
     function formatCurrencyInput(el) {
       let val = el.value.replace(/,/g, '');
@@ -253,8 +272,8 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td class="text-center font-bold bg-slate-50">${idx + 1}</td>
-          <td class="p-1 bg-white"><input type="text" id="inst_amount_${idx}" class="cell-input text-right font-semibold" value="${escapeHTML(item.amount || '0.00')}" oninput="formatCurrencyInput(this)"></td>
-          <td class="p-1 bg-white"><input type="text" id="inst_year_${idx}" class="cell-input text-center" value="${escapeHTML(item.year || '2569')}"></td>
+          <td class="p-1 bg-white"><input type="text" id="inst_amount_${idx}" class="cell-input text-right font-semibold" value="${item.amount || '0.00'}" oninput="formatCurrencyInput(this)"></td>
+          <td class="p-1 bg-white"><input type="text" id="inst_year_${idx}" class="cell-input text-center" value="${item.year || '2569'}"></td>
         `;
         tbody.appendChild(tr);
       });
@@ -275,23 +294,70 @@
       calcFine();
     }
 
+    // 💡 ปรับปรุงฟังก์ชันสร้างช่องกรรมการ ให้เป็น Dropdown เลือกจากทำเนียบรายชื่อ
     function renderCommitteeFields(existingList = null) {
       const count = parseInt(document.getElementById('committeeCount').value) || 1;
       const tbody = document.getElementById('committeeRows');
       tbody.innerHTML = '';
+      
+      const staffList = getStaffDirectory();
+
       for (let i = 0; i < count; i++) {
-        const val = existingList && existingList[i] !== undefined ? existingList[i] : (defaultCommittees[i] || '');
-        tbody.innerHTML += `<tr><td class="th-green whitespace-nowrap font-medium">${(i === 0) ? 'ชื่อประธานกรรมการ' : 'ชื่อกรรมการ'}</td><td class="p-1 bg-white"><input type="text" id="comm_${i}" class="cell-input" value="${escapeHTML(val)}" placeholder="ระบุชื่อ-นามสกุล"></td></tr>`;
+        const currentVal = existingList && existingList[i] !== undefined ? existingList[i] : (defaultCommittees[i] || '');
+        
+        let optionsHtml = `<option value="">-- เลือกจากทำเนียบรายชื่อ --</option>`;
+        staffList.forEach(staff => {
+          const isSelected = (staff.name === currentVal) ? 'selected' : '';
+          optionsHtml += `<option value="${staff.name}" ${isSelected}>${staff.name} (${staff.position})</option>`;
+        });
+
+        tbody.innerHTML += `
+          <tr>
+            <td class="th-green whitespace-nowrap font-medium">${(i === 0) ? 'ชื่อประธานกรรมการ' : 'ชื่อกรรมการ'}</td>
+            <td class="p-1 bg-white">
+              <select id="comm_${i}" class="cell-input font-medium cursor-pointer">
+                ${optionsHtml}
+              </select>
+            </td>
+          </tr>`;
       }
     }
 
+    // 💡 ปรับปรุงฟังก์ชันสร้างช่องผู้ควบคุมงาน ให้เป็น Dropdown เลือกจากทำเนียบรายชื่อ
     function renderInspectorFields(existingList = null) {
       const count = parseInt(document.getElementById('inspectorCount').value) || 1;
       const tbody = document.getElementById('inspectorRows');
       tbody.innerHTML = '';
+      
+      const staffList = getStaffDirectory();
+
       for (let i = 0; i < count; i++) {
         const item = existingList && existingList[i] ? existingList[i] : defaultInspectors[i] || { name: '', pos: 'ผู้ควบคุมงาน' };
-        tbody.innerHTML += `<tr><td class="th-green whitespace-nowrap font-medium">ชื่อ-นามสกุล (${i+1})</td><td class="p-1 bg-white"><input type="text" id="insp_name_${i}" class="cell-input font-medium" value="${escapeHTML(item.name)}" placeholder="ระบุชื่อผู้ควบคุมงาน"></td></tr><tr><td class="th-green whitespace-nowrap font-medium">ตำแหน่ง (${i+1})</td><td class="p-1 bg-white"><select id="insp_pos_${i}" class="cell-input font-medium cursor-pointer"><option value="ผู้ควบคุมงาน" ${item.pos === 'ผู้ควบคุมงาน' ? 'selected' : ''}>ผู้ควบคุมงาน</option><option value="หัวหน้าผู้ควบคุมงาน" ${item.pos === 'หัวหน้าผู้ควบคุมงาน' ? 'selected' : ''}>หัวหน้าผู้ควบคุมงาน</option></select></td></tr>`;
+        
+        let optionsHtml = `<option value="">-- เลือกจากทำเนียบรายชื่อ --</option>`;
+        staffList.forEach(staff => {
+          const isSelected = (staff.name === item.name) ? 'selected' : '';
+          optionsHtml += `<option value="${staff.name}" ${isSelected}>${staff.name} (${staff.position})</option>`;
+        });
+
+        tbody.innerHTML += `
+          <tr>
+            <td class="th-green whitespace-nowrap font-medium">ชื่อ-นามสกุล (${i+1})</td>
+            <td class="p-1 bg-white">
+              <select id="insp_name_${i}" class="cell-input font-medium cursor-pointer">
+                ${optionsHtml}
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td class="th-green whitespace-nowrap font-medium">ตำแหน่ง (${i+1})</td>
+            <td class="p-1 bg-white">
+              <select id="insp_pos_${i}" class="cell-input font-medium cursor-pointer">
+                <option value="ผู้ควบคุมงาน" ${item.pos === 'ผู้ควบคุมงาน' ? 'selected' : ''}>ผู้ควบคุมงาน</option>
+                <option value="หัวหน้าผู้ควบคุมงาน" ${item.pos === 'หัวหน้าผู้ควบคุมงาน' ? 'selected' : ''}>หัวหน้าผู้ควบคุมงาน</option>
+              </select>
+            </td>
+          </tr>`;
       }
     }
 
@@ -339,7 +405,7 @@
       });
 
       const contractNo = document.getElementById('contractNo').value || 'NO_CONTRACT';
-      const projId = getActiveProjectId({ contractNo });
+      const projId = `PROJ_${contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
       return {
         action: 'save_basic_info',
@@ -500,7 +566,6 @@
 
       try {
         const response = await fetch(currentGasUrl, { method: 'POST', body: JSON.stringify(payload) });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const result = await response.json();
         if (result.status === 'success') {
           document.getElementById('sync-status').textContent = 'บันทึกสำเร็จ';
@@ -521,7 +586,6 @@
 
       try {
         const response = await fetch(`${currentGasUrl}?action=get_basic_info`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const res = await response.json();
         if (res && res.data && Object.keys(res.data).length > 0) { 
           setFormData(res.data); 
