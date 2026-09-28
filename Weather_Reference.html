@@ -72,9 +72,14 @@
 
     <!-- ฟอร์มบันทึก / แก้ไขสภาพอากาศด้วยตนเอง -->
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-300 space-y-4">
-      <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2 border-b pb-3">
-        <i data-lucide="edit-3" class="w-5 h-5 text-sky-600"></i> บันทึก / แก้ไขข้อมูลสภาพอากาศประจำวันด้วยตนเอง
-      </h3>
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+          <i data-lucide="edit-3" class="w-5 h-5 text-sky-600"></i> บันทึก / แก้ไขข้อมูลสภาพอากาศประจำวันด้วยตนเอง
+        </h3>
+        <span id="edit_mode_badge" class="text-xs font-bold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full hidden">กำลังโหมดแก้ไขข้อมูลเดิม</span>
+      </div>
+
+      <input type="hidden" id="edit_index" value="-1">
 
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div class="space-y-1.5">
@@ -103,8 +108,11 @@
         </div>
       </div>
 
-      <div class="pt-3 flex justify-end">
-        <button onclick="saveManualWeather()" class="btn-3d bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow flex items-center gap-2 cursor-pointer">
+      <div class="pt-3 flex items-center justify-between">
+        <button id="btn_cancel_edit" onclick="cancelEditMode()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold hidden cursor-pointer">
+          ยกเลิกแก้ไข
+        </button>
+        <button onclick="saveManualWeather()" class="btn-3d bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow flex items-center gap-2 cursor-pointer ml-auto">
           <i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูลลงฐานข้อมูลกลาง
         </button>
       </div>
@@ -120,15 +128,16 @@
         <table class="w-full custom-table text-left border-collapse">
           <thead>
             <tr>
-              <th class="w-1/4">วันที่</th>
-              <th class="w-1/4 text-center">สภาพท้องฟ้า</th>
-              <th class="w-1/4 text-center">ลักษณะฝน</th>
+              <th class="w-1/5">วันที่</th>
+              <th class="w-1/5 text-center">สภาพท้องฟ้า</th>
+              <th class="w-1/5 text-center">ลักษณะฝน</th>
               <th class="w-1/4 text-center">หมายเหตุ</th>
+              <th class="w-24 text-center">จัดการ</th>
             </tr>
           </thead>
           <tbody id="weather_log_tbody">
             <tr>
-              <td colspan="4" class="text-center text-slate-400 py-4">ยังไม่มีประวัติการบันทึกสภาพอากาศ</td>
+              <td colspan="5" class="text-center text-slate-400 py-4">ยังไม่มีประวัติการบันทึกสภาพอากาศ</td>
             </tr>
           </tbody>
         </table>
@@ -141,10 +150,8 @@
     lucide.createIcons();
     const STORAGE_KEY = 'CENTRAL_WEATHER_LOGS_DB';
 
-    // ตั้งค่าวันที่เริ่มต้นเป็นวันปัจจุบัน
     document.getElementById('fetch_date').valueAsDate = new Date();
 
-    // ฟังก์ชันจดจำพิกัด
     function saveCoordinates() {
       const lat = document.getElementById('fetch_lat').value;
       const lon = document.getElementById('fetch_lon').value;
@@ -152,7 +159,6 @@
       localStorage.setItem('WEATHER_SAVED_LON', lon);
     }
 
-    // ฟังก์ชันดึงค่าพิกัดที่เคยบันทึกไว้ตอนโหลดหน้า
     function loadCoordinates() {
       const savedLat = localStorage.getItem('WEATHER_SAVED_LAT');
       const savedLon = localStorage.getItem('WEATHER_SAVED_LON');
@@ -170,7 +176,6 @@
         return;
       }
 
-      // บันทึกพิกัดทุกครั้งที่กดค้นหาเผื่อลืม
       saveCoordinates();
 
       const btn = document.getElementById('btn_fetch_api');
@@ -179,7 +184,6 @@
       lucide.createIcons();
 
       try {
-        // ใช้ Open-Meteo API (ฟรี ไม่ต้องใช้ Key) รองรับทั้งข้อมูลย้อนหลังและพยากรณ์
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum,weathercode&start_date=${dateStr}&end_date=${dateStr}`;
         const res = await fetch(url);
         const data = await res.json();
@@ -208,6 +212,7 @@
     }
 
     function saveManualWeather() {
+      const editIdx = parseInt(document.getElementById('edit_index').value);
       const date = document.getElementById('manual_date').value.trim();
       const sky = document.getElementById('manual_sky').value;
       const rain = document.getElementById('manual_rain').value;
@@ -219,11 +224,54 @@
       }
 
       let logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      logs.unshift({ date, sky, rain, note });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
 
+      if (editIdx >= 0 && editIdx < logs.length) {
+        // อัปเดตข้อมูลเดิม
+        logs[editIdx] = { date, sky, rain, note };
+        alert('แก้ไขข้อมูลสภาพอากาศเรียบร้อยแล้วค่ะ');
+      } else {
+        // เพิ่มรายการใหม่
+        logs.unshift({ date, sky, rain, note });
+        alert('บันทึกข้อมูลสภาพอากาศเรียบร้อยแล้วค่ะ');
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+      cancelEditMode();
       renderWeatherLogs();
-      alert('บันทึกข้อมูลสภาพอากาศเรียบร้อยแล้วค่ะ');
+    }
+
+    function editWeatherLog(index) {
+      let logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      if (index >= 0 && index < logs.length) {
+        const item = logs[index];
+        document.getElementById('manual_date').value = item.date;
+        document.getElementById('manual_sky').value = item.sky;
+        document.getElementById('manual_rain').value = item.rain;
+        document.getElementById('manual_note').value = item.note || '';
+        document.getElementById('edit_index').value = index;
+
+        document.getElementById('edit_mode_badge').classList.remove('hidden');
+        document.getElementById('btn_cancel_edit').classList.remove('hidden');
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+      }
+    }
+
+    function cancelEditMode() {
+      document.getElementById('edit_index').value = "-1";
+      document.getElementById('manual_date').value = "";
+      document.getElementById('manual_note').value = "";
+      document.getElementById('edit_mode_badge').classList.add('hidden');
+      document.getElementById('btn_cancel_edit').classList.add('hidden');
+    }
+
+    function deleteWeatherLog(index) {
+      if (!confirm('คุณต้องการลบข้อมูลสภาพอากาศรายการนี้ใช่หรือไม่?')) return;
+      
+      let logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      logs.splice(index, 1);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+      
+      renderWeatherLogs();
     }
 
     function renderWeatherLogs() {
@@ -231,25 +279,29 @@
       const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 
       if (logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-slate-400 py-4">ยังไม่มีประวัติการบันทึกสภาพอากาศ</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-slate-400 py-4">ยังไม่มีประวัติการบันทึกสภาพอากาศ</td></tr>`;
         return;
       }
 
       tbody.innerHTML = '';
-      logs.forEach(item => {
+      logs.forEach((item, index) => {
         tbody.innerHTML += `
           <tr>
             <td class="font-medium text-slate-800">${item.date}</td>
             <td class="text-center">${item.sky}</td>
             <td class="text-center">${item.rain}</td>
             <td class="text-center text-slate-600 text-xs">${item.note || '-'}</td>
+            <td class="text-center space-x-1">
+              <button onclick="editWeatherLog(${index})" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-2.5 py-1 rounded text-xs font-bold cursor-pointer" title="แก้ไขรายการนี้">แก้ไข</button>
+              <button onclick="deleteWeatherLog(${index})" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-2.5 py-1 rounded text-xs font-bold cursor-pointer" title="ลบรายการนี้">ลบ</button>
+            </td>
           </tr>
         `;
       });
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      loadCoordinates(); // เรียกใช้ตอนโหลดหน้าเพื่อนำค่ามาแสดง
+      loadCoordinates();
       renderWeatherLogs();
     });
   </script>
