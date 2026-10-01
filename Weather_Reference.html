@@ -18,21 +18,34 @@
     .cell-input:focus { background-color: #fff; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
     .custom-table th, .custom-table td { border: 1px solid #e2e8f0; padding: 10px 12px; font-size: 14px; }
     .custom-table th { background-color: #f1f5f9; font-weight: 600; text-align: center; color: #475569; }
+
+    /* 💡 ตั้งค่าการพิมพ์ (Print CSS) */
+    @media print {
+      body { background: white !important; padding: 0 !important; margin: 0 !important; }
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      .max-w-4xl { max-width: 100% !important; width: 100% !important; box-shadow: none !important; border: none !important; padding: 0 !important; }
+      .print-table-wrapper { border: none !important; padding: 0 !important; box-shadow: none !important; background: transparent !important; }
+      table { width: 100% !important; border-collapse: collapse !important; border: 1px solid #000 !important; }
+      th, td { border: 1px solid #000 !important; padding: 8px !important; color: #000 !important; font-size: 16pt !important; }
+      th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+    .print-only { display: none; }
   </style>
 </head>
-<body class="p-3 sm:p-6 min-h-screen flex items-center justify-center">
+<body class="p-3 sm:p-6 min-h-screen flex items-start justify-center">
 
-  <div class="max-w-4xl w-full bg-slate-100 p-5 sm:p-8 rounded-3xl shadow-2xl border border-slate-300 space-y-6">
+  <div class="max-w-4xl w-full bg-slate-100 p-5 sm:p-8 rounded-3xl shadow-2xl border border-slate-300 space-y-6 print:bg-white print:shadow-none print:p-0">
     
-    <!-- ส่วนหัว -->
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-300 flex flex-wrap items-center justify-between gap-4">
+    <!-- ส่วนหัว (ซ่อนตอนพิมพ์) -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-300 flex flex-wrap items-center justify-between gap-4 no-print">
       <div class="flex items-center gap-3.5">
         <div class="w-12 h-12 rounded-2xl bg-sky-600 flex items-center justify-center text-white shadow-md shrink-0">
           <i data-lucide="cloud-sun" class="w-7 h-7"></i>
         </div>
         <div>
           <h1 class="text-xl sm:text-2xl font-bold text-slate-800 leading-tight">ศูนย์ข้อมูลสภาพอากาศกลาง</h1>
-          <p class="text-xs sm:text-sm text-slate-500">ดึงข้อมูลสภาพอากาศย้อนหลัง/พยากรณ์ หรือบันทึกข้อมูลด้วยตนเอง</p>
+          <p class="text-xs sm:text-sm text-slate-500">ดึงข้อมูลย้อนหลัง/พยากรณ์ หรือบันทึกข้อมูลด้วยตนเอง</p>
         </div>
       </div>
       <div>
@@ -42,12 +55,11 @@
       </div>
     </div>
 
-    <!-- ส่วนดึงข้อมูลสภาพอากาศอัตโนมัติจากพิกัด -->
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-300 space-y-4">
+    <!-- ส่วนดึงข้อมูลสภาพอากาศอัตโนมัติจากพิกัด (ซ่อนตอนพิมพ์) -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-300 space-y-4 no-print">
       <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2 border-b pb-3">
         <i data-lucide="cloud-download" class="w-5 h-5 text-sky-600"></i> ดึงข้อมูลสภาพอากาศอัตโนมัติ (ผ่านพิกัด GPS)
       </h3>
-
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-700">ละติจูด (Latitude)</label>
@@ -62,7 +74,6 @@
           <input type="date" id="fetch_date" class="cell-input text-center font-bold">
         </div>
       </div>
-
       <div class="pt-2 flex justify-end">
         <button onclick="fetchWeatherDataFromAPI()" id="btn_fetch_api" class="btn-3d bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow flex items-center gap-2 cursor-pointer">
           <i data-lucide="search" class="w-4 h-4"></i> ดึงข้อมูลสภาพอากาศจากระบบออนไลน์
@@ -70,11 +81,11 @@
       </div>
     </div>
 
-    <!-- ฟอร์มบันทึก / แก้ไขสภาพอากาศด้วยตนเอง -->
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-300 space-y-4">
+    <!-- ฟอร์มบันทึก / แก้ไขสภาพอากาศด้วยตนเอง (ซ่อนตอนพิมพ์) -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-300 space-y-4 no-print">
       <div class="flex items-center justify-between border-b pb-3">
         <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
-          <i data-lucide="edit-3" class="w-5 h-5 text-sky-600"></i> บันทึก / แก้ไขข้อมูลสภาพอากาศประจำวันด้วยตนเอง
+          <i data-lucide="edit-3" class="w-5 h-5 text-sky-600"></i> บันทึก / แก้ไขข้อมูลสภาพอากาศ
         </h3>
         <span id="edit_mode_badge" class="text-xs font-bold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full hidden">กำลังโหมดแก้ไขข้อมูลเดิม</span>
       </div>
@@ -84,7 +95,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-700">วันที่บันทึก</label>
-          <input type="text" id="manual_date" class="cell-input text-center font-bold" placeholder="เช่น 21 กันยายน 2569">
+          <input type="date" id="manual_date" class="cell-input text-center font-bold">
         </div>
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-700">สภาพท้องฟ้า</label>
@@ -113,26 +124,48 @@
           ยกเลิกแก้ไข
         </button>
         <button onclick="saveManualWeather()" class="btn-3d bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow flex items-center gap-2 cursor-pointer ml-auto">
-          <i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูลลงฐานข้อมูลกลาง
+          <i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล
         </button>
       </div>
     </div>
 
-    <!-- ตารางแสดงประวัติสภาพอากาศที่บันทึก -->
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-300 space-y-4">
-      <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2 border-b pb-3">
-        <i data-lucide="table" class="w-5 h-5 text-sky-600"></i> ประวัติบันทึกสภาพอากาศกลาง
-      </h3>
+    <!-- ตารางแสดงประวัติและส่วนพิมพ์รายงาน -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-300 space-y-4 print-table-wrapper">
+      
+      <!-- ส่วนหัวสำหรับปริ้นท์ (จะแสดงเฉพาะตอนพิมพ์) -->
+      <div class="print-only text-center pb-4 border-b-2 border-slate-800 mb-4">
+        <h2 class="text-2xl font-bold text-slate-900" style="font-size: 22pt;">รายงานบันทึกข้อมูลสภาพอากาศ</h2>
+        <p id="print_report_label" class="text-lg font-semibold mt-1" style="font-size: 18pt;">ข้อมูลทั้งหมด</p>
+      </div>
 
-      <div class="overflow-x-auto rounded-xl border border-slate-200">
+      <!-- แถบเครื่องมือจัดการและสั่งพิมพ์ (ซ่อนตอนพิมพ์) -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b no-print">
+        <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+          <i data-lucide="table" class="w-5 h-5 text-sky-600"></i> ประวัติบันทึกสภาพอากาศ
+        </h3>
+        
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 bg-slate-100 py-1.5 px-3 rounded-lg border border-slate-200">
+            <span class="text-xs font-bold text-slate-700"><i data-lucide="filter" class="w-3.5 h-3.5 inline"></i> เดือน:</span>
+            <select id="filter_month" onchange="renderWeatherLogs()" class="bg-transparent text-sm font-bold text-slate-800 outline-none cursor-pointer">
+              <option value="ALL">ทุกเดือน (ทั้งหมด)</option>
+            </select>
+          </div>
+          <button onclick="window.print()" class="btn-3d bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow flex items-center gap-1.5 cursor-pointer">
+            <i data-lucide="printer" class="w-4 h-4"></i> พิมพ์รายงาน
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-200 print:border-none print:overflow-visible">
         <table class="w-full custom-table text-left border-collapse">
           <thead>
             <tr>
-              <th class="w-1/5">วันที่</th>
+              <th class="w-1/5 text-center">วันที่</th>
               <th class="w-1/5 text-center">สภาพท้องฟ้า</th>
               <th class="w-1/5 text-center">ลักษณะฝน</th>
               <th class="w-1/4 text-center">หมายเหตุ</th>
-              <th class="w-24 text-center">จัดการ</th>
+              <th class="w-24 text-center no-print">จัดการ</th>
             </tr>
           </thead>
           <tbody id="weather_log_tbody">
@@ -151,6 +184,21 @@
     const STORAGE_KEY = 'CENTRAL_WEATHER_LOGS_DB';
 
     document.getElementById('fetch_date').valueAsDate = new Date();
+    document.getElementById('manual_date').valueAsDate = new Date();
+
+    function formatThaiDate(dateStr) {
+      if (dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        if(parts.length === 3) {
+          const y = parseInt(parts[0]) + 543;
+          const m = parseInt(parts[1]);
+          const d = parseInt(parts[2]);
+          const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+          return `${d} ${thaiMonths[m-1]} ${y}`;
+        }
+      }
+      return dateStr;
+    }
 
     function saveCoordinates() {
       const lat = document.getElementById('fetch_lat').value;
@@ -226,17 +274,19 @@
       let logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 
       if (editIdx >= 0 && editIdx < logs.length) {
-        // อัปเดตข้อมูลเดิม
         logs[editIdx] = { date, sky, rain, note };
         alert('แก้ไขข้อมูลสภาพอากาศเรียบร้อยแล้วค่ะ');
       } else {
-        // เพิ่มรายการใหม่
         logs.unshift({ date, sky, rain, note });
         alert('บันทึกข้อมูลสภาพอากาศเรียบร้อยแล้วค่ะ');
       }
 
+      // จัดเรียงวันที่จากใหม่ไปเก่า
+      logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
       cancelEditMode();
+      updateMonthFilterOptions();
       renderWeatherLogs();
     }
 
@@ -244,7 +294,13 @@
       let logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
       if (index >= 0 && index < logs.length) {
         const item = logs[index];
-        document.getElementById('manual_date').value = item.date;
+        // ตรวจสอบถ้าเป็นรูปแบบ YYYY-MM-DD
+        if(item.date.includes('-') && item.date.length === 10) {
+            document.getElementById('manual_date').value = item.date;
+        } else {
+            document.getElementById('manual_date').type = "text";
+            document.getElementById('manual_date').value = item.date;
+        }
         document.getElementById('manual_sky').value = item.sky;
         document.getElementById('manual_rain').value = item.rain;
         document.getElementById('manual_note').value = item.note || '';
@@ -258,7 +314,8 @@
 
     function cancelEditMode() {
       document.getElementById('edit_index').value = "-1";
-      document.getElementById('manual_date').value = "";
+      document.getElementById('manual_date').type = "date";
+      document.getElementById('manual_date').valueAsDate = new Date();
       document.getElementById('manual_note').value = "";
       document.getElementById('edit_mode_badge').classList.add('hidden');
       document.getElementById('btn_cancel_edit').classList.add('hidden');
@@ -271,29 +328,78 @@
       logs.splice(index, 1);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
       
+      updateMonthFilterOptions();
       renderWeatherLogs();
+    }
+
+    function updateMonthFilterOptions() {
+      const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      const filterSelect = document.getElementById('filter_month');
+      const currentFilter = filterSelect.value;
+      
+      const uniqueMonths = new Set();
+      logs.forEach(item => {
+          let mStr = "";
+          if (item.date.includes('-')) {
+              mStr = item.date.substring(0, 7); 
+          } else {
+              const parts = item.date.split(' ');
+              if(parts.length >= 3) mStr = parts[1] + ' ' + parts[2];
+              else mStr = item.date;
+          }
+          uniqueMonths.add(mStr);
+      });
+
+      filterSelect.innerHTML = '<option value="ALL">ดูทุกเดือน (ทั้งหมด)</option>';
+      Array.from(uniqueMonths).sort().reverse().forEach(m => {
+          let label = m;
+          if (m.includes('-')) {
+              const [y, mm] = m.split('-');
+              const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+              label = `${thaiMonths[parseInt(mm)-1]} ${parseInt(y) + 543}`;
+          }
+          filterSelect.innerHTML += `<option value="${m}">${label}</option>`;
+      });
+      
+      if(currentFilter && Array.from(uniqueMonths).includes(currentFilter)) {
+          filterSelect.value = currentFilter;
+      }
     }
 
     function renderWeatherLogs() {
       const tbody = document.getElementById('weather_log_tbody');
-      const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      let logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      const filterVal = document.getElementById('filter_month').value;
+      const filterSelect = document.getElementById('filter_month');
+      
+      // กรองข้อมูลตามเดือนที่เลือก
+      let filteredLogs = logs;
+      if (filterVal !== "ALL") {
+          filteredLogs = logs.filter(item => item.date.includes(filterVal));
+          document.getElementById('print_report_label').textContent = `ประจำเดือน ${filterSelect.options[filterSelect.selectedIndex].text}`;
+      } else {
+          document.getElementById('print_report_label').textContent = `ข้อมูลทั้งหมด`;
+      }
 
-      if (logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-slate-400 py-4">ยังไม่มีประวัติการบันทึกสภาพอากาศ</td></tr>`;
+      if (filteredLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-slate-400 py-4">ไม่มีประวัติการบันทึกสภาพอากาศของเดือนนี้</td></tr>`;
         return;
       }
 
       tbody.innerHTML = '';
-      logs.forEach((item, index) => {
+      filteredLogs.forEach(item => {
+        // หาค่า index ต้นฉบับเพื่อใช้สำหรับปุ่ม Edit/Delete
+        const originalIndex = logs.findIndex(orig => orig.date === item.date && orig.note === item.note);
+        
         tbody.innerHTML += `
           <tr>
-            <td class="font-medium text-slate-800">${item.date}</td>
+            <td class="font-medium text-slate-800 text-center">${formatThaiDate(item.date)}</td>
             <td class="text-center">${item.sky}</td>
             <td class="text-center">${item.rain}</td>
-            <td class="text-center text-slate-600 text-xs">${item.note || '-'}</td>
-            <td class="text-center space-x-1">
-              <button onclick="editWeatherLog(${index})" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-2.5 py-1 rounded text-xs font-bold cursor-pointer" title="แก้ไขรายการนี้">แก้ไข</button>
-              <button onclick="deleteWeatherLog(${index})" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-2.5 py-1 rounded text-xs font-bold cursor-pointer" title="ลบรายการนี้">ลบ</button>
+            <td class="text-center text-slate-600">${item.note || '-'}</td>
+            <td class="text-center space-x-1 no-print">
+              <button onclick="editWeatherLog(${originalIndex})" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-2.5 py-1 rounded text-xs font-bold cursor-pointer" title="แก้ไขรายการนี้">แก้ไข</button>
+              <button onclick="deleteWeatherLog(${originalIndex})" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-2.5 py-1 rounded text-xs font-bold cursor-pointer" title="ลบรายการนี้">ลบ</button>
             </td>
           </tr>
         `;
@@ -302,6 +408,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       loadCoordinates();
+      updateMonthFilterOptions();
       renderWeatherLogs();
     });
   </script>
