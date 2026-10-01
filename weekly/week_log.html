@@ -889,34 +889,43 @@
       }
     }
 
-    function openRestoreModal() {
+   // 💡 ฟังก์ชันเปิดหน้าต่างดึงข้อมูล ที่อัปเกรดให้แสดงเดือนย้อนหลังอัตโนมัติ
+    async function openRestoreModal() {
       const sel = document.getElementById('sel_backup_history');
-      sel.innerHTML = '';
-      const logsRaw = localStorage.getItem('BACKUP_HISTORY_LOG');
-      let logs = [];
-      if (logsRaw) { try { logs = JSON.parse(logsRaw); } catch(e){} }
-      
-      const validLogs = logs.filter(l => l.status && l.status.success && l.fileName);
-      
-      if (validLogs.length === 0) {
-        sel.innerHTML = `<option value="">ไม่พบประวัติไฟล์สำรองบน Google Drive</option>`;
-      } else {
-        validLogs.forEach(log => {
-          sel.innerHTML += `<option value="${log.fileName}">${log.fileName} (${log.desc || 'ไม่มีรายละเอียด'})</option>`;
-        });
-      }
+      const btn = document.getElementById('btn-confirm-restore');
       
       document.getElementById('lbl_modal_week').textContent = currentWeekIndex;
       document.getElementById('restore_modal').classList.remove('hidden');
+      btn.disabled = true;
+
+      // สร้างตัวเลือกเดือนย้อนหลัง 6 เดือนอัตโนมัติ โดยไม่ต้องพึ่ง LocalStorage
+      sel.innerHTML = '<option value="">-- กรุณาเลือกเดือนที่ต้องการดึงข้อมูล --</option>';
+      
+      const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+      const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+      let d = new Date();
+      
+      for(let i = 0; i < 6; i++) {
+        let mStr = months[d.getMonth()] + "_" + (d.getFullYear() + 543);
+        let label = thaiMonths[d.getMonth()] + " " + (d.getFullYear() + 543);
+        sel.innerHTML += `<option value="${mStr}">${mStr} (ประวัติเดือน ${label})</option>`;
+        d.setMonth(d.getMonth() - 1);
+      }
+      
+      // เพิ่มตัวเลือกให้พิมพ์ชื่อไฟล์เองได้ เผื่อต้องการดึงข้อมูลจากเดือนที่เก่ามากๆ
+      sel.innerHTML += `<option value="CUSTOM">-- ✍️ ระบุชื่อไฟล์/เดือน พิมพ์เอง --</option>`;
+      btn.disabled = false;
     }
 
-    function closeRestoreModal() {
-      document.getElementById('restore_modal').classList.add('hidden');
-    }
-
+    // 💡 ฟังก์ชันยืนยันการดึงข้อมูลจาก Drive (ปรับให้อ่านคีย์ข้อมูลได้แม่นยำขึ้น)
     async function confirmRestoreFromDrive() {
       const sel = document.getElementById('sel_backup_history');
-      const fileName = sel.value;
+      let fileName = sel.value;
+      
+      if (fileName === "CUSTOM") {
+        fileName = prompt("กรุณาพิมพ์ชื่อเดือน/ปี ของไฟล์สำรองที่ต้องการ (เช่น OCT_2569):");
+      }
+      
       if (!fileName) return alert('กรุณาเลือกไฟล์สำรองของเดือนที่ต้องการดึงข้อมูลค่ะ');
 
       const btn = document.getElementById('btn-confirm-restore');
@@ -929,27 +938,33 @@
         
         if (result && result.status === 'success' && result.database) {
           const db = result.database;
-          const targetKey = `WEEK_LOG_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
+          
+          // ค้นหาคีย์ข้อมูลของสัปดาห์ปัจจุบัน จากเดือนที่ระบุ
+          const targetKey1 = `WEEK_LOG_DATA_${currentProjectID}_${fileName}_${currentWeekIndex}`;
+          const targetKey2 = `WEEK_LOG_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
           const legacyKey = `WEEK_LOG_DATA_${currentProjectID}_${currentWeekIndex}`;
+          const oldestKey = `WEEK_LOG_DATA_${currentWeekIndex}`;
           
           let extractedData = null;
-          if (db[targetKey]) {
-            extractedData = typeof db[targetKey] === 'string' ? JSON.parse(db[targetKey]) : db[targetKey];
+          if (db[targetKey1]) {
+            extractedData = typeof db[targetKey1] === 'string' ? JSON.parse(db[targetKey1]) : db[targetKey1];
+          } else if (db[targetKey2]) {
+            extractedData = typeof db[targetKey2] === 'string' ? JSON.parse(db[targetKey2]) : db[targetKey2];
           } else if (db[legacyKey]) {
             extractedData = typeof db[legacyKey] === 'string' ? JSON.parse(db[legacyKey]) : db[legacyKey];
-          } else if (db[`WEEK_LOG_DATA_${currentWeekIndex}`]) {
-            extractedData = typeof db[`WEEK_LOG_DATA_${currentWeekIndex}`] === 'string' ? JSON.parse(db[`WEEK_LOG_DATA_${currentWeekIndex}`]) : db[`WEEK_LOG_DATA_${currentWeekIndex}`];
+          } else if (db[oldestKey]) {
+            extractedData = typeof db[oldestKey] === 'string' ? JSON.parse(db[oldestKey]) : db[oldestKey];
           }
 
           if (extractedData) {
             setFormData(extractedData);
             closeRestoreModal();
-            alert(`คัดลอกข้อมูลสัปดาห์ที่ ${currentWeekIndex} จากไฟล์ ${fileName} สำเร็จ!\n\n⚠️ คำแนะนำ: กรุณาตรวจสอบข้อมูลบนหน้าจอ และกดปุ่ม "บันทึกข้อมูล" สีเขียวด้านบนเพื่อจัดเก็บลงในสัปดาห์ปัจจุบันด้วยนะคะ`);
+            alert(`ดึงข้อมูลสัปดาห์ที่ ${currentWeekIndex} จากคลังข้อมูลเดือน "${fileName}" บน Google Drive สำเร็จค่ะ!\n\n⚠️ คำแนะนำ: กรุณาตรวจสอบข้อมูลบนหน้าจอ และกดปุ่ม "บันทึกข้อมูล" สีเขียวด้านบนเพื่อเซฟลงเครื่องอีกครั้งนะคะ`);
           } else {
-            alert(`ไม่พบข้อมูลการปฏิบัติงานของสัปดาห์ที่ ${currentWeekIndex} ในไฟล์สำรองเดือนนี้ค่ะ`);
+            alert(`ไม่พบข้อมูลการปฏิบัติงานของ "สัปดาห์ที่ ${currentWeekIndex}" ในฐานข้อมูลเดือน ${fileName} ค่ะ`);
           }
         } else {
-          alert(`เกิดข้อผิดพลาด: ${result ? result.message : 'ไม่สามารถดึงข้อมูลจาก Google Drive ได้'}`);
+          alert(`เกิดข้อผิดพลาด: ${result ? result.message : 'ไม่สามารถดึงข้อมูลจาก Google Drive ได้ ไฟล์อาจไม่มีอยู่จริง'}`);
         }
       } catch (err) {
         alert(`ข้อผิดพลาดการเชื่อมต่อ: ${err.message}`);
