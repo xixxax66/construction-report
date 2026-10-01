@@ -25,9 +25,30 @@
 </head>
 <body class="p-3 sm:p-6 min-h-screen">
 
+  <!-- 💡 Modal กู้คืนข้อมูลโครงการทั้งหมดจาก Google Drive -->
+  <div id="restore_project_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+          <i data-lucide="folder-sync" class="w-5 h-5 text-indigo-600"></i> กู้คืนโครงการทั้งหมดจาก Drive
+        </h3>
+        <button onclick="closeRestoreProjectModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-6 h-6"></i></button>
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-slate-700 mb-2">เลือกฐานข้อมูลที่ต้องการสแกนหาโครงการ:</label>
+        <select id="sel_backup_history_proj" class="w-full border-2 border-slate-300 rounded-xl p-2.5 font-bold text-slate-800 bg-slate-50 outline-none cursor-pointer"></select>
+        <p class="text-xs text-slate-500 mt-2">* ระบบจะค้นหาและดึงข้อมูลตั้งต้นของ <b>"ทุกโครงการ"</b> ที่เคยบันทึกไว้ กลับมาแสดงในช่องเลือกโครงการอัตโนมัติ</p>
+      </div>
+      <div class="flex gap-2 pt-2 border-t">
+        <button onclick="closeRestoreProjectModal()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-sm cursor-pointer">ยกเลิก</button>
+        <button onclick="confirmRestoreAllProjects()" id="btn-confirm-restore-proj" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">ยืนยันดึงรายชื่อโครงการ</button>
+      </div>
+    </div>
+  </div>
+
   <div class="max-w-6xl mx-auto bg-slate-200/80 p-4 sm:p-6 rounded-xl shadow-lg border border-slate-300 space-y-4">
     
-    <!-- แถบเลือกโครงการ (Project Selector) และลิงก์ไปหน้าจัดการบุคลากร -->
+    <!-- แถบเลือกโครงการ (Project Selector) และปุ่มกู้คืน -->
     <div class="bg-white p-3 rounded-lg shadow-sm border border-emerald-600 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2 flex-1 min-w-[280px]">
         <div class="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
@@ -40,9 +61,13 @@
         </div>
       </div>
       <div class="flex items-center gap-2 flex-wrap">
-        <a href="Staff_Directory.html" target="_blank" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition">
-          <i data-lucide="users" class="w-4 h-4"></i> จัดการทำเนียบรายชื่อ
+        <a href="Staff_Directory.html" target="_blank" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition">
+          <i data-lucide="users" class="w-4 h-4"></i> จัดการทำเนียบ
         </a>
+        <!-- 💡 ปุ่มใหม่สำหรับกู้คืนรายชื่อโครงการ -->
+        <button onclick="openRestoreProjectModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition">
+          <i data-lucide="folder-sync" class="w-4 h-4"></i> กู้คืนโครงการเก่า
+        </button>
         <button onclick="createNewProject()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
           <i data-lucide="plus-circle" class="w-4 h-4"></i> เพิ่มโครงการใหม่
         </button>
@@ -69,6 +94,7 @@
       </div>
     </div>
 
+    <!-- โครงสร้างแบบฟอร์ม (เหมือนเดิมทุกประการ) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
       <div class="lg:col-span-8 space-y-5">
         
@@ -176,7 +202,7 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- คณะกรรมการตรวจรับพัสดุ (รองรับทั้งกดเลือกและพิมพ์เอง) -->
+          <!-- คณะกรรมการตรวจรับพัสดุ (รองรับการเลือกจากทำเนียบ) -->
           <div class="bg-white rounded-lg shadow border border-emerald-600 overflow-hidden">
             <table class="sheet-table">
               <thead><tr><th colspan="2" class="th-header-title">คณะกรรมการตรวจรับพัสดุ</th></tr></thead>
@@ -184,7 +210,7 @@
               <tbody id="committeeRows"></tbody>
             </table>
           </div>
-          <!-- ผู้ควบคุมงาน (รองรับทั้งกดเลือกและพิมพ์เอง) -->
+          <!-- ผู้ควบคุมงาน (รองรับการเลือกจากทำเนียบ) -->
           <div class="bg-white rounded-lg shadow border border-emerald-600 overflow-hidden">
             <table class="sheet-table">
               <thead><tr><th colspan="2" class="th-header-title">ผู้ควบคุมงาน</th></tr></thead>
@@ -240,6 +266,132 @@
     const PROJECT_LIST_KEY = 'CONSTRUCTION_ALL_PROJECTS_LIST';
     const STAFF_STORAGE_KEY = 'CONSTRUCTION_STAFF_DIRECTORY_DB';
 
+    // 💡 ฟังก์ชัน requestJSONP สำหรับดึงข้อมูลข้ามโดเมนจาก Drive
+    function requestJSONP(action, params = {}) {
+      return new Promise((resolve, reject) => {
+        let url = currentGasUrl;
+        if (url.includes('?')) url = url.split('?')[0];
+        const callbackName = 'gas_cb_' + Date.now() + Math.round(Math.random() * 1000);
+        let fetchUrl = `${url}?action=${action}&callback=${callbackName}&_t=${Date.now()}`;
+        for (const [key, value] of Object.entries(params)) {
+          fetchUrl += `&${key}=${encodeURIComponent(value)}`;
+        }
+        const script = document.createElement('script');
+        script.src = fetchUrl;
+        const timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error('หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ (Timeout)'));
+        }, 15000);
+        function cleanup() {
+          if (window[callbackName]) delete window[callbackName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          clearTimeout(timeoutId);
+        }
+        window[callbackName] = function(result) {
+          cleanup();
+          resolve(result);
+        };
+        script.onerror = function() {
+          cleanup();
+          reject(new Error('เครือข่ายขัดข้อง หรือถูกเบราว์เซอร์บล็อกสคริปต์ค่ะ'));
+        };
+        document.body.appendChild(script);
+      });
+    }
+
+    // 💡 เปิดหน้าต่างกู้คืนโครงการ
+    function openRestoreProjectModal() {
+      const sel = document.getElementById('sel_backup_history_proj');
+      const btn = document.getElementById('btn-confirm-restore-proj');
+      document.getElementById('restore_project_modal').classList.remove('hidden');
+      btn.disabled = true;
+
+      sel.innerHTML = '<option value="">-- กรุณาเลือกเดือนที่ต้องการสแกนหาโครงการ --</option>';
+      const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+      const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+      let d = new Date();
+      for(let i = 0; i < 6; i++) {
+        let mStr = months[d.getMonth()] + "_" + (d.getFullYear() + 543);
+        let label = thaiMonths[d.getMonth()] + " " + (d.getFullYear() + 543);
+        sel.innerHTML += `<option value="${mStr}">${mStr} (คลังข้อมูลเดือน ${label})</option>`;
+        d.setMonth(d.getMonth() - 1);
+      }
+      sel.innerHTML += `<option value="CUSTOM">-- ✍️ ระบุชื่อไฟล์/เดือน พิมพ์เอง --</option>`;
+      btn.disabled = false;
+    }
+
+    function closeRestoreProjectModal() {
+      document.getElementById('restore_project_modal').classList.add('hidden');
+    }
+
+    // 💡 ดึงข้อมูลโครงการทั้งหมดจาก Drive แล้วยัดใส่ Dropdown
+    async function confirmRestoreAllProjects() {
+      const sel = document.getElementById('sel_backup_history_proj');
+      let fileName = sel.value;
+      
+      if (fileName === "CUSTOM") {
+        fileName = prompt("กรุณาพิมพ์ชื่อเดือน/ปี ของคลังข้อมูลที่ต้องการ (เช่น OCT_2569):");
+      }
+      
+      if (!fileName) return alert('กรุณาเลือกคลังข้อมูลค่ะ');
+
+      const btn = document.getElementById('btn-confirm-restore-proj');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังสแกนหาโครงการ...`;
+      lucide.createIcons();
+
+      try {
+        const result = await requestJSONP('get_specific_project_database', { targetFileName: fileName });
+        
+        if (result && result.status === 'success' && result.database) {
+          const db = result.database;
+          let restoredCount = 0;
+          let projectList = [];
+          
+          const raw = localStorage.getItem(PROJECT_LIST_KEY);
+          if (raw) { try { projectList = JSON.parse(raw); } catch(e){} }
+
+          for (const key in db) {
+            // ค้นหาคีย์ที่เก็บข้อมูลตั้งต้นโครงการ
+            if (key.startsWith('LOCAL_BASIC_INFO_PROJ_') || key === 'LOCAL_BASIC_INFO') {
+              try {
+                let projData = typeof db[key] === 'string' ? JSON.parse(db[key]) : db[key];
+                
+                if (!projData.projectID || !projData.contractNo) continue;
+                
+                const saveKey = `LOCAL_BASIC_INFO_${projData.projectID}`;
+                localStorage.setItem(saveKey, JSON.stringify(projData));
+                
+                if (!projectList.some(p => p.id === projData.projectID)) {
+                  projectList.push({ id: projData.projectID, name: projData.projectName, contractNo: projData.contractNo });
+                  restoredCount++;
+                }
+              } catch(e) { console.error('Error parsing project data', e); }
+            }
+          }
+
+          if (projectList.length > 0) {
+             localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(projectList));
+             loadProjectListDropdown(projectList[projectList.length - 1].id); 
+             switchProject(projectList[projectList.length - 1].id);
+             closeRestoreProjectModal();
+             alert(`สแกนพบและกู้คืนรายชื่อโครงการได้ทั้งหมด ${restoredCount} โครงการค่ะ!\nรายชื่อทั้งหมดถูกดึงมาใส่ในช่องเลือกโครงการเรียบร้อยแล้ว`);
+          } else {
+             alert(`ไม่พบข้อมูลตั้งต้นของโครงการใดๆ ในไฟล์นี้เลยค่ะ`);
+          }
+        } else {
+          alert(`เกิดข้อผิดพลาด: ไม่สามารถดึงข้อมูลจาก Drive ได้ หรือไฟล์อาจไม่มีอยู่จริง`);
+        }
+      } catch (err) {
+        alert(`ข้อผิดพลาดการเชื่อมต่อ: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `ยืนยันดึงรายชื่อโครงการ`;
+        lucide.createIcons();
+      }
+    }
+
+
     function getStaffDirectory() {
       const raw = localStorage.getItem(STAFF_STORAGE_KEY);
       if (!raw) {
@@ -292,7 +444,6 @@
       calcFine();
     }
 
-    // 💡 ฟังก์ชันสลับโหมด (เลือกลิสต์ หรือ พิมพ์เอง) สำหรับคอมโบ้บ็อกซ์คณะกรรมการ
     function handleStaffSelectChange(selectEl, customInputId) {
       const customInput = document.getElementById(customInputId);
       if (!customInput) return;
@@ -306,17 +457,13 @@
       }
     }
 
-    // 💡 ปรับปรุงช่องกรรมการ ให้รองรับทั้งเลือกจากลิสต์และพิมพ์เอง
     function renderCommitteeFields(existingList = null) {
       const count = parseInt(document.getElementById('committeeCount').value) || 1;
       const tbody = document.getElementById('committeeRows');
       tbody.innerHTML = '';
-      
       const staffList = getStaffDirectory();
-
       for (let i = 0; i < count; i++) {
         const currentVal = existingList && existingList[i] !== undefined ? existingList[i] : (defaultCommittees[i] || '');
-        
         let isCustomMatch = true;
         let optionsHtml = `<option value="">-- เลือกจากทำเนียบรายชื่อ --</option>`;
         staffList.forEach(staff => {
@@ -325,9 +472,7 @@
           optionsHtml += `<option value="${staff.name}" ${isSelected ? 'selected' : ''}>${staff.name} (${staff.position})</option>`;
         });
         optionsHtml += `<option value="__CUSTOM__" ${isCustomMatch && currentVal ? 'selected' : ''}>✏️ พิมพ์ชื่อระบุเอง...</option>`;
-
         const customInputDisplay = (isCustomMatch && currentVal) ? '' : 'hidden';
-
         tbody.innerHTML += `
           <tr>
             <td class="th-green whitespace-nowrap font-medium">${(i === 0) ? 'ชื่อประธานกรรมการ' : 'ชื่อกรรมการ'}</td>
@@ -341,17 +486,13 @@
       }
     }
 
-    // 💡 ปรับปรุงช่องผู้ควบคุมงาน ให้รองรับทั้งเลือกจากลิสต์และพิมพ์เอง
     function renderInspectorFields(existingList = null) {
       const count = parseInt(document.getElementById('inspectorCount').value) || 1;
       const tbody = document.getElementById('inspectorRows');
       tbody.innerHTML = '';
-      
       const staffList = getStaffDirectory();
-
       for (let i = 0; i < count; i++) {
         const item = existingList && existingList[i] ? existingList[i] : defaultInspectors[i] || { name: '', pos: 'ผู้ควบคุมงาน' };
-        
         let isCustomMatch = true;
         let optionsHtml = `<option value="">-- เลือกจากทำเนียบรายชื่อ --</option>`;
         staffList.forEach(staff => {
@@ -360,9 +501,7 @@
           optionsHtml += `<option value="${staff.name}" ${isSelected ? 'selected' : ''}>${staff.name} (${staff.position})</option>`;
         });
         optionsHtml += `<option value="__CUSTOM__" ${isCustomMatch && item.name ? 'selected' : ''}>✏️ พิมพ์ชื่อระบุเอง...</option>`;
-
         const customInputDisplay = (isCustomMatch && item.name) ? '' : 'hidden';
-
         tbody.innerHTML += `
           <tr>
             <td class="th-green whitespace-nowrap font-medium">ชื่อ-นามสกุล (${i+1})</td>
