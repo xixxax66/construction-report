@@ -63,7 +63,6 @@
       letter-spacing: 0.5px;
     }
 
-    /* 💡 ขยายส่วนลงชื่อให้ใหญ่ชัดเจน 16pt ตามแบบฟอร์มราชการ */
     .signature-area, .signature-area p, .signature-area span {
       font-size: 16pt !important;
       line-height: 1.2;
@@ -175,10 +174,9 @@
       box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
     }
 
-    /* 💡 แก้ไขสไตล์ตอนสั่งพิมพ์ */
     @media print {
       body {
-        display: block !important; /* ป้องกันหน้ากระดาษหดตัวจากการใช้ Flex กึ่งกลาง */
+        display: block !important; 
         background: white !important;
         padding: 0 !important;
         margin: 0 !important;
@@ -200,7 +198,7 @@
         page-break-after: auto;
       }
       .auto-expand-area {
-        overflow: hidden !important; /* ซ่อน scrollbar ตอนพิมพ์ */
+        overflow: hidden !important; 
       }
       .custom-chk {
         border: 1.5px solid #000 !important;
@@ -249,6 +247,12 @@
       <button onclick="openRestoreModal()" class="btn-3d flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-bold cursor-pointer" title="ดึงข้อมูลจากเดือนอื่นที่เคยสำรองไว้">
         <i data-lucide="cloud-download" class="w-4 h-4"></i> ดึงข้อมูลสำรอง
       </button>
+      
+      <!-- ปุ่มส่งข้อมูลรายสัปดาห์เข้า Sheet -->
+      <button onclick="exportWeekLogToSheet()" id="btn-export-sheet" class="btn-3d flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-bold cursor-pointer">
+        <i data-lucide="table" class="w-4 h-4"></i> ส่งเข้า Sheet
+      </button>
+
       <button onclick="saveLogData()" id="btn-save" class="btn-3d flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-bold cursor-pointer">
         <i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล
       </button>
@@ -628,7 +632,6 @@
           el.textContent = dNum;
         });
 
-        // 💡 แก้ไขส่วน Checkbox label เพื่อไม่ให้ตัดคำ (เพิ่ม flex-wrap และ whitespace-nowrap)
         dailyRowsTbody.innerHTML += `
           <tr>
             <td class="text-center bg-slate-50/60 align-top pt-2">${fullDateTh}</td>
@@ -957,15 +960,26 @@
       }
     }
 
+    // 💡 อัปเกรดฟังก์ชันบันทึกให้ดัก Error เผื่อหน่วยความจำเต็ม
     async function saveLogData() {
       const btn = document.getElementById('btn-save');
-      const payload = getFormData();
-
-      localStorage.setItem(WEEK_STORAGE_KEY, JSON.stringify(payload));
-      btn.disabled = true;
-      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> บันทึก...`;
-
+      const originalHtml = btn.innerHTML;
+      
       try {
+        const payload = getFormData();
+        
+        // ลองเซฟลงเครื่องก่อน
+        try {
+          localStorage.setItem(WEEK_STORAGE_KEY, JSON.stringify(payload));
+        } catch (storageErr) {
+          alert('⚠️ คำเตือน: หน่วยความจำเบราว์เซอร์เต็ม (LocalStorage Quota Exceeded)\\nระบบไม่สามารถบันทึกข้อมูลลงเครื่องได้ กรุณาล้างประวัติเว็บหรือลบโครงการเก่าที่ไม่ได้ใช้ในหน้าแผนที่ค่ะ');
+          return; // หยุดการทำงานถ้าเมมเต็ม
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> บันทึก...`;
+        lucide.createIcons();
+
         await fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
           mode: 'cors',
@@ -977,8 +991,91 @@
       } catch (err) {
         alert(`บันทึกลงในระบบเครื่องเรียบร้อยแล้วค่ะ (สัปดาห์ที่ ${currentWeekIndex})`);
       } finally {
+        if(btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
+          lucide.createIcons();
+        }
+      }
+    }
+
+    // 💡 อัปเกรดฟังก์ชันส่งเข้าชีตให้ดัก Error ด้วย
+    async function exportWeekLogToSheet() {
+      let sheetId;
+      try {
+        sheetId = localStorage.getItem('CENTRAL_WEEKLOG_SHEET_ID');
+        if (!sheetId) {
+          sheetId = prompt("กรุณาระบุรหัส Google Sheets (Sheet ID) สำหรับเก็บข้อมูลการปฏิบัติงานรายสัปดาห์:\n(คำแนะนำ: ควรสร้างไฟล์ Google Sheets แยกต่างหากจากข้อมูลสรุปหน้าแรก เพื่อให้เป็นระเบียบค่ะ)", "");
+          if (!sheetId) return;
+          localStorage.setItem('CENTRAL_WEEKLOG_SHEET_ID', sheetId.trim());
+        }
+      } catch(e) {
+        alert('⚠️ หน่วยความจำเครื่องเต็ม ไม่สามารถจดจำ Sheet ID ได้ค่ะ');
+        return;
+      }
+
+      const btn = document.getElementById('btn-export-sheet');
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> ส่งข้อมูล...`;
+      lucide.createIcons();
+
+      try {
+        const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+        let contractNo = 'ไม่ระบุ';
+        let projName = 'ไม่ระบุ';
+        if (basicRaw) {
+          try {
+            const bData = JSON.parse(basicRaw);
+            if (bData.contractNo) contractNo = bData.contractNo;
+            if (bData.projectName) projName = bData.projectName;
+          } catch(e){}
+        }
+
+        const formData = getFormData();
+        const dateRangeEl = document.getElementById('txt-date-range');
+        const dateRange = dateRangeEl ? dateRangeEl.textContent.replace('ช่วงวันที่: ', '').trim() : '-';
+        
+        let totalLabor = 0;
+        formData.labor.lead.forEach(v => totalLabor += parseFloat(v)||0);
+        formData.labor.worker.forEach(v => totalLabor += parseFloat(v)||0);
+
+        const rowData = [
+          new Date().toLocaleString('th-TH'), 
+          currentProjectID,                   
+          contractNo,                         
+          currentWeekIndex.toString(),        
+          dateRange,                          
+          totalLabor.toString(),              
+          JSON.stringify(formData)            
+        ];
+
+        const payload = {
+          action: 'append_to_sheet',
+          sheetId: sheetId,
+          rowData: rowData
+        };
+
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'cors',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result && result.status === 'success') {
+          alert('ส่งข้อมูลแบบละเอียดเข้า Google Sheets เรียบร้อยแล้วค่ะ!');
+        } else {
+          throw new Error(result.message || 'พบข้อผิดพลาดจากเซิร์ฟเวอร์');
+        }
+      } catch(err) {
+        alert('เกิดข้อผิดพลาดในการส่งข้อมูลเข้า Sheet:\n' + err.message + '\n\nระบบได้ล้างค่า Sheet ID เดิมแล้ว กรุณากดส่งใหม่อีกครั้งเพื่อระบุ ID ที่ถูกต้องค่ะ');
+        localStorage.removeItem('CENTRAL_WEEKLOG_SHEET_ID'); 
+      } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล`;
+        btn.innerHTML = originalHtml;
         lucide.createIcons();
       }
     }
@@ -1018,7 +1115,6 @@
       }
     });
 
-    // 💡 เพิ่มฟังก์ชันขยายขนาด Textarea อัตโนมัติเมื่อกดสั่งพิมพ์
     window.addEventListener('beforeprint', () => {
       document.querySelectorAll('.auto-expand-area').forEach(el => autoExpandTextarea(el));
     });
