@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ปัญหา/อุปสรรคและสรุปผลการดำเนินงาน - รายงานประจำเดือน</title>
+  <title>ปัญหา/อุปสรรคและสรุปผลการดำเนินงาน - รายงานประจำเดือน (Offline Pro)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="../assets/gas-sync.js"></script>
   <style>
     @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
@@ -66,7 +67,7 @@
       border: 1px solid #000;
       padding: 4px 6px;
       font-size: 15pt !important;
-      vertical-align: top; /* 💡 ปรับให้ข้อความชิดบน */
+      vertical-align: top;
     }
 
     .table-problem th {
@@ -76,7 +77,6 @@
       background-color: #f8fafc;
     }
 
-    /* 💡 เปลี่ยนเป็น auto-expand ให้เหมือนหน้าวัสดุ */
     .auto-expand-area {
       width: 100%;
       min-height: 25mm;
@@ -184,7 +184,6 @@
 
   <div class="max-w-[210mm] w-full mb-3 flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl shadow border border-slate-300 no-print">
     <div class="flex items-center gap-2">
-      <!-- 💡 เพิ่ม ID btn_back_menu -->
       <a id="btn_back_menu" href="../Monthly_Reference.html" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1 text-base font-bold">
         <i data-lucide="arrow-left" class="w-5 h-5"></i> กลับเมนู
       </a>
@@ -217,7 +216,6 @@
         <input type="checkbox" id="chk_yes" class="custom-checkbox" onclick="event.stopPropagation(); toggleHasProblem(true);"> มี รายละเอียดดังนี้
       </div>
 
-      <!-- 💡 เพิ่มปุ่มลบ/เพิ่มแถว เหมือนในหน้าวัสดุ ให้ยืดหยุ่นขึ้น -->
       <div class="flex justify-end gap-2 mb-1 no-print" id="problem_tools" style="display: none;">
         <button onclick="addProblemRow()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2 py-1 rounded font-bold">＋ เพิ่มข้อ</button>
         <button onclick="removeProblemRow()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-2 py-1 rounded font-bold">－ ลบข้อ</button>
@@ -297,8 +295,14 @@
 
   <script>
     lucide.createIcons();
+
+    localforage.config({
+      name: 'ConstructionDB',
+      storeName: 'project_data'
+    });
+
     let currentProjectID = 'DEFAULT_PROJ';
-    let currentMonthCode = ''; // 💡 เพิ่มตัวแปรรหัสเดือน
+    let currentMonthCode = '';
 
     let problemData = {
       hasProblem: false,
@@ -310,15 +314,15 @@
     };
 
     function getStorageKeyProblem() {
-      // 💡 แยกเก็บตามโปรเจกต์และรหัสเดือนเลย
       return `MONTHLY_PROBLEM_SUMMARY_DB_${currentProjectID}_${currentMonthCode}`;
     }
 
-    function initProjectContext() {
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+    async function initProjectContext() {
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
-          const projectData = JSON.parse(basicRaw);
+          const projectData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           const cNo = projectData.contractNo || 'NO_CONTRACT';
           currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
         } catch(e) {}
@@ -362,35 +366,34 @@
       return null;
     }
 
-    function toggleHasProblem(status) {
+    async function toggleHasProblem(status) {
       problemData.hasProblem = status;
-      saveAndRender();
+      await saveAndRender();
     }
 
-    function addProblemRow() {
+    async function addProblemRow() {
       problemData.problems.push({ desc: "", notifyContractor: false, reportPresident: false });
-      saveAndRender();
+      await saveAndRender();
     }
 
-    function removeProblemRow() {
+    async function removeProblemRow() {
       if (problemData.problems.length > 1) {
         problemData.problems.pop();
-        saveAndRender();
+        await saveAndRender();
       } else {
         alert("ต้องมีอย่างน้อย 1 รายการค่ะ");
       }
     }
 
-    // ฟังก์ชันดึงปัญหา-อุปสรรคจากหน้ารายงานประจำสัปดาห์ (1-5) อัตโนมัติ (💡 ปรับให้ดึงเฉพาะของเดือนนั้นๆ)
-    function pullWeeklyProblems() {
+    async function pullWeeklyProblems() {
       const pulledList = [];
       for (let w = 1; w <= 5; w++) {
-        // ดึงให้แม่นยำตาม Project และ Month
         const key = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${w}`;
-        const raw = localStorage.getItem(key) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`);
+        let raw = await localforage.getItem(key);
+        if (!raw) raw = localStorage.getItem(key) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`);
         if (raw) {
           try {
-            const data = JSON.parse(raw);
+            const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (data.hasProblem && Array.isArray(data.problems)) {
               data.problems.forEach(p => {
                 if (p && p.trim() !== "" && !pulledList.includes(p.trim())) {
@@ -404,36 +407,35 @@
 
       if (pulledList.length > 0) {
         problemData.hasProblem = true;
-        // เคลียร์ของเก่าออก แล้วใส่ของใหม่
         problemData.problems = pulledList.map(desc => ({
           desc: desc, 
           notifyContractor: true, 
           reportPresident: true 
         }));
         
-        // ถ้าดึงมาได้น้อยกว่า 3 ข้อ ให้เติมแถวว่างให้ครบ 3 เพื่อความสวยงาม
         while(problemData.problems.length < 3) {
           problemData.problems.push({ desc: "", notifyContractor: false, reportPresident: false });
         }
 
-        saveAndRender();
-        alert(`ดึงปัญหา-อุปสรรคจากรายงานประจำสัปดาห์มาใส่ในแบบสรุปเรียบร้อยแล้วค่ะ! (พบ ${pulledList.length} รายการ)`);
+        await saveAndRender();
+        alert(`ดึงปัญหา-อุปสรรคจากรายงานประจำสัปดาห์เรียบร้อยแล้วค่ะ! (พบ ${pulledList.length} รายการ)`);
       } else {
         alert("ไม่พบข้อมูลปัญหา-อุปสรรคในรายงานประจำสัปดาห์ของโครงการนี้ในเดือนนี้ค่ะ");
       }
     }
 
-    function loadProblemData(isManualAlert = false) {
-      initProjectContext();
+    async function loadProblemData(isManualAlert = false) {
+      await initProjectContext();
       try {
         let orgName = "องค์การบริหารส่วนตำบลโพนงาม";
         let targetWeek = 5;
 
-        const monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+        let monthlyRaw = await localforage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`);
+        if (!monthlyRaw) monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
         let monthlyData = {};
         if (monthlyRaw) {
           try {
-            monthlyData = JSON.parse(monthlyRaw);
+            monthlyData = typeof monthlyRaw === 'string' ? JSON.parse(monthlyRaw) : monthlyRaw;
             if (monthlyData.planWeek) {
               targetWeek = parseInt(monthlyData.planWeek) || 5;
             }
@@ -448,9 +450,12 @@
         let totalDaysNum = 140;
         let startDateStr = "";
 
-        const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+        let basicRaw = await localforage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`);
+        if (!basicRaw) basicRaw = await localforage.getItem('LOCAL_BASIC_INFO') || 
+                                  localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || 
+                                  localStorage.getItem('LOCAL_BASIC_INFO');
         if (basicRaw) {
-          const data = JSON.parse(basicRaw);
+          const data = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           if (data.organizationName) orgName = data.organizationName;
           if (data.inspectors && data.inspectors[0] && data.inspectors[0].name) {
             document.getElementById('txt_insp_name').textContent = toThaiNumber(data.inspectors[0].name);
@@ -483,25 +488,32 @@
         }
         document.getElementById('val_remaining_days').textContent = toThaiNumber(remainDays);
 
-        const savedWeekInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || 
-                              localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${targetWeek}`);
+        let savedWeekInst = await localforage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentMonthCode}_${targetWeek}`);
+        if (!savedWeekInst) {
+          savedWeekInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || 
+                          localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${targetWeek}`);
+        }
         if (savedWeekInst) {
-          try { installments = JSON.parse(savedWeekInst); } catch(e){}
+          try { installments = typeof savedWeekInst === 'string' ? JSON.parse(savedWeekInst) : savedWeekInst; } catch(e){}
         }
 
         let completedCount = 0;
         let completedAmountSum = 0;
 
-        const savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || 
-                              localStorage.getItem(`WEEK_REPORT_ACCEPTED_${targetWeek}`);
+        let savedAccepted = await localforage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentMonthCode}_${targetWeek}`);
+        if (!savedAccepted) {
+          savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || 
+                          localStorage.getItem(`WEEK_REPORT_ACCEPTED_${targetWeek}`);
+        }
         if (savedAccepted && savedAccepted !== '-' && savedAccepted.trim() !== '') {
           completedCount = parseInt(savedAccepted.toString().replace(/[๐-๙]/g, (s) => "๐๑๒๓๔๕๖๗๘๙".indexOf(s))) || 0;
         }
 
         let savedDates = {};
-        const savedDatesRaw = localStorage.getItem(`MONTHLY_INSPECTION_DATES_DB_${currentProjectID}`) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
+        let savedDatesRaw = await localforage.getItem(`MONTHLY_INSPECTION_DATES_DB_${currentProjectID}`);
+        if (!savedDatesRaw) savedDatesRaw = localStorage.getItem(`MONTHLY_INSPECTION_DATES_DB_${currentProjectID}`) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
         if (savedDatesRaw) {
-          try { savedDates = JSON.parse(savedDatesRaw); } catch(e){}
+          try { savedDates = typeof savedDatesRaw === 'string' ? JSON.parse(savedDatesRaw) : savedDatesRaw; } catch(e){}
         }
 
         installments.forEach((inst, idx) => {
@@ -523,20 +535,24 @@
           document.getElementById('val_paid_percent').textContent = '-';
         }
 
-        const saved = localStorage.getItem(getStorageKeyProblem()) || 
-                      localStorage.getItem(`MONTHLY_PROBLEM_SUMMARY_DB_${currentProjectID}`) || 
-                      localStorage.getItem('MONTHLY_PROBLEM_SUMMARY_DB');
+        let saved = await localforage.getItem(getStorageKeyProblem());
+        if (!saved) {
+          saved = localStorage.getItem(getStorageKeyProblem()) || 
+                  localStorage.getItem(`MONTHLY_PROBLEM_SUMMARY_DB_${currentProjectID}`) || 
+                  localStorage.getItem('MONTHLY_PROBLEM_SUMMARY_DB');
+        }
         if (saved) {
-          problemData = JSON.parse(saved);
+          problemData = typeof saved === 'string' ? JSON.parse(saved) : saved;
         }
 
         let planProg = parseFloat(monthlyData.planPercent) || 0;
         if (planProg === 0) {
-          const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentMonthCode}`) || localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`);
+          let weeklyRefRaw = await localforage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentMonthCode}`);
+          if (!weeklyRefRaw) weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentMonthCode}`) || localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`);
           if (weeklyRefRaw) {
             try {
-              const weeksArray = JSON.parse(weeklyRefRaw);
-              const targetWeekObj = weeksArray.find(w => parseInt(w.weekIndex) === targetWeek);
+              const weeksArray = typeof weeklyRefRaw === 'string' ? JSON.parse(weeklyRefRaw) : weeklyRefRaw;
+              const targetWeekObj = Array.isArray(weeksArray) ? weeksArray.find(w => parseInt(w.weekIndex) === targetWeek) : null;
               if (targetWeekObj && targetWeekObj.plan) {
                 planProg = parseFloat(targetWeekObj.plan) || 0;
               }
@@ -546,10 +562,11 @@
 
         let actualProg = parseFloat(monthlyData.actualPercent) || 0;
         if (actualProg === 0) {
-          const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`);
+          let progressRaw = await localforage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${targetWeek}`);
+          if (!progressRaw) progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`);
           if (progressRaw) {
             try {
-              const progData = JSON.parse(progressRaw);
+              const progData = typeof progressRaw === 'string' ? JSON.parse(progressRaw) : progressRaw;
               actualProg = parseFloat(progData.totalWeightPercent) || 0;
             } catch(e){}
           }
@@ -557,9 +574,10 @@
 
         if (actualProg === 0) {
           for (let w = 5; w >= 1; w--) {
-            const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`);
+            let wRaw = await localforage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${w}`);
+            if (!wRaw) wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`);
             if (wRaw) {
-              const wData = JSON.parse(wRaw);
+              const wData = typeof wRaw === 'string' ? JSON.parse(wRaw) : wRaw;
               actualProg = parseFloat(wData.totalWeightPercent) || 0;
               break;
             }
@@ -621,7 +639,6 @@
       problemData.problems.forEach((item, idx) => {
         const idxTh = toThaiNumber(idx + 1);
         
-        // 💡 ใช้ auto-expand-area แทน textarea แบบฟิกขนาด
         tbody.innerHTML += `
           <tr>
             <td class="text-center font-bold align-top pt-3">${idxTh}</td>
@@ -640,34 +657,36 @@
         `;
       });
 
-      // สั่งขยายกล่องข้อความอัตโนมัติเมื่อเรนเดอร์เสร็จ
       setTimeout(() => {
         document.querySelectorAll('.auto-expand-area').forEach(el => autoExpandTextarea(el));
       }, 50);
     }
 
-    function updateProblemDesc(idx, val) {
+    async function updateProblemDesc(idx, val) {
       problemData.problems[idx].desc = val;
-      localStorage.setItem(getStorageKeyProblem(), JSON.stringify(problemData));
+      await localforage.setItem(getStorageKeyProblem(), JSON.stringify(problemData));
+      try { localStorage.setItem(getStorageKeyProblem(), JSON.stringify(problemData)); } catch(e){}
     }
 
-    function toggleCheck(idx, field, val) {
+    async function toggleCheck(idx, field, val) {
       problemData.problems[idx][field] = val;
-      localStorage.setItem(getStorageKeyProblem(), JSON.stringify(problemData));
+      await localforage.setItem(getStorageKeyProblem(), JSON.stringify(problemData));
+      try { localStorage.setItem(getStorageKeyProblem(), JSON.stringify(problemData)); } catch(e){}
     }
 
-    function saveAndRender() {
-      localStorage.setItem(getStorageKeyProblem(), JSON.stringify(problemData));
+    async function saveAndRender() {
+      await localforage.setItem(getStorageKeyProblem(), JSON.stringify(problemData));
+      try { localStorage.setItem(getStorageKeyProblem(), JSON.stringify(problemData)); } catch(e){}
       renderUI();
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const monthCode = urlParams.get('month');
       if (monthCode) {
         document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
       }
-      loadProblemData(false);
+      await loadProblemData(false);
     });
   </script>
 </body>

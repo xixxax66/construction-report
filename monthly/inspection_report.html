@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>รายละเอียดงวดงานและการตรวจรับงาน - รายงานประจำเดือน</title>
+  <title>รายละเอียดงวดงานและการตรวจรับงาน - รายงานประจำเดือน (Offline Pro)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="../assets/gas-sync.js"></script>
   <style>
     @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
@@ -97,10 +98,9 @@
 </head>
 <body class="p-2 sm:p-4 min-h-screen flex flex-col items-center">
 
-  <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
+  <!-- แผงควบคุมด้านบน -->
   <div class="max-w-[210mm] w-full mb-4 bg-white p-5 rounded-2xl shadow-lg border border-slate-300 flex flex-wrap items-center justify-between gap-4 no-print">
     <div class="flex items-center gap-3">
-      <!-- 💡 เพิ่ม ID btn_back_menu เพื่อให้จดจำพารามิเตอร์ของเดือน -->
       <a id="btn_back_menu" href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-2xl font-bold border border-slate-300 shadow-sm">
         <i data-lucide="arrow-left" class="w-6 h-6"></i> กลับเมนู
       </a>
@@ -116,7 +116,6 @@
     </div>
   </div>
 
-  <!-- แผ่นกระดาษ A4 Workspace -->
   <div class="sheet-workspace" id="doc-print">
     <div class="sheet-top-content">
       <div class="header-row">
@@ -124,7 +123,6 @@
         <span id="lbl_org_name">องค์การบริหารส่วนตำบลโพนงาม</span>
       </div>
 
-      <!-- ตารางรายละเอียดงวดงาน -->
       <table class="table-inspection">
         <thead>
           <tr>
@@ -136,11 +134,9 @@
           </tr>
         </thead>
         <tbody id="inspection_table_body">
-          <!-- เติมแถวตามจำนวนงวดงาน -->
         </tbody>
       </table>
 
-      <!-- ส่วนหมายเหตุ -->
       <div class="note-section">
         <p class="font-bold mb-1">หมายเหตุ</p>
         <div class="dotted-line"></div>
@@ -150,21 +146,25 @@
       </div>
     </div>
 
-    <!-- ส่วนท้ายกระดาษ -->
     <div></div>
   </div>
 
   <script>
     lucide.createIcons();
     
-    // 💡 เตรียมตัวแปรสำหรับผูกคีย์ข้อมูลกับรหัสโครงการ
+    localforage.config({
+      name: 'ConstructionDB',
+      storeName: 'project_data'
+    });
+
     let currentProjectID = 'DEFAULT_PROJ';
 
-    function initProjectContext() {
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+    async function initProjectContext() {
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
-          const projectData = JSON.parse(basicRaw);
+          const projectData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           const cNo = projectData.contractNo || 'NO_CONTRACT';
           currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
         } catch(e) {}
@@ -207,28 +207,31 @@
       return `${toThaiNumber(day)} ${month} ${toThaiNumber(year)}`;
     }
 
-    function onDateSelected(idx, type, val) {
+    async function onDateSelected(idx, type, val) {
       if (!val) return;
       const formattedDate = toThaiDate(val);
       if (type === 'end') {
         document.getElementById(`end_date_${idx}`).value = formattedDate;
-        saveInspectionData(idx);
+        await saveInspectionData(idx);
       } else if (type === 'accept') {
         document.getElementById(`accept_date_${idx}`).value = formattedDate;
-        saveInspectionData(idx);
+        await saveInspectionData(idx);
       }
     }
 
-    function loadInspectionData() {
-      initProjectContext();
+    async function loadInspectionData() {
+      await initProjectContext();
       try {
         let installments = [];
         let orgName = "องค์การบริหารส่วนตำบลโพนงาม";
 
-        // 1. โหลดข้อมูลจาก LOCAL_BASIC_INFO ตามโปรเจกต์
-        const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+        let basicRaw = await localforage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`);
+        if (!basicRaw) basicRaw = await localforage.getItem('LOCAL_BASIC_INFO') || 
+                                  localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || 
+                                  localStorage.getItem('LOCAL_BASIC_INFO');
+        
         if (basicRaw) {
-          const data = JSON.parse(basicRaw);
+          const data = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           if (data.organizationName) {
             orgName = data.organizationName;
           }
@@ -239,11 +242,12 @@
 
         document.getElementById('lbl_org_name').textContent = toThaiNumber(orgName);
 
-        // 2. โหลดข้อมูลวันที่ที่เคยบันทึกไว้ ของโครงการนี้
         let savedDates = {};
-        const savedDatesRaw = localStorage.getItem(getStorageKey()) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
+        let savedDatesRaw = await localforage.getItem(getStorageKey());
+        if (!savedDatesRaw) savedDatesRaw = localStorage.getItem(getStorageKey()) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
+        
         if (savedDatesRaw) {
-          try { savedDates = JSON.parse(savedDatesRaw); } catch(e){}
+          try { savedDates = typeof savedDatesRaw === 'string' ? JSON.parse(savedDatesRaw) : savedDatesRaw; } catch(e){}
         }
 
         const tbody = document.getElementById('inspection_table_body');
@@ -251,7 +255,7 @@
         tbody.innerHTML = '';
 
         if (installments.length === 0) {
-          installments = [{ amount: "2,849,260.00" }];
+          installments = [{ amount: "0.00" }];
         }
 
         installments.forEach((inst, idx) => {
@@ -286,30 +290,34 @@
       }
     }
 
-    function saveInspectionData(idx) {
+    async function saveInspectionData(idx) {
       let savedDates = {};
-      const savedDatesRaw = localStorage.getItem(getStorageKey());
+      let savedDatesRaw = await localforage.getItem(getStorageKey());
+      if (!savedDatesRaw) savedDatesRaw = localStorage.getItem(getStorageKey());
+
       if (savedDatesRaw) {
-        try { savedDates = JSON.parse(savedDatesRaw); } catch(e){}
+        try { savedDates = typeof savedDatesRaw === 'string' ? JSON.parse(savedDatesRaw) : savedDatesRaw; } catch(e){}
       }
 
       savedDates[`end_${idx}`] = document.getElementById(`end_date_${idx}`).value;
       savedDates[`accept_${idx}`] = document.getElementById(`accept_date_${idx}`).value;
       savedDates[`note_${idx}`] = document.getElementById(`note_${idx}`).value;
 
-      localStorage.setItem(getStorageKey(), JSON.stringify(savedDates));
-      localStorage.setItem('MONTHLY_INSPECTION_DATES_DB', JSON.stringify(savedDates)); // แบ็คอัพลงคีย์เก่าด้วย
+      await localforage.setItem(getStorageKey(), JSON.stringify(savedDates));
+      try {
+        localStorage.setItem(getStorageKey(), JSON.stringify(savedDates));
+        localStorage.setItem('MONTHLY_INSPECTION_DATES_DB', JSON.stringify(savedDates));
+      } catch(e){}
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      // 💡 จดจำพารามิเตอร์ URL เพื่อกลับไปเมนูเดือนเดิม
+    window.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const monthCode = urlParams.get('month');
       if (monthCode) {
         document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
       }
       
-      loadInspectionData();
+      await loadInspectionData();
     });
   </script>
 </body>

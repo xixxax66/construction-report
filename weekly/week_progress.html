@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ผลการดำเนินงานในสัปดาห์</title>
+  <title>ผลการดำเนินงานในสัปดาห์ (Offline Pro)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="../assets/gas-sync.js"></script>
   <style>
     @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
@@ -148,7 +149,7 @@
     </div>
   </div>
 
-  <!-- Modal สำหรับเลือกดึงข้อมูลแบบ Manual (ปรับปรุงใหม่ให้ค้นหาเดือนและสัปดาห์ได้อย่างแม่นยำ) -->
+  <!-- Modal สำหรับเลือกดึงข้อมูลแบบ Manual -->
   <div id="manual_import_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
     <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-slate-200 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
@@ -279,6 +280,11 @@
 
   <script>
     lucide.createIcons();
+
+    localforage.config({
+      name: 'ConstructionDB',
+      storeName: 'project_data'
+    });
     
     let currentTasks = [
       { name: "งานถางป่าและขุดตอ ขนาดเบา", cost: 10108.72, proportion: 0.35, prev: "", curr: "" },
@@ -288,29 +294,31 @@
     let totalContractWeeks = 20;
     let currentProjectID = 'DEFAULT_PROJ';
     const urlParams = new URLSearchParams(window.location.search);
-    let currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
+    let currentReportMonth = urlParams.get('month') || 'SEP_2569';
     let prevWeekTotalWeight = 0;
     let isDataInvalid = false;
     
     const currentWeekIndex = parseInt(urlParams.get('week')) || 1; 
-    
     let actualContractWeek = currentWeekIndex; 
     let reportSeq = currentWeekIndex;          
     let plannedProgressFromRef = null;        
     
     let STORAGE_KEY = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
     
-    document.getElementById('link-report').href = `week_report.html?week=${currentWeekIndex}&month=${currentReportMonth}`;
+    document.getElementById('link-report').href = `week_report_2.html?week=${currentWeekIndex}&month=${currentReportMonth}`;
 
-    function loadProjectContractData() {
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+    async function loadProjectContractData() {
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+
       if (basicRaw) {
         try {
-          const projectData = JSON.parse(basicRaw);
+          const projectData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           if (projectData.contractNo) {
-            currentProjectID = getActiveProjectId(projectData);
+            currentProjectID = `PROJ_${projectData.contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
             currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
             STORAGE_KEY = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
+            document.getElementById('link-report').href = `week_report_2.html?week=${currentWeekIndex}&month=${currentReportMonth}`;
           }
           if (projectData.organizationName) {
             document.getElementById('lbl-org').textContent = projectData.organizationName;
@@ -318,11 +326,11 @@
           if (projectData.projectName) {
             document.getElementById('lbl-project-name').textContent = `โครงการ: ${projectData.projectName} (งบประมาณ ${projectData.budgetAmount || '-'} บาท)`;
           }
-          const durationDays = getContractDurationDays({
-            ...projectData,
-            extensionDays: projectData.extensionDays || projectData.totalExtendedDays
-          });
-          if (durationDays > 0) totalContractWeeks = Math.ceil(durationDays / 7);
+          if (projectData.durationWeeks) {
+            totalContractWeeks = parseInt(projectData.durationWeeks) || 20;
+          } else if (projectData.durationDays || projectData.manualDays) {
+            totalContractWeeks = Math.ceil(parseInt(projectData.durationDays || projectData.manualDays) / 7);
+          }
           if (projectData.tasks && Array.isArray(projectData.tasks) && projectData.tasks.length > 0) {
             currentTasks = projectData.tasks.map(t => ({
               name: t.name || t.taskName || "",
@@ -339,24 +347,26 @@
 
       if (currentWeekIndex > 1) {
         const prevProgKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex - 1}`;
-        const prevProgRaw = localStorage.getItem(prevProgKey) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentWeekIndex - 1}`);
+        let prevProgRaw = await localforage.getItem(prevProgKey);
+        if (!prevProgRaw) prevProgRaw = localStorage.getItem(prevProgKey) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentWeekIndex - 1}`);
         if (prevProgRaw) {
           try {
-            const pObj = JSON.parse(prevProgRaw);
+            const pObj = typeof prevProgRaw === 'string' ? JSON.parse(prevProgRaw) : prevProgRaw;
             prevWeekTotalWeight = parseFloat(pObj.totalWeightPercent) || 0;
           } catch(e){}
         }
       }
     }
 
-    function loadActualWeekData() {
-      const weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`) || 
-                           localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || 
-                           localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+    async function loadActualWeekData() {
+      let weeklyRefRaw = await localforage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`);
+      if (!weeklyRefRaw) weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`) || 
+                                       localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || 
+                                       localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
       if (weeklyRefRaw) {
         try {
-          const weeks = JSON.parse(weeklyRefRaw);
-          const wObj = weeks.find(w => parseInt(w.weekIndex) === currentWeekIndex);
+          const weeks = typeof weeklyRefRaw === 'string' ? JSON.parse(weeklyRefRaw) : weeklyRefRaw;
+          const wObj = Array.isArray(weeks) ? weeks.find(w => parseInt(w.weekIndex) === currentWeekIndex) : null;
           if (wObj) {
             if (wObj.week) actualContractWeek = parseFloat(wObj.week) || currentWeekIndex;
             if (wObj.seq) reportSeq = parseInt(wObj.seq) || currentWeekIndex;
@@ -412,12 +422,13 @@
       reader.readAsText(file);
     }
 
-    function openMonthlyPickerModal() {
+    async function openMonthlyPickerModal() {
       const sel = document.getElementById('sel_monthly_history');
       sel.innerHTML = '';
       let historyList = [];
-      const rawHistory = localStorage.getItem(`CONSTRUCTION_MONTHLY_HISTORY_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_MONTHLY_HISTORY_DB');
-      if (rawHistory) { try { historyList = JSON.parse(rawHistory); } catch(e){} }
+      let rawHistory = await localforage.getItem(`CONSTRUCTION_MONTHLY_HISTORY_DB_${currentProjectID}`);
+      if (!rawHistory) rawHistory = localStorage.getItem(`CONSTRUCTION_MONTHLY_HISTORY_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_MONTHLY_HISTORY_DB');
+      if (rawHistory) { try { historyList = typeof rawHistory === 'string' ? JSON.parse(rawHistory) : rawHistory; } catch(e){} }
 
       if (historyList.length === 0) {
         sel.innerHTML = `<option value="">ไม่พบประวัติรายงานประจำเดือนของโครงการนี้</option>`;
@@ -446,8 +457,7 @@
       alert(`ดึงยอดผลงานสะสม ${val}% จากรายงานประจำเดือนมาเป็นฐานตั้งต้นเรียบร้อยแล้วค่ะ!`);
     }
 
-    // 🛠️ ปรับปรุงระบบค้นหาเดือนต้นทางแบบอัจฉริยะ (กวาดหาจาก WEEK_PROGRESS_DATA และ WEEKLY_REF ทั้งหมด)
-    function openManualImportModal() {
+    async function openManualImportModal() {
       const monthSel = document.getElementById('import_source_month');
       monthSel.innerHTML = '';
 
@@ -455,47 +465,19 @@
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && (key.includes(`WEEK_PROGRESS_DATA_${currentProjectID}_`) || key.includes(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_`))) {
-          // ดึงชื่อเดือนออกจากคีย์ (รูปแบบ: PREFIX_PROJECT_MONTH_WEEK)
-          const parts = key.split('_');
-          // หาเดือนที่เป็นรูปแบบ เช่น SEP_2569 หรือ สรุปเดือนต่างๆ ท้ายๆ
-          if (parts.length >= 4) {
-            const possibleMonth = parts[parts.length - 2]; 
-            const possibleMonthFull = parts.slice(parts.length - 2).join('_');
-            
-            // เช็กคีย์แบบ WEEK_PROGRESS_DATA_PROJ_xxx_MONTH_WEEK
-            if (key.includes(`WEEK_PROGRESS_DATA_${currentProjectID}_`)) {
-              const subParts = key.replace(`WEEK_PROGRESS_DATA_${currentProjectID}_`, '').split('_');
-              if (subParts.length >= 2) {
-                const mName = subParts.slice(0, subParts.length - 1).join('_');
-                if (mName && mName !== currentReportMonth && !foundMonths.includes(mName)) {
-                  foundMonths.push(mName);
-                }
-              }
-            }
-            // เช็กคีย์แบบ CONSTRUCTION_WEEKLY_REF_DB_PROJ_xxx_MONTH
-            if (key.includes(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_`)) {
-              const mName = key.replace(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_`, '');
+          if (key.includes(`WEEK_PROGRESS_DATA_${currentProjectID}_`)) {
+            const subParts = key.replace(`WEEK_PROGRESS_DATA_${currentProjectID}_`, '').split('_');
+            if (subParts.length >= 2) {
+              const mName = subParts.slice(0, subParts.length - 1).join('_');
               if (mName && mName !== currentReportMonth && !foundMonths.includes(mName)) {
                 foundMonths.push(mName);
               }
             }
           }
-        }
-      }
-
-      // Fallback เผื่อไม่เจอในรูปแบบคีย์ข้างต้น ให้ค้นหาคีย์ทั้งหมดที่มีข้อมูล progress อยู่
-      if (foundMonths.length === 0) {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith(`WEEK_PROGRESS_DATA_`)) {
-            const cleanKey = key.replace(`WEEK_PROGRESS_DATA_`, '');
-            const lastUnderscore = cleanKey.lastIndexOf('_');
-            if (lastUnderscore !== -1) {
-              const rest = cleanKey.substring(0, lastUnderscore);
-              const mName = rest.replace(`${currentProjectID}_`, '');
-              if (mName && mName !== currentReportMonth && !foundMonths.includes(mName)) {
-                foundMonths.push(mName);
-              }
+          if (key.includes(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_`)) {
+            const mName = key.replace(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_`, '');
+            if (mName && mName !== currentReportMonth && !foundMonths.includes(mName)) {
+              foundMonths.push(mName);
             }
           }
         }
@@ -529,7 +511,6 @@
         return;
       }
 
-      // ค้นหาสัปดาห์ที่มีข้อมูลบันทึกจริงในเดือนนั้นๆ
       let availableWeeks = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -548,28 +529,27 @@
           weekSel.innerHTML += `<option value="${w}">สัปดาห์ที่ ${w}</option>`;
         });
       } else {
-        // Fallback หากหาไม่เจอ ให้แสดงสัปดาห์ 1-5 เป็นค่ามาตรฐาน
         weekSel.innerHTML = `<option value="1">สัปดาห์ที่ 1</option><option value="2">สัปดาห์ที่ 2</option><option value="3">สัปดาห์ที่ 3</option><option value="4">สัปดาห์ที่ 4</option><option value="5">สัปดาห์ที่ 5</option>`;
       }
     }
 
-    function confirmManualImportData() {
+    async function confirmManualImportData() {
       const srcMonth = document.getElementById('import_source_month').value;
       const srcWeekIndex = document.getElementById('import_source_week').value;
 
       if (!srcMonth || !srcWeekIndex) return alert("กรุณาเลือกเดือนและสัปดาห์ต้นทางให้ครบถ้วนค่ะ");
 
       const progKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${srcMonth}_${srcWeekIndex}`;
-      const progRaw = localStorage.getItem(progKey);
+      let progRaw = await localforage.getItem(progKey);
+      if (!progRaw) progRaw = localStorage.getItem(progKey);
 
       if (!progRaw) return alert(`ไม่พบบันทึกข้อมูลผลงานของเดือน ${srcMonth} (สัปดาห์ที่ ${srcWeekIndex}) ในระบบเครื่อง`);
 
       if (!confirm(`ต้องการดึง "รายการงานทั้งหมด" และผลงานสะสมจาก เดือน ${srcMonth} (สัปดาห์ที่ ${srcWeekIndex}) มาใช้งานในสัปดาห์นี้ใช่หรือไม่?`)) return;
 
       try {
-        const sourceData = JSON.parse(progRaw);
+        const sourceData = typeof progRaw === 'string' ? JSON.parse(progRaw) : progRaw;
         if (sourceData.tasks && Array.isArray(sourceData.tasks) && sourceData.tasks.length > 0) {
-          // 💡 ดึงโครงสร้างรายการงาน ชื่อ มูลค่า และรวมผลงานสะสม (prev + curr) มาตั้งต้นใหม่ทั้งหมด
           currentTasks = sourceData.tasks.map(st => {
             const p = parseFloat(st.prev) || 0;
             const c = parseFloat(st.curr) || 0;
@@ -593,17 +573,18 @@
       }
     }
 
-    function pullDataFromPreviousWeek() {
+    async function pullDataFromPreviousWeek() {
       if (currentWeekIndex <= 1) return alert("สัปดาห์ที่ 1 ไม่มีข้อมูลสัปดาห์ก่อนหน้าในรอบเดือนนี้ค่ะ");
       
       const prevStorageKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex - 1}`;
-      const prevRaw = localStorage.getItem(prevStorageKey);
+      let prevRaw = await localforage.getItem(prevStorageKey);
+      if (!prevRaw) prevRaw = localStorage.getItem(prevStorageKey);
       if (!prevRaw) return alert(`ไม่พบข้อมูลบันทึกของสัปดาห์ก่อนหน้า`);
 
       if (!confirm(`ต้องการดึงรายการงานและผลงานสะสมจากสัปดาห์ก่อนหน้ามาใช้งานหรือไม่?`)) return;
 
       try {
-        const prevData = JSON.parse(prevRaw);
+        const prevData = typeof prevRaw === 'string' ? JSON.parse(prevRaw) : prevRaw;
         if (prevData.tasks && Array.isArray(prevData.tasks)) {
           currentTasks = prevData.tasks.map(pt => {
             const accumPrev = (parseFloat(pt.prev) || 0) + (parseFloat(pt.curr) || 0);
@@ -845,22 +826,20 @@
 
       try {
         const payload = getFormData();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        await localforage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch(e){}
         
         const centralUrl = localStorage.getItem('CONSTRUCTION_GAS_URL');
         if (centralUrl) {
-          const response = await fetch(centralUrl, {
+          await fetch(centralUrl, {
             method: 'POST', mode: 'cors', redirect: 'follow',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action: 'save_week_progress', ...payload })
           });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const result = await response.json();
-          if (result && result.status && result.status !== 'success') throw new Error(result.message || 'Cloud save failed');
         }
         alert(`บันทึกผลการดำเนินงานเรียบร้อยแล้วค่ะ`);
       } catch (err) {
-        alert(`บันทึกข้อมูลลงเครื่องสำเร็จเรียบร้อย`);
+        alert(`บันทึกข้อมูลลงฐานข้อมูลออฟไลน์เรียบร้อยค่ะ`);
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล`;
@@ -869,13 +848,15 @@
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
-      loadProjectContractData();
-      loadActualWeekData();
+      await loadProjectContractData();
+      await loadActualWeekData();
 
-      const cached = localStorage.getItem(STORAGE_KEY);
+      let cached = await localforage.getItem(STORAGE_KEY);
+      if (!cached) cached = localStorage.getItem(STORAGE_KEY);
+
       if (cached) {
         try {
-          const data = JSON.parse(cached);
+          const data = typeof cached === 'string' ? JSON.parse(cached) : cached;
           if (data.tasks && data.tasks.length > 0) currentTasks = data.tasks;
           if (data.hasProblem !== undefined) {
             document.getElementById('chk_has_problem').checked = data.hasProblem;
@@ -889,10 +870,12 @@
       } else {
         if (currentWeekIndex > 1) {
           const prevStorageKey = `WEEK_PROGRESS_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex - 1}`;
-          const prevRaw = localStorage.getItem(prevStorageKey);
+          let prevRaw = await localforage.getItem(prevStorageKey);
+          if (!prevRaw) prevRaw = localStorage.getItem(prevStorageKey);
+
           if (prevRaw) {
             try {
-              const prevData = JSON.parse(prevRaw);
+              const prevData = typeof prevRaw === 'string' ? JSON.parse(prevRaw) : prevRaw;
               if (prevData.tasks && Array.isArray(prevData.tasks)) {
                 currentTasks = prevData.tasks.map(pt => {
                   const accumPrev = (parseFloat(pt.prev) || 0) + (parseFloat(pt.curr) || 0);

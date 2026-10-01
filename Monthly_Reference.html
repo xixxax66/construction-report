@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>เมนูรายงานประจำเดือน - ระบบรายงานผลการก่อสร้าง</title>
+  <title>เมนูรายงานประจำเดือน - ระบบรายงานผลการก่อสร้าง (Offline Pro)</title>
   <!-- Google Fonts: Sarabun -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,6 +12,8 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- LocalForage CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="assets/gas-sync.js"></script>
   <style>
     body {
@@ -166,7 +168,6 @@
             </tr>
           </thead>
           <tbody id="history_table_body">
-            <!-- รายการประวัติจะถูกโหลดแสดงที่นี่โดยอัตโนมัติ -->
           </tbody>
         </table>
       </div>
@@ -179,7 +180,6 @@
       </h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="links_container">
         
-        <!-- ลิงก์ทั้งหมดจะถูกสร้างและอัปเดต href อัตโนมัติจาก Script -->
         <a id="link_cover" href="monthly/cover.html" class="btn-3d bg-slate-50 hover:bg-emerald-50 p-3 rounded-xl border border-slate-300 flex items-center gap-3 group transition">
           <div class="w-10 h-10 rounded-lg bg-blue-100 group-hover:bg-emerald-600 text-blue-600 group-hover:text-white flex items-center justify-center transition"><i data-lucide="book-open" class="w-5 h-5"></i></div>
           <div class="flex-1"><h4 class="font-bold text-slate-800 group-hover:text-emerald-700 text-sm">1. หน้าปกรายงานประจำเดือน</h4></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
@@ -237,9 +237,14 @@
 
   <script>
     lucide.createIcons();
+
+    localforage.config({
+      name: 'ConstructionDB',
+      storeName: 'project_data'
+    });
+
     let currentProjectID = 'DEFAULT_PROJECT';
 
-    // 💡 ฟังก์ชันแปลงเดือนไทยเป็นรหัสภาษาอังกฤษ (เพื่อใช้ทำเป็น Key เก็บข้อมูล)
     function getMonthCode() {
       const monthCodes = {
         "มกราคม": "JAN", "กุมภาพันธ์": "FEB", "มีนาคม": "MAR", "เมษายน": "APR",
@@ -248,28 +253,37 @@
       };
       const m = document.getElementById('monthly_month').value;
       const y = document.getElementById('monthly_year').value;
-      return `${monthCodes[m]}_${y}`;
+      return `${monthCodes[m] || 'JUN'}_${y || '2569'}`;
     }
 
     function updateDocLinks() {
       const mCode = getMonthCode();
-      document.getElementById('link_cover').href = `monthly/cover.html?month=${mCode}`;
-      document.getElementById('link_toc').href = `monthly/toc.html?month=${mCode}`;
-      document.getElementById('link_info').href = `monthly/work_info.html?month=${mCode}`;
-      document.getElementById('link_cons').href = `monthly/construction_report.html?month=${mCode}`;
-      document.getElementById('link_map').href = `monthly/map.html?month=${mCode}`;
-      document.getElementById('link_mprog').href = `monthly/monthly_progress.html?month=${mCode}`;
-      document.getElementById('link_insp').href = `monthly/inspection_report.html?month=${mCode}`;
-      document.getElementById('link_mat').href = `monthly/material_report.html?month=${mCode}`;
-      document.getElementById('link_prob').href = `monthly/problem_summary.html?month=${mCode}`;
-      document.getElementById('link_prog').href = `monthly/progress_report.html?month=${mCode}`;
+      const docIds = [
+        ['link_cover', 'monthly/cover.html'],
+        ['link_toc', 'monthly/toc.html'],
+        ['link_info', 'monthly/work_info.html'],
+        ['link_cons', 'monthly/construction_report.html'],
+        ['link_map', 'monthly/map.html'],
+        ['link_mprog', 'monthly/monthly_progress.html'],
+        ['link_insp', 'monthly/inspection_report.html'],
+        ['link_mat', 'monthly/material_report.html'],
+        ['link_prob', 'monthly/problem_summary.html'],
+        ['link_prog', 'monthly/progress_report.html']
+      ];
+
+      docIds.forEach(([id, path]) => {
+        const el = document.getElementById(id);
+        if (el) el.href = `${path}?month=${mCode}`;
+      });
     }
 
-    function initProjectContext() {
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+    async function initProjectContext() {
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+
       if (basicRaw) {
         try {
-          const projectData = JSON.parse(basicRaw);
+          const projectData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           const pName = projectData.projectName || 'โครงการก่อสร้าง';
           const cNo = projectData.contractNo || 'NO_CONTRACT';
           currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -306,19 +320,22 @@
       document.getElementById('monthly_report_date').value = `${day} ${month} ${year}`;
     }
 
-    // 💡 ปรับให้ดึงแผนงานจากคีย์เฉพาะของโปรเจกต์และเดือนนั้นๆ
-    function updatePlanPercent() {
+    async function updatePlanPercent() {
       const selectedWeek = parseInt(document.getElementById('select_plan_week').value);
       const mCode = getMonthCode();
       let planVal = 0;
 
-      const weeklyDataRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${mCode}`) ||
-                            localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) ||
-                            localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+      let weeklyDataRaw = await localforage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${mCode}`);
+      if (!weeklyDataRaw) {
+        weeklyDataRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${mCode}`) ||
+                        localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) ||
+                        localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+      }
+
       if (weeklyDataRaw) {
         try {
-          const weeksArray = JSON.parse(weeklyDataRaw);
-          const targetWeekObj = weeksArray.find(w => parseInt(w.weekIndex) === selectedWeek);
+          const weeksArray = typeof weeklyDataRaw === 'string' ? JSON.parse(weeklyDataRaw) : weeklyDataRaw;
+          const targetWeekObj = Array.isArray(weeksArray) ? weeksArray.find(w => parseInt(w.weekIndex) === selectedWeek) : null;
           if (targetWeekObj && targetWeekObj.plan) {
             planVal = parseFloat(targetWeekObj.plan) || 0;
           }
@@ -327,27 +344,32 @@
       document.getElementById('plan_current_percent').textContent = planVal.toFixed(2);
     }
 
-    // 💡 ปรับให้ดึงผลงานจากคีย์เฉพาะของโปรเจกต์และเดือนนั้นๆ ป้องกันข้อมูลข้ามเดือน
-    function updateActualPercent() {
+    async function updateActualPercent() {
       const selectedWeek = parseInt(document.getElementById('select_plan_week').value);
       const mCode = getMonthCode();
       let actualVal = 0;
 
-      const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${mCode}_${selectedWeek}`) || 
-                          localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${selectedWeek}`);
+      let progressRaw = await localforage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${mCode}_${selectedWeek}`);
+      if (!progressRaw) {
+        progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${mCode}_${selectedWeek}`) || 
+                      localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${selectedWeek}`);
+      }
+
       if (progressRaw) {
         try {
-          const progData = JSON.parse(progressRaw);
+          const progData = typeof progressRaw === 'string' ? JSON.parse(progressRaw) : progressRaw;
           actualVal = parseFloat(progData.totalWeightPercent) || 0;
         } catch(e) {}
       } else {
-        // ถอยหาสัปดาห์ก่อนหน้าในเดือนนี้
         for (let w = selectedWeek; w >= 1; w--) {
-          const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${mCode}_${w}`) || 
-                       localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`);
+          let wRaw = await localforage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${mCode}_${w}`);
+          if (!wRaw) {
+            wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${mCode}_${w}`) || 
+                   localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`);
+          }
           if (wRaw) {
             try {
-              const wData = JSON.parse(wRaw);
+              const wData = typeof wRaw === 'string' ? JSON.parse(wRaw) : wRaw;
               actualVal = parseFloat(wData.totalWeightPercent) || 0;
               break;
             } catch(e){}
@@ -357,14 +379,14 @@
       document.getElementById('actual_current_percent').textContent = actualVal.toFixed(2);
     }
 
-    function syncFromWeekReport() {
-      updatePlanPercent();
-      updateActualPercent();
+    async function syncFromWeekReport() {
+      await updatePlanPercent();
+      await updateActualPercent();
       const selectedWeek = document.getElementById('select_plan_week').value;
       alert(`ซิงค์ข้อมูลแผนงานและผลงานจากสัปดาห์ที่ ${selectedWeek} ของเดือนที่เลือกเรียบร้อยแล้วค่ะ!`);
     }
 
-    function saveMonthlyInfo() {
+    async function saveMonthlyInfo() {
       const month = document.getElementById('monthly_month').value;
       const year = document.getElementById('monthly_year').value;
       const mCode = getMonthCode();
@@ -379,25 +401,29 @@
         actualPercent: document.getElementById('actual_current_percent').textContent
       };
       
-      // บันทึกแยกตามรหัสโครงการ
-      localStorage.setItem(getProjectMonthlyKey(), JSON.stringify(payload));
-      localStorage.setItem('MONTHLY_REPORT_INFO_DATA', JSON.stringify(payload)); 
+      await localforage.setItem(getProjectMonthlyKey(), JSON.stringify(payload));
+      await localforage.setItem('MONTHLY_REPORT_INFO_DATA', JSON.stringify(payload));
+      try {
+        localStorage.setItem(getProjectMonthlyKey(), JSON.stringify(payload));
+        localStorage.setItem('MONTHLY_REPORT_INFO_DATA', JSON.stringify(payload));
+      } catch(e){}
       
-      archiveMonthlyHistorySilent(payload);
+      await archiveMonthlyHistorySilent(payload);
       alert(`บันทึกข้อมูลรายงานประจำเดือน ${month} ${year} ของโครงการนี้เรียบร้อยแล้วค่ะ!`);
     }
 
-    function onMonthOrYearChanged() {
-      updateDocLinks(); // อัปเดตพารามิเตอร์ของทุกลิงก์ทันทีเมื่อเปลี่ยนเดือน
+    async function onMonthOrYearChanged() {
+      updateDocLinks();
       
       const month = document.getElementById('monthly_month').value;
       const year = document.getElementById('monthly_year').value;
       const targetId = `${month}_${year}`;
 
       let historyList = [];
-      const rawHistory = localStorage.getItem(getProjectHistoryKey());
+      let rawHistory = await localforage.getItem(getProjectHistoryKey());
+      if (!rawHistory) rawHistory = localStorage.getItem(getProjectHistoryKey());
       if (rawHistory) {
-        try { historyList = JSON.parse(rawHistory); } catch(e){}
+        try { historyList = typeof rawHistory === 'string' ? JSON.parse(rawHistory) : rawHistory; } catch(e){}
       }
 
       const found = historyList.find(h => h.id === targetId);
@@ -415,15 +441,19 @@
           planPercent: found.planPercent,
           actualPercent: found.actualPercent
         };
-        localStorage.setItem(getProjectMonthlyKey(), JSON.stringify(payload));
-        localStorage.setItem('MONTHLY_REPORT_INFO_DATA', JSON.stringify(payload));
+        await localforage.setItem(getProjectMonthlyKey(), JSON.stringify(payload));
+        await localforage.setItem('MONTHLY_REPORT_INFO_DATA', JSON.stringify(payload));
+        try {
+          localStorage.setItem(getProjectMonthlyKey(), JSON.stringify(payload));
+          localStorage.setItem('MONTHLY_REPORT_INFO_DATA', JSON.stringify(payload));
+        } catch(e){}
       } else {
-        updatePlanPercent();
-        updateActualPercent();
+        await updatePlanPercent();
+        await updateActualPercent();
       }
     }
 
-    function archiveMonthlyHistorySilent(payload) {
+    async function archiveMonthlyHistorySilent(payload) {
       const record = {
         id: `${payload.month}_${payload.year}`,
         monthYear: `${payload.month} ${payload.year}`,
@@ -435,9 +465,10 @@
       };
 
       let historyList = [];
-      const rawHistory = localStorage.getItem(getProjectHistoryKey());
+      let rawHistory = await localforage.getItem(getProjectHistoryKey());
+      if (!rawHistory) rawHistory = localStorage.getItem(getProjectHistoryKey());
       if (rawHistory) {
-        try { historyList = JSON.parse(rawHistory); } catch(e){}
+        try { historyList = typeof rawHistory === 'string' ? JSON.parse(rawHistory) : rawHistory; } catch(e){}
       }
 
       const existingIdx = historyList.findIndex(h => h.id === record.id);
@@ -447,23 +478,25 @@
         historyList.unshift(record);
       }
 
-      localStorage.setItem(getProjectHistoryKey(), JSON.stringify(historyList));
-      loadMonthlyHistory();
+      await localforage.setItem(getProjectHistoryKey(), JSON.stringify(historyList));
+      try { localStorage.setItem(getProjectHistoryKey(), JSON.stringify(historyList)); } catch(e){}
+      await loadMonthlyHistory();
     }
 
-    function archiveMonthlyHistory() {
-      saveMonthlyInfo();
+    async function archiveMonthlyHistory() {
+      await saveMonthlyInfo();
     }
 
-    function loadMonthlyHistory() {
+    async function loadMonthlyHistory() {
       const tbody = document.getElementById('history_table_body');
       if (!tbody) return;
       tbody.innerHTML = '';
 
       let historyList = [];
-      const rawHistory = localStorage.getItem(getProjectHistoryKey());
+      let rawHistory = await localforage.getItem(getProjectHistoryKey());
+      if (!rawHistory) rawHistory = localStorage.getItem(getProjectHistoryKey());
       if (rawHistory) {
-        try { historyList = JSON.parse(rawHistory); } catch(e){}
+        try { historyList = typeof rawHistory === 'string' ? JSON.parse(rawHistory) : rawHistory; } catch(e){}
       }
 
       if (historyList.length === 0) {
@@ -487,11 +520,12 @@
       });
     }
 
-    function restoreHistory(id) {
+    async function restoreHistory(id) {
       let historyList = [];
-      const rawHistory = localStorage.getItem(getProjectHistoryKey());
+      let rawHistory = await localforage.getItem(getProjectHistoryKey());
+      if (!rawHistory) rawHistory = localStorage.getItem(getProjectHistoryKey());
       if (rawHistory) {
-        try { historyList = JSON.parse(rawHistory); } catch(e){}
+        try { historyList = typeof rawHistory === 'string' ? JSON.parse(rawHistory) : rawHistory; } catch(e){}
       }
       const target = historyList.find(h => h.id === id);
       if (target) {
@@ -503,32 +537,36 @@
         document.getElementById('actual_current_percent').textContent = target.actualPercent;
         if (target.planWeek) document.getElementById('select_plan_week').value = target.planWeek;
         
-        onMonthOrYearChanged(); // ให้อัปเดตลิงก์พร้อมบันทึกเป็นเดือนปัจจุบัน
+        await onMonthOrYearChanged();
 
         alert(`ดึงข้อมูลประวัติประจำเดือน ${target.monthYear} ของโครงการนี้มาใช้งานเรียบร้อยแล้วค่ะ!`);
       }
     }
 
-    function deleteHistory(index) {
+    async function deleteHistory(index) {
       if (confirm("คุณอรรถวัตต้องการลบประวัติรายงานนี้ของโครงการนี้ใช่หรือไม่?")) {
         let historyList = [];
-        const rawHistory = localStorage.getItem(getProjectHistoryKey());
+        let rawHistory = await localforage.getItem(getProjectHistoryKey());
+        if (!rawHistory) rawHistory = localStorage.getItem(getProjectHistoryKey());
         if (rawHistory) {
-          try { historyList = JSON.parse(rawHistory); } catch(e){}
+          try { historyList = typeof rawHistory === 'string' ? JSON.parse(rawHistory) : rawHistory; } catch(e){}
         }
         historyList.splice(index, 1);
-        localStorage.setItem(getProjectHistoryKey(), JSON.stringify(historyList));
-        loadMonthlyHistory();
+        await localforage.setItem(getProjectHistoryKey(), JSON.stringify(historyList));
+        try { localStorage.setItem(getProjectHistoryKey(), JSON.stringify(historyList)); } catch(e){}
+        await loadMonthlyHistory();
       }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      initProjectContext();
+    window.addEventListener('DOMContentLoaded', async () => {
+      await initProjectContext();
 
-      const saved = localStorage.getItem(getProjectMonthlyKey()) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+      let saved = await localforage.getItem(getProjectMonthlyKey());
+      if (!saved) saved = localStorage.getItem(getProjectMonthlyKey()) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+
       if (saved) {
         try {
-          const data = JSON.parse(saved);
+          const data = typeof saved === 'string' ? JSON.parse(saved) : saved;
           if (data.month) document.getElementById('monthly_month').value = data.month;
           if (data.year) document.getElementById('monthly_year').value = data.year;
           if (data.reportDate) document.getElementById('monthly_report_date').value = data.reportDate;
@@ -537,16 +575,16 @@
           if (data.actualPercent) {
             document.getElementById('actual_current_percent').textContent = data.actualPercent;
           } else {
-            updateActualPercent();
+            await updateActualPercent();
           }
         } catch(e){}
       } else {
-        updatePlanPercent();
-        updateActualPercent();
+        await updatePlanPercent();
+        await updateActualPercent();
       }
       
       updateDocLinks();
-      loadMonthlyHistory();
+      await loadMonthlyHistory();
     });
   </script>
 </body>

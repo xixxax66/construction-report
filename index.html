@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 💡 ไลบรารี LocalForage สำหรับเชื่อมฐานข้อมูล IndexedDB ร่วมกับหน้าตั้งค่า -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="assets/gas-sync.js"></script>
   <style>
     body { font-family: 'Sarabun', sans-serif; background-color: #cbd5e1; }
@@ -215,7 +217,6 @@
           </div>
         </div>
 
-        <!-- 💡 ช่องสำหรับใส่ Google Sheets ID -->
         <div class="space-y-1.5 sm:col-span-2 pt-2 border-t border-slate-200">
           <label class="text-sm font-semibold text-slate-700 flex items-center gap-1">
             <i data-lucide="table" class="w-4 h-4"></i> พื้นที่จัดเก็บตารางฐานข้อมูล (Google Sheets ID)
@@ -252,7 +253,6 @@
           <i data-lucide="cloud-download" class="w-4 h-4"></i> ดึงจาก Cloud
         </button>
 
-        <!-- 💡 ปุ่มส่งข้อมูลความคืบหน้าเข้า Google Sheets -->
         <button onclick="exportToGoogleSheets()" id="btn-export-sheet" class="btn-3d bg-green-600 hover:bg-green-700 text-white p-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow cursor-pointer">
           <i data-lucide="table-properties" class="w-4 h-4"></i> ส่งเข้า Sheet
         </button>
@@ -296,6 +296,11 @@
   <script>
     lucide.createIcons();
 
+    localforage.config({
+      name: 'ConstructionDB',
+      storeName: 'project_data'
+    });
+
     const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbz9T8I8iojUCXX9D71RRftcemcLsv5-mG1ND1pVbJugwHuDCffxMLHkIKU6V_y6zieJ5A/exec';
     const LOG_KEY = 'BACKUP_HISTORY_LOG';
     const DEFAULT_FOLDER_ID = '11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd';
@@ -325,7 +330,6 @@
       }
     }
 
-    // 💡 ฟังก์ชันบันทึก Sheet ID
     function saveSheetId() {
       const val = document.getElementById('input_sheet_id').value.trim();
       if (val) {
@@ -376,11 +380,13 @@
       });
     }
 
-    function updateProjectUI() {
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+    async function updateProjectUI() {
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+
       if (basicRaw) {
         try {
-          const data = JSON.parse(basicRaw);
+          const data = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           if (data.organizationName) document.getElementById('org-subtitle').textContent = data.organizationName;
           if (data.projectName) document.getElementById('lbl_project_name').textContent = data.projectName;
           if (data.contractNo) document.getElementById('lbl_contract_no').textContent = `สัญญาเลขที่ ${data.contractNo}`;
@@ -397,11 +403,10 @@
       
       document.getElementById('input_gas_url').value = getActiveUrl();
       
-      // โหลดค่า Sheet ID มาแสดง
       const savedSheetId = localStorage.getItem('CENTRAL_SHEET_ID');
       if (savedSheetId) document.getElementById('input_sheet_id').value = savedSheetId;
 
-      loadIndexProjectDropdown();
+      await loadIndexProjectDropdown();
     }
 
     function resetBadge(type, message) {
@@ -422,21 +427,27 @@
       lucide.createIcons();
     }
 
-    function loadIndexProjectDropdown() {
+    async function loadIndexProjectDropdown() {
       const select = document.getElementById('index_project_selector');
       if (!select) return;
 
       let list = [];
-      const raw = localStorage.getItem(PROJECT_LIST_KEY);
-      if (raw) { try { list = JSON.parse(raw); } catch(e){} }
+      let raw = await localforage.getItem(PROJECT_LIST_KEY);
+      if (!raw) raw = localStorage.getItem(PROJECT_LIST_KEY);
+      if (raw) { try { list = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(e){} }
 
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      
+      let activeProjId = '';
       if (basicRaw) {
         try {
-          const bData = JSON.parse(basicRaw);
+          const bData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
+          activeProjId = bData.projectID || '';
           if (bData.contractNo && !list.some(p => p.id === bData.projectID)) {
             list.push({ id: bData.projectID, name: bData.projectName, contractNo: bData.contractNo });
-            localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
+            await localforage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
+            try { localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(list)); } catch(e){}
           }
         } catch(e){}
       }
@@ -447,24 +458,32 @@
         return;
       }
 
-      const activeProjId = JSON.parse(localStorage.getItem('LOCAL_BASIC_INFO') || '{}').projectID || '';
       list.forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.id;
-        opt.textContent = `[สัญญา ${p.contractNo}] ${p.name.substring(0, 45)}...`;
+        const safeName = p.name ? String(p.name) : "ไม่มีชื่อโครงการ";
+        const safeContract = p.contractNo ? String(p.contractNo) : "ไม่ระบุ";
+        opt.textContent = `[สัญญา ${safeContract}] ${safeName.substring(0, 45)}...`;
         if (p.id === activeProjId) opt.selected = true;
         select.appendChild(opt);
       });
     }
 
-    function switchIndexProject(projId) {
+    async function switchIndexProject(projId) {
       if (projId === "DEFAULT") return;
       const key = `LOCAL_BASIC_INFO_${projId}`;
-      const saved = localStorage.getItem(key);
+      let saved = await localforage.getItem(key);
+      if (!saved) saved = localStorage.getItem(key);
+
       if (saved) {
-        localStorage.setItem('LOCAL_BASIC_INFO', saved);
-        updateProjectUI();
-        alert('สลับโครงการบนหน้าหลักเรียบร้อยแล้วค่ะ');
+        const parsed = typeof saved === 'string' ? JSON.parse(saved) : saved;
+        await localforage.setItem('LOCAL_BASIC_INFO', JSON.stringify(parsed));
+        try {
+          localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(parsed));
+          localStorage.setItem(key, JSON.stringify(parsed));
+        } catch(e){}
+        await updateProjectUI();
+        alert(`สลับไปยังโครงการสัญญา ${parsed.contractNo || '-'} บนหน้าหลักเรียบร้อยแล้วค่ะ`);
       }
     }
 
@@ -539,7 +558,7 @@
       }
     }
 
-    function confirmFolderSelection() {
+    async function confirmFolderSelection() {
       const inputEl = document.getElementById('driveFolderId');
       const labelEl = document.getElementById('lbl_selected_folder');
       
@@ -555,7 +574,9 @@
       
       let basicData = JSON.parse(localStorage.getItem('LOCAL_BASIC_INFO') || '{}');
       basicData.driveFolderId = inputEl.value;
-      localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(basicData));
+      
+      await localforage.setItem('LOCAL_BASIC_INFO', JSON.stringify(basicData));
+      try { localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(basicData)); } catch(e){}
 
       closeFolderPicker();
     }
@@ -568,20 +589,26 @@
     async function forcePullForIpad() {
       resetBadge('loading', 'กำลังดึงข้อมูล...');
       try {
-        const activeProj = JSON.parse(localStorage.getItem('LOCAL_BASIC_INFO') || '{}');
-        const result = await requestJSONP('get_latest_project_database', { projectID: activeProj.projectID || '' });
+        let activeProj = await localforage.getItem('LOCAL_BASIC_INFO');
+        if (!activeProj) activeProj = localStorage.getItem('LOCAL_BASIC_INFO');
+        const parsedProj = activeProj ? (typeof activeProj === 'string' ? JSON.parse(activeProj) : activeProj) : {};
+        
+        const result = await requestJSONP('get_latest_project_database', { projectID: parsedProj.projectID || '' });
         
         if (result && result.status === 'success' && result.database) {
           let count = 0;
           const db = result.database;
-          Object.keys(db).forEach(key => {
+          
+          for (const key of Object.keys(db)) {
             const val = typeof db[key] === 'object' ? JSON.stringify(db[key]) : String(db[key]);
-            localStorage.setItem(key, val);
+            await localforage.setItem(key, val);
+            try { localStorage.setItem(key, val); } catch(e){}
             count++;
-          });
+          }
 
-          if (activeProj.projectID) {
-            localStorage.setItem(`LOCAL_BASIC_INFO_${activeProj.projectID}`, JSON.stringify(db));
+          if (parsedProj.projectID) {
+            await localforage.setItem(`LOCAL_BASIC_INFO_${parsedProj.projectID}`, JSON.stringify(db));
+            try { localStorage.setItem(`LOCAL_BASIC_INFO_${parsedProj.projectID}`, JSON.stringify(db)); } catch(e){}
           }
 
           await loadLogsOnly();
@@ -614,13 +641,17 @@
           let count = 0;
           const db = result.database;
           
-          ALL_SYSTEM_KEYS.forEach(key => localStorage.removeItem(key));
+          for (const key of ALL_SYSTEM_KEYS) {
+            await localforage.removeItem(key);
+            localStorage.removeItem(key);
+          }
           
-          Object.keys(db).forEach(key => {
+          for (const key of Object.keys(db)) {
             const val = typeof db[key] === 'object' ? JSON.stringify(db[key]) : String(db[key]);
-            localStorage.setItem(key, val);
+            await localforage.setItem(key, val);
+            try { localStorage.setItem(key, val); } catch(e){}
             count++;
-          });
+          }
           
           const syncTime = new Date().toLocaleString('th-TH');
           localStorage.setItem('LAST_CLOUD_SYNC_TIME', syncTime);
@@ -636,16 +667,17 @@
       }
     }
 
-    function exportAllProjectData() {
+    async function exportAllProjectData() {
       const projectDatabase = {};
       
-      ALL_SYSTEM_KEYS.forEach(key => {
-        const val = localStorage.getItem(key);
+      for (const key of ALL_SYSTEM_KEYS) {
+        let val = await localforage.getItem(key);
+        if (!val) val = localStorage.getItem(key);
         if (val) { 
-          try { projectDatabase[key] = JSON.parse(val); } 
+          try { projectDatabase[key] = typeof val === 'string' ? JSON.parse(val) : val; } 
           catch (e) { projectDatabase[key] = val; } 
         }
-      });
+      }
       
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
@@ -694,14 +726,16 @@
         const fileDescInput = document.getElementById('backupFileDesc');
         const fileDesc = fileDescInput ? fileDescInput.value.trim() : '';
 
-        const backupData = exportAllProjectData();
+        const backupData = await exportAllProjectData();
 
-        const basicInfoRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+        let basicInfoRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+        if (!basicInfoRaw) basicInfoRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+
         let currentProjId = "DEFAULT";
         let currentContractNo = "DEFAULT";
         if (basicInfoRaw) {
           try {
-            const bInfo = JSON.parse(basicInfoRaw);
+            const bInfo = typeof basicInfoRaw === 'string' ? JSON.parse(basicInfoRaw) : basicInfoRaw;
             if (bInfo.contractNo) {
               currentContractNo = bInfo.contractNo;
               currentProjId = `PROJ_${currentContractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -762,7 +796,7 @@
           localStorage.setItem(LOG_KEY, JSON.stringify(logsToSend));
           renderLogs();
 
-          updateProjectUI();
+          await updateProjectUI();
           alert(`สำรองข้อมูลและอัปเดตประวัติ Log ไฟล์ "${result.savedFileName || finalFileName}" เรียบร้อยแล้วค่ะ!`);
         } else {
           throw new Error(result ? result.message : 'เซิร์ฟเวอร์ปฏิเสธการตอบกลับ');
@@ -779,7 +813,6 @@
       }
     }
 
-    // 💡 ฟังก์ชันใหม่สำหรับส่งข้อมูลเข้า Google Sheets
     async function exportToGoogleSheets() {
       const sheetId = localStorage.getItem('CENTRAL_SHEET_ID');
       if (!sheetId) {
@@ -795,18 +828,17 @@
       lucide.createIcons();
 
       try {
-        // 1. ดึงข้อมูลโครงการเบื้องต้น
         let basicData = {};
-        const raw = localStorage.getItem('LOCAL_BASIC_INFO');
+        let raw = await localforage.getItem('LOCAL_BASIC_INFO');
+        if (!raw) raw = localStorage.getItem('LOCAL_BASIC_INFO');
         if (raw) {
-          try { basicData = JSON.parse(raw); } catch(e){}
+          try { basicData = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(e){}
         }
         
         const contractNo = basicData.contractNo || 'ไม่ระบุ';
         const projId = basicData.projectID || 'PROJ_' + contractNo.replace(/[^a-zA-Z0-9]/g, '_');
         const projName = basicData.projectName || 'ไม่ระบุชื่อโครงการ';
 
-        // 2. ค้นหาเปอร์เซ็นต์ผลงาน (Progress) ล่าสุดของโครงการนี้จาก LocalStorage
         let latestWeek = 0;
         let latestProgress = 0;
         
@@ -826,12 +858,10 @@
           }
         }
 
-        // กำหนดสถานะ
         let statusText = 'ยังไม่เริ่มงาน';
         if (latestProgress > 0 && latestProgress < 100) statusText = 'กำลังดำเนินการ';
         if (latestProgress >= 100) statusText = 'แล้วเสร็จ';
 
-        // 3. จัดเตรียมข้อมูลสำหรับส่งเข้า Sheet (ตามคอลัมน์ A - G ที่กำหนดไว้)
         const timestamp = new Date().toLocaleString('th-TH');
         const rowData = [
           timestamp,
@@ -871,28 +901,18 @@
         lucide.createIcons();
       }
     }
-    
-    function downloadProjectJSON() {
-      const data = exportAllProjectData();
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `Project_Database.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
 
-    function importProjectJSON(event) {
+    async function importProjectJSON(event) {
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = async function(e) {
         try {
           const importedData = JSON.parse(e.target.result);
           for (const [key, value] of Object.entries(importedData)) {
             const valueToStore = typeof value === 'object' ? JSON.stringify(value) : value;
-            localStorage.setItem(key, valueToStore);
+            await localforage.setItem(key, valueToStore);
+            try { localStorage.setItem(key, valueToStore); } catch(err){}
           }
           alert('นำเข้าฐานข้อมูลโครงการสำเร็จ!');
           location.reload();
@@ -903,9 +923,12 @@
       reader.readAsText(file);
     }
 
-    function clearCurrentProjectData() {
+    async function clearCurrentProjectData() {
       if (confirm('คุณต้องการล้างข้อมูลโครงการปัจจุบันทั้งหมดใช่ไหมคะ?')) {
-        ALL_SYSTEM_KEYS.forEach(key => localStorage.removeItem(key));
+        for (const key of ALL_SYSTEM_KEYS) {
+          await localforage.removeItem(key);
+          localStorage.removeItem(key);
+        }
         alert('ล้างข้อมูลเรียบร้อย');
         location.reload();
       }
@@ -934,7 +957,7 @@
         let statusHtml = '';
         let restoreBtn = '';
 
-        if (log.status.success) {
+        if (log.status && log.status.success) {
           statusHtml = `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold whitespace-nowrap">✔️ สำเร็จ</span>`;
           if (log.fileName) {
             restoreBtn = `<button onclick="restoreFromCloud('${log.fileName}')" class="px-2.5 py-1 bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white rounded text-xs font-bold whitespace-nowrap transition shadow-sm flex items-center gap-1 cursor-pointer mt-1"><i data-lucide="cloud-download" class="w-3 h-3"></i> กู้คืน</button>`;
@@ -961,8 +984,8 @@
       }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      updateProjectUI();
+    window.addEventListener('DOMContentLoaded', async () => {
+      await updateProjectUI();
       renderLogs();
       loadLogsOnly();
     });

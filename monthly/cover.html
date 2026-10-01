@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>หน้าปกรายงานประจำเดือน - ระบบรายงานผลการก่อสร้าง</title>
+  <title>หน้าปกรายงานประจำเดือน - ระบบรายงานผลการก่อสร้าง (Offline Pro)</title>
   
-  <!-- โหลดฟอนต์ Sarabun จาก Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="../../assets/gas-sync.js"></script>
   
   <style>
@@ -83,7 +83,6 @@
     .divider-line { width: 65%; border-bottom: 1.5px solid #000; margin: 12px auto 16px auto; }
     .section-tag { font-size: 16pt !important; font-weight: 700; margin-bottom: 20px; }
     
-    /* 💡 ปรับขนาดฟอนต์ให้เล็กลง และตั้งค่าความหนาเป็นปกติ (400) */
     .project-info-box {
       font-size: 14pt !important;
       font-weight: 400 !important;
@@ -97,7 +96,6 @@
       font-weight: 400 !important;
       margin-bottom: 8px;
     }
-    /* หัวข้อสำหรับหน้าปกภาพถ่ายยังคงให้หนาอยู่เพื่อแยกสัดส่วน */
     .project-info-box .photo-title {
       font-weight: 400 !important;
       font-size: 14pt !important;
@@ -121,10 +119,10 @@
 
   <input type="file" id="logo_file_input" accept="image/*" class="hidden" onchange="processLogoUpload(event)">
 
-  <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
+  <!-- แผงควบคุมด้านบน -->
   <div class="max-w-5xl w-full mb-4 bg-white p-5 rounded-2xl shadow-lg border border-slate-300 flex flex-wrap items-center justify-between gap-4 no-print">
     <div class="flex items-center gap-3">
-      <a href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-xl font-bold border border-slate-300 shadow-sm">
+      <a id="btn_back_menu" href="../Monthly_Reference.html" class="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 flex items-center gap-2 text-xl font-bold border border-slate-300 shadow-sm">
         <i data-lucide="arrow-left" class="w-6 h-6"></i> กลับเมนู
       </a>
       <span class="font-bold text-slate-800 text-2xl">เลือกรูปแบบหน้าปก</span>
@@ -147,8 +145,6 @@
 
   <!-- แผ่นกระดาษ A4 หน้าปก -->
   <div class="sheet-doc" id="doc-sheet">
-    
-    <!-- 1. ส่วนหัว -->
     <div class="w-full flex flex-col items-center" id="cover_header">
       <div class="logo-container" onclick="document.getElementById('logo_file_input').click()" title="คลิกเพื่อเปลี่ยนโลโก้">
         <img src="../../assets/Krut.png" alt="ตราสัญลักษณ์หน่วยงาน" class="logo-img" id="img_logo" onerror="this.src='../assets/Krut.png'">
@@ -164,7 +160,6 @@
       <p class="section-tag" id="cover_section_tag">งานควบคุมงานก่อสร้าง</p>
     </div>
 
-    <!-- 2. ส่วนกลาง -->
     <div class="w-full my-auto flex flex-col items-center justify-center space-y-4" id="cover_body">
       <div class="project-info-box">
         <div id="lbl_project_name"></div>
@@ -173,7 +168,6 @@
       </div>
     </div>
 
-    <!-- 3. ส่วนท้าย -->
     <div class="w-full flex flex-col items-center space-y-4" id="cover_footer">
       <div class="report-title-box" id="lbl_report_title">
         รายงานความก้าวหน้าประจำเดือน <span id="lbl_report_month">มิถุนายน ๒๕๖๙</span>
@@ -185,22 +179,25 @@
         <p id="lbl_footer_sub">อำเภอโกสุมพิสัย จังหวัดมหาสารคาม</p>
       </div>
     </div>
-
   </div>
 
   <script>
     lucide.createIcons();
-    const LOGO_STORAGE_KEY = 'PROJECT_CUSTOM_LOGO_DATA';
-    
-    let currentProjectID = 'DEFAULT_PROJ';
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlMonthCode = urlParams.get('month');
 
-    function initProjectContext() {
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+    localforage.config({
+      name: 'ConstructionDB',
+      storeName: 'project_data'
+    });
+
+    const LOGO_STORAGE_KEY = 'PROJECT_CUSTOM_LOGO_DATA';
+    let currentProjectID = 'DEFAULT_PROJ';
+
+    async function initProjectContext() {
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
-          const projectData = JSON.parse(basicRaw);
+          const projectData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           const cNo = projectData.contractNo || 'NO_CONTRACT';
           currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
         } catch(e) {}
@@ -218,10 +215,7 @@
       const thaiMonths = {
         "January": "มกราคม", "February": "กุมภาพันธ์", "March": "มีนาคม", "April": "เมษายน",
         "May": "พฤษภาคม", "June": "มิถุนายน", "July": "กรกฎาคม", "August": "สิงหาคม",
-        "September": "กันยายน", "October": "ตุลาคม", "November": "พฤศจิกายน", "December": "ธันวาคม",
-        "มกราคม": "มกราคม", "กุมภาพันธ์": "กุมภาพันธ์", "มีนาคม": "มีนาคม", "เมษายน": "เมษายน",
-        "พฤษภาคม": "พฤษภาคม", "มิถุนายน": "มิถุนายน", "กรกฎาคม": "กรกฎาคม", "สิงหาคม": "สิงหาคม",
-        "กันยายน": "กันยายน", "ตุลาคม": "ตุลาคม", "พฤศจิกายน": "พฤศจิกายน", "ธันวาคม": "ธันวาคม"
+        "September": "กันยายน", "October": "ตุลาคม", "November": "พฤศจิกายน", "December": "ธันวาคม"
       };
       
       let cleanStr = dateStr.toString().trim();
@@ -233,23 +227,28 @@
       return toThaiNumber(cleanStr);
     }
 
-    function processLogoUpload(e) {
+    async function processLogoUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(evt) {
+      reader.onload = async function(evt) {
         const base64Img = evt.target.result;
-        localStorage.setItem(LOGO_STORAGE_KEY, base64Img);
+        await localforage.setItem(LOGO_STORAGE_KEY, base64Img);
+        try { localStorage.setItem(LOGO_STORAGE_KEY, base64Img); } catch(err){}
         document.getElementById('img_logo').src = base64Img;
         alert("เปลี่ยนโลโก้หน่วยงานสำเร็จแล้วค่ะ!");
       };
       reader.readAsDataURL(file);
     }
 
-    function loadProjectData() {
-      initProjectContext();
+    async function loadProjectData() {
+      await initProjectContext();
       
-      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+      let basicRaw = await localforage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`);
+      if (!basicRaw) basicRaw = await localforage.getItem('LOCAL_BASIC_INFO') || 
+                                localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || 
+                                localStorage.getItem('LOCAL_BASIC_INFO');
+
       let orgName = "องค์การบริหารส่วนตำบลโพนงาม";
       let district = "โกสุมพิสัย";
       let province = "มหาสารคาม";
@@ -259,7 +258,7 @@
 
       if (basicRaw) {
         try {
-          const p = JSON.parse(basicRaw);
+          const p = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           if (p.organizationName) orgName = p.organizationName;
           if (p.district) district = p.district;
           if (p.province) province = p.province;
@@ -275,10 +274,12 @@
       const orgSub = `อำเภอ${district} จังหวัด${province}`;
 
       let monthStr = "มิถุนายน ๒๕๖๙";
-      const monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+      let monthlyRaw = await localforage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`);
+      if (!monthlyRaw) monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+
       if (monthlyRaw) {
         try {
-          const m = JSON.parse(monthlyRaw);
+          const m = typeof monthlyRaw === 'string' ? JSON.parse(monthlyRaw) : monthlyRaw;
           if (m.month && m.year) {
             monthStr = `${m.month} ${toThaiNumber(m.year)}`;
           }
@@ -295,14 +296,14 @@
       };
     }
 
-    function switchCoverType(type) {
+    async function switchCoverType(type) {
       const sheet = document.getElementById('doc-sheet');
       const header = document.getElementById('cover_header');
       const body = document.getElementById('cover_body');
       const footer = document.getElementById('cover_footer');
       const titleBox = document.getElementById('lbl_report_title');
 
-      const data = loadProjectData();
+      const data = await loadProjectData();
 
       document.getElementById('lbl_org_name').textContent = data.orgName;
       document.getElementById('lbl_org_sub').textContent = data.orgSub;
@@ -350,11 +351,18 @@
       }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      const savedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
+    window.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const monthCode = urlParams.get('month');
+      if (monthCode) {
+        document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
+      }
+
+      let savedLogo = await localforage.getItem(LOGO_STORAGE_KEY);
+      if (!savedLogo) savedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
       if (savedLogo) document.getElementById('img_logo').src = savedLogo;
 
-      switchCoverType('main');
+      await switchCoverType('main');
     });
   </script>
 </body>

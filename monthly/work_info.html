@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ข้อมูลเกี่ยวกับงาน - รายงานประจำเดือน</title>
+  <title>ข้อมูลเกี่ยวกับงาน - รายงานประจำเดือน (Offline Pro)</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="../assets/gas-sync.js"></script>
   
   <style>
-    /* 💡 กลับมาใช้ฟอนต์ THSarabunPSK จากโฟลเดอร์ assets ตามเดิม */
     @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
     @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun Bold.ttf') format('truetype'); font-weight: bold; }
     
@@ -36,7 +36,6 @@
       position: relative; 
     }
     
-    /* 💡 ปรับขนาดฟอนต์ให้เท่าเดิม (16pt) และลดระยะบรรทัดให้ชิดกันเหมือนใน Word */
     .sheet-workspace p, .sheet-workspace span, .sheet-workspace div { 
       font-size: 16pt; 
       line-height: 1.25; 
@@ -79,10 +78,8 @@
 </head>
 <body class="p-2 sm:p-4 min-h-screen flex flex-col items-center">
 
-  <!-- แผงควบคุมด้านบน (ไม่พิมพ์ออกกระดาษ) -->
   <div class="max-w-[210mm] w-full mb-3 flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl shadow border border-slate-300 no-print">
     <div class="flex items-center gap-2">
-      <!-- 💡 ปุ่มกลับเมนูที่จดจำค่าเดือนได้ -->
       <a id="btn_back_menu" href="../Monthly_Reference.html" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 flex items-center gap-1 text-base font-bold transition">
         <i data-lucide="arrow-left" class="w-5 h-5"></i> กลับเมนู
       </a>
@@ -95,16 +92,15 @@
     </div>
   </div>
 
-  <!-- แผ่นกระดาษ A4 Workspace -->
   <div class="sheet-workspace" id="doc-print">
     <div class="doc-title">๑ ข้อมูลเกี่ยวกับงาน</div>
 
     <!-- 1.1 ผู้ดำเนินการ -->
     <div class="section-title">๑.๑ ผู้ดำเนินการ</div>
-    <div class="row-item"><div class="row-label">ผู้ว่าจ้าง</div><div class="row-value" id="lbl_employer">องค์การบริหารส่วนตำบลโพนงาม</div></div>
-    <div class="row-item"><div class="row-label">ผู้ออกแบบ</div><div class="row-value" id="lbl_designer">กองช่าง องค์การบริหารส่วนตำบลโพนงาม</div></div>
-    <div class="row-item"><div class="row-label">ผู้รับจ้าง</div><div class="row-value" id="lbl_contractor">ห้างหุ้นส่วนจำกัด เค.เค.มุกดาหารก่อสร้าง</div></div>
-    <div class="row-item"><div class="row-label">สถานที่ตั้ง</div><div class="row-value" id="lbl_contractor_address">๓๑/๑ หมู่ ๕ ตำบลกุดแข้ อำเภอเมืองมุกดาหาร จังหวัดมุกดาหาร</div></div>
+    <div class="row-item"><div class="row-label">ผู้ว่าจ้าง</div><div class="row-value" id="lbl_employer">-</div></div>
+    <div class="row-item"><div class="row-label">ผู้ออกแบบ</div><div class="row-value" id="lbl_designer">-</div></div>
+    <div class="row-item"><div class="row-label">ผู้รับจ้าง</div><div class="row-value" id="lbl_contractor">-</div></div>
+    <div class="row-item"><div class="row-label">สถานที่ตั้ง</div><div class="row-value" id="lbl_contractor_address">-</div></div>
 
     <!-- 1.2 สัญญาจ้าง -->
     <div class="section-title">๑.๒ สัญญาจ้าง</div>
@@ -176,13 +172,20 @@
 
   <script>
     lucide.createIcons();
+
+    localforage.config({
+      name: 'ConstructionDB',
+      storeName: 'project_data'
+    });
+
     let currentProjectID = 'DEFAULT_PROJ';
 
-    function initProjectContext() {
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+    async function initProjectContext() {
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
-          const projectData = JSON.parse(basicRaw);
+          const projectData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           const cNo = projectData.contractNo || 'NO_CONTRACT';
           currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
         } catch(e) {}
@@ -222,19 +225,22 @@
       return toThaiNumber(cleanStr);
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const monthCode = urlParams.get('month');
       if (monthCode) {
         document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
       }
 
-      initProjectContext();
+      await initProjectContext();
       
-      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+      let basicRaw = await localforage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`);
+      if (!basicRaw) basicRaw = await localforage.getItem('LOCAL_BASIC_INFO') || 
+                                localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || 
+                                localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
-          const data = JSON.parse(basicRaw);
+          const data = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           
           if (data.organizationName) document.getElementById('lbl_employer').textContent = toThaiNumber(data.organizationName);
           if (data.designerName) document.getElementById('lbl_designer').textContent = toThaiNumber(data.designerName);
@@ -266,13 +272,14 @@
           const comms = data.committees && data.committees.length > 0 ? data.committees : [
             "นางสาวถนอมนวล วะทวีก้านตรงฯ", "จ่าเอกธีรพงษ์ ดรชานนท์", "นางสาวปนัดดา ภูอาษา", "นายวีระศักดิ์ ทับวิชร", "นายอรรถวัต อดทน"
           ];
-          comms.forEach((name, idx) => {
-            if (!name) return;
+          comms.forEach((item, idx) => {
+            if (!item) return;
+            const cName = typeof item === 'object' ? item.name : item;
             const role = (idx === 0) ? 'ประธานกรรมการ' : 'กรรมการ';
             commContainer.innerHTML += `
               <div class="row-item" style="padding-left: 20px;">
                 <div style="width: 40px; text-align: right; margin-right: 20px;">${toThaiNumber(idx + 1)}.</div>
-                <div style="width: 320px;">${toThaiNumber(name)}</div>
+                <div style="width: 320px;">${toThaiNumber(cName)}</div>
                 <div>${role}</div>
               </div>
             `;
@@ -282,12 +289,14 @@
           inspContainer.innerHTML = '';
           const inspList = data.inspectors && data.inspectors.length > 0 ? data.inspectors : [{ name: "นายพัทธิยะ วงษาซ้าย", pos: "ผู้ควบคุมงาน" }];
           inspList.forEach((insp, idx) => {
-            if (!insp.name) return;
+            const inspName = typeof insp === 'object' ? insp.name : insp;
+            const inspPos = typeof insp === 'object' ? insp.pos : 'ผู้ควบคุมงาน';
+            if (!inspName) return;
             inspContainer.innerHTML += `
               <div class="row-item" style="padding-left: 20px;">
                 <div style="width: 40px; text-align: right; margin-right: 20px;">${toThaiNumber(idx + 1)}.</div>
-                <div style="width: 320px;">${toThaiNumber(insp.name)}</div>
-                <div>${insp.pos || 'ผู้ควบคุมงาน'}</div>
+                <div style="width: 320px;">${toThaiNumber(inspName)}</div>
+                <div>${inspPos}</div>
               </div>
             `;
           });
@@ -299,7 +308,7 @@
           }
 
         } catch (e) {
-          console.error("Error parsing local basic info:", e);
+          console.error("Error parsing basic info:", e);
         }
       }
     });

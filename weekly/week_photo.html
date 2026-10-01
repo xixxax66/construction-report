@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ภาพถ่ายสภาพการปฏิบัติงาน</title>
+  <title>ภาพถ่ายสภาพการปฏิบัติงาน (Offline Pro)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="../assets/gas-sync.js"></script>
   <style>
     @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
@@ -101,7 +102,7 @@
         <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
           <i data-lucide="folder-kanban" class="w-5 h-5 text-blue-600"></i> เลือกรูปจากคลังใน Google Drive มาจัดวาง
         </h3>
-        <button onclick="closeDrivePicker()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="closeDrivePicker()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-6 h-6"></i></button>
       </div>
       <p class="text-xs text-slate-500">คลิกที่รูปภาพจากคลังด้านล่าง เพื่อนำมาปรับตัดส่วน (Crop) ลงในช่องรายงาน</p>
       <div id="drive_photo_grid" class="grid grid-cols-3 gap-3 max-h-96 overflow-y-auto p-1 bg-slate-50 border rounded-xl p-3">
@@ -120,10 +121,9 @@
         <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
           <i data-lucide="crop" class="w-5 h-5 text-blue-600"></i> ปรับแต่งมุมมองรูปภาพ
         </h3>
-        <button onclick="closeImageEditor()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="closeImageEditor()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-6 h-6"></i></button>
       </div>
 
-      <!-- พื้นที่ Cropper -->
       <div id="cropper_container" 
            style="aspect-ratio: 4/3;"
            onmousedown="startCropDrag(event)" onmousemove="onCropMove(event)" onmouseup="endCropDrag()" onmouseleave="endCropDrag()"
@@ -132,7 +132,6 @@
         <div class="absolute inset-0 border-2 border-dashed border-white/50 pointer-events-none"></div>
       </div>
 
-      <!-- แผงเลือกสัดส่วนสำเร็จรูป -->
       <div class="flex items-center justify-between gap-1 pt-1">
         <span class="text-xs font-bold text-slate-600">สัดส่วนกรอบ:</span>
         <button onclick="setCropAspect('4:3', this)" class="px-2.5 py-1 bg-blue-600 text-white rounded text-xs font-bold shadow-sm transition aspect-btn">4:3 (รายงาน)</button>
@@ -210,6 +209,13 @@
   </div>
 
   <script>
+    lucide.createIcons();
+
+    localforage.config({
+      name: 'ConstructionDB',
+      storeName: 'project_data'
+    });
+
     function setCropAspect(ratioStr, btnEl) {
       document.querySelectorAll('.aspect-btn').forEach(b => {
         b.className = "px-2.5 py-1 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded text-xs font-bold transition aspect-btn";
@@ -223,7 +229,6 @@
       lucide.createIcons();
     }
 
-    lucide.createIcons();
     const urlParams = new URLSearchParams(window.location.search);
     const currentWeekIndex = parseInt(urlParams.get('week')) || 1;
     
@@ -231,11 +236,10 @@
     let currentReportMonth = urlParams.get('month') || 'SEP_2569';
     let PHOTO_STORAGE_KEY = `WEEK_PHOTO_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
 
-    let projectTitle = "โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก";
+    let projectTitle = "โครงการก่อสร้าง...";
     let inspName = "นายพัทธิยะ วงษาซ้าย";
     let inspPos = "ผู้ควบคุมงาน";
     
-    // 💡 ตัวแปรสำหรับแสดงผลรายงานครั้งที่, สัปดาห์ที่ และปี
     let weekSeq = currentWeekIndex;
     let weekNum = currentWeekIndex;
     let weekYear = "2569"; 
@@ -250,16 +254,6 @@
       if (numStr === null || numStr === undefined) return '';
       const thaiNums = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
       return numStr.toString().replace(/[0-9]/g, (w) => thaiNums[w]);
-    }
-
-    function thaiDateText(dateStr) {
-      if (!dateStr) return '';
-      const thaiMonths = { "January": "มกราคม", "February": "กุมภาพันธ์", "March": "มีนาคม", "April": "เมษายน", "May": "พฤษภาคม", "June": "มิถุนายน", "July": "กรกฎาคม", "August": "สิงหาคม", "September": "กันยายน", "October": "ตุลาคม", "November": "พฤศจิกายน", "December": "ธันวาคม" };
-      let cleanStr = dateStr.toString().trim();
-      for (const [enM, thM] of Object.entries(thaiMonths)) {
-        if (cleanStr.toLowerCase().includes(enM.toLowerCase())) cleanStr = cleanStr.replace(new RegExp(enM, 'gi'), thM);
-      }
-      return toThaiNumber(cleanStr);
     }
 
     function chunkArray(array, size) {
@@ -278,10 +272,11 @@
       document.getElementById('txt_page_count').textContent = chunks.length;
 
       let commHtml = '';
-      commsList.forEach((name, idx) => {
-        if (!name) return;
+      commsList.forEach((item, idx) => {
+        if (!item) return;
+        const cName = typeof item === 'object' ? item.name : item;
         const isPresident = (idx === 0);
-        commHtml += `<div class="${isPresident ? 'col-span-2 flex justify-center' : ''}"><div><p>(ลงชื่อ).................................................... ${isPresident ? 'ประธานกรรมการฯ' : 'กรรมการฯ'}</p><p class="mt-0.5">(${name})</p></div></div>`;
+        commHtml += `<div class="${isPresident ? 'col-span-2 flex justify-center' : ''}"><div><p>(ลงชื่อ).................................................... ${isPresident ? 'ประธานกรรมการฯ' : 'กรรมการฯ'}</p><p class="mt-0.5">(${cName})</p></div></div>`;
       });
 
       chunks.forEach((chunk, pageIndex) => {
@@ -334,27 +329,31 @@
       lucide.createIcons();
     }
 
-    function updatePhotoDesc(idx, val, el) {
+    async function updatePhotoDesc(idx, val, el) {
       photosList[idx].desc = val;
       if (val.trim() === '') el.parentElement.classList.add('empty-desc');
       else el.parentElement.classList.remove('empty-desc');
-      savePhotosToLocalSafe();
+      await savePhotosToLocalSafe();
     }
 
-    function savePhotosToLocalSafe() {
-      try { localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify({ weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList })); } catch (err) {}
+    async function savePhotosToLocalSafe() {
+      const payload = { weekIndex: currentWeekIndex, reportMonth: currentReportMonth, photos: photosList };
+      await localforage.setItem(PHOTO_STORAGE_KEY, JSON.stringify(payload));
+      try { localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify(payload)); } catch (err) {}
     }
 
     async function handleBatchUploadToDrive(e) {
       const files = e.target.files;
       if (!files || files.length === 0) return;
 
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+
       let imageFolderId = "11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd";
       let contractNo = "DEFAULT";
       if (basicRaw) {
         try {
-          const pData = JSON.parse(basicRaw);
+          const pData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           imageFolderId = pData.imageFolderId || pData.driveFolderId || imageFolderId;
           contractNo = pData.contractNo || contractNo;
         } catch(e){}
@@ -397,12 +396,14 @@
       modal.classList.remove('hidden');
       grid.innerHTML = '<p class="col-span-3 text-center text-slate-500 py-6">กำลังโหลดคลังรูปภาพ...</p>';
 
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+
       let imageFolderId = "11fiWOEZwAqUlZ7W3MuYv3Oi6Vbkfo2jd";
       let contractNo = "DEFAULT";
       if (basicRaw) {
         try {
-          const pData = JSON.parse(basicRaw);
+          const pData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           imageFolderId = pData.imageFolderId || pData.driveFolderId || imageFolderId;
           contractNo = pData.contractNo || contractNo;
         } catch(e){}
@@ -473,7 +474,7 @@
     function resetCropTransform() { cropState.scale = 1; cropState.translateX = 0; cropState.translateY = 0; cropState.rotation = 0; document.getElementById('zoom_slider').value = 1; document.getElementById('zoom_val').textContent = '100%'; updateCropperTransform(); }
     function updateCropperTransform() { const img = document.getElementById('cropper_image'); if (img) { img.style.transform = `translate(calc(-50% + ${cropState.translateX}px), calc(-50% + ${cropState.translateY}px)) scale(${cropState.scale}) rotate(${cropState.rotation}deg)`; img.style.top = '50%'; img.style.left = '50%'; } }
 
-    function confirmCroppedImage() {
+    async function confirmCroppedImage() {
       const item = photosList[currentEditingIdx];
       const img = document.getElementById('cropper_image');
       const canvas = document.createElement('canvas');
@@ -491,57 +492,81 @@
       item.src = canvas.toDataURL('image/jpeg', 0.85);
       renderAllPages();
       closeImageEditor();
-      savePhotosToLocalSafe();
+      await savePhotosToLocalSafe();
     }
 
-    function addPhotoSlot() { photosList.push({ src: "", desc: "" }); renderAllPages(); savePhotosToLocalSafe(); }
-    function removePhotoSlot(idx) { if (photosList.length <= 1) return alert("ต้องมีช่องรูปอย่างน้อย 1 ช่องค่ะ"); photosList.splice(idx, 1); renderAllPages(); savePhotosToLocalSafe(); }
-    function saveReportMetadataOnly() { savePhotosToLocalSafe(); alert("บันทึกข้อมูลรายงานเรียบร้อยแล้วค่ะ!"); }
+    async function addPhotoSlot() { 
+      photosList.push({ src: "", desc: "" }); 
+      renderAllPages(); 
+      await savePhotosToLocalSafe(); 
+    }
 
-    function loadProjectAndPhotoData() {
-      // 1. ดึงข้อมูลโครงการเบื้องต้น
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+    async function removePhotoSlot(idx) { 
+      if (photosList.length <= 1) return alert("ต้องมีช่องรูปอย่างน้อย 1 ช่องค่ะ"); 
+      photosList.splice(idx, 1); 
+      renderAllPages(); 
+      await savePhotosToLocalSafe(); 
+    }
+
+    async function saveReportMetadataOnly() { 
+      await savePhotosToLocalSafe(); 
+      alert("บันทึกข้อมูลรายงานเรียบร้อยแล้วค่ะ!"); 
+    }
+
+    async function loadProjectAndPhotoData() {
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
-          let projectData = JSON.parse(basicRaw);
+          let projectData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           if (projectData.contractNo) {
             currentProjectID = `PROJ_${projectData.contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
             currentReportMonth = urlParams.get('month') || localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`) || 'SEP_2569';
             PHOTO_STORAGE_KEY = `WEEK_PHOTO_DATA_${currentProjectID}_${currentReportMonth}_${currentWeekIndex}`;
           }
           if (projectData.projectName) projectTitle = projectData.projectName;
-          if (projectData.inspectors && projectData.inspectors[0] && projectData.inspectors[0].name) { inspName = projectData.inspectors[0].name; inspPos = projectData.inspectors[0].pos; }
+          if (projectData.inspectors && projectData.inspectors[0] && projectData.inspectors[0].name) { 
+            inspName = projectData.inspectors[0].name; 
+            inspPos = projectData.inspectors[0].pos || "ผู้ควบคุมงาน"; 
+          }
           if (projectData.committees && projectData.committees.length > 0) commsList = projectData.committees;
         } catch(e){}
       }
 
-      // 2. 💡 ดึงข้อมูลสัปดาห์ (seq, week, year) จากฐานข้อมูลอ้างอิงให้ตรงกับความเป็นจริง
-      const refDataRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`) || 
-                         localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || 
-                         localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+      let refDataRaw = await localforage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`);
+      if (!refDataRaw) {
+        refDataRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}_${currentReportMonth}`) || 
+                     localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || 
+                     localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+      }
 
       if (refDataRaw) {
         try {
-          const weeks = JSON.parse(refDataRaw);
-          const wItem = weeks.find(w => parseInt(w.weekIndex) === currentWeekIndex);
+          const weeks = typeof refDataRaw === 'string' ? JSON.parse(refDataRaw) : refDataRaw;
+          const wItem = Array.isArray(weeks) ? weeks.find(w => parseInt(w.weekIndex) === currentWeekIndex) : null;
           if (wItem) {
             if (wItem.seq) weekSeq = wItem.seq;
             if (wItem.week) weekNum = wItem.week;
-            
-            // ดึงปี พ.ศ. จาก startDate (ตัวอย่าง format: "23 สิงหาคม 2569")
-            if (wItem.startDate) {
+            if (wItem.year) weekYear = wItem.year;
+            else if (wItem.startDate) {
                const parts = wItem.startDate.split(' ');
-               if (parts.length >= 3) {
-                 weekYear = parts[2];
-               }
+               if (parts.length >= 3) weekYear = parts[2];
             }
           }
         } catch (e) {}
       }
 
-      // 3. โหลดภาพที่เคยบันทึก
-      const cached = localStorage.getItem(PHOTO_STORAGE_KEY) || localStorage.getItem(`WEEK_PHOTO_DATA_${currentWeekIndex}`);
-      if (cached) { try { const data = JSON.parse(cached); if (data.photos) photosList = data.photos; } catch(e) {} }
+      let cached = await localforage.getItem(PHOTO_STORAGE_KEY);
+      if (!cached) cached = localStorage.getItem(PHOTO_STORAGE_KEY) || localStorage.getItem(`WEEK_PHOTO_DATA_${currentWeekIndex}`);
+      
+      if (cached) { 
+        try { 
+          const data = typeof cached === 'string' ? JSON.parse(cached) : cached; 
+          if (data.photos && Array.isArray(data.photos) && data.photos.length > 0) {
+            photosList = data.photos; 
+          }
+        } catch(e) {} 
+      }
       
       renderAllPages();
     }

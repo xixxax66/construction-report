@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>แผนที่แสดงที่ตั้งโครงการ - รายงานประจำเดือน</title>
+  <title>แผนที่แสดงที่ตั้งโครงการ - รายงานประจำเดือน (Offline Pro)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="../assets/gas-sync.js"></script>
   <style>
     @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
@@ -89,7 +90,6 @@
 </head>
 <body class="p-2 sm:p-6 min-h-screen flex flex-col items-center">
 
-  <!-- ซ่อน input สำหรับอัปโหลดภาพแผนที่ -->
   <input type="file" id="map_file_input" accept="image/*" class="hidden" onchange="processMapUpload(event)">
 
   <!-- แผงควบคุมด้านบน -->
@@ -122,11 +122,10 @@
     <div>
       <h2 class="doc-title">แผนที่แสดงที่ตั้งโครงการ</h2>
       <p class="project-desc" id="lbl_project_desc">
-        กำลังโหลดข้อมูลโครงการจากฐานข้อมูล...
+        กำลังโหลดข้อมูลโครงการ...
       </p>
     </div>
 
-    <!-- กรอบแสดงรูปภาพแผนที่ -->
     <div class="map-frame" onclick="document.getElementById('map_file_input').click()" title="คลิกเพื่ออัปโหลดหรือเปลี่ยนรูปแผนที่">
       <div id="map_placeholder" class="map-placeholder">
         <i data-lucide="map" class="w-16 h-16 text-slate-400"></i>
@@ -143,35 +142,42 @@
 
   <script>
     lucide.createIcons();
+
+    localforage.config({
+      name: 'ConstructionDB',
+      storeName: 'project_data'
+    });
     
     let currentProjectID = 'DEFAULT_PROJ';
     let currentContractNo = 'DEFAULT';
     let currentDriveFolderId = '';
     let MAP_STORAGE_KEY = `PROJECT_MAP_IMAGE_DATA_${currentProjectID}`;
 
-    const GOOGLE_SCRIPT_URL = localStorage.getItem('CONSTRUCTION_GAS_URL') || 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
+    const GOOGLE_SCRIPT_URL = localStorage.getItem('CONSTRUCTION_GAS_URL') || 'https://script.google.com/macros/s/AKfycbz9T8I8iojUCXX9D71RRftcemcLsv5-mG1ND1pVbJugwHuDCffxMLHkIKU6V_y6zieJ5A/exec';
 
-    function initProjectContext() {
+    async function initProjectContext() {
       const urlParams = new URLSearchParams(window.location.search);
       const paramProj = urlParams.get('projectID');
       const paramContract = urlParams.get('contractNo');
 
       let basicData = null;
       if (paramProj) {
-        const raw = localStorage.getItem(`LOCAL_BASIC_INFO_${paramProj}`);
-        if (raw) { try { basicData = JSON.parse(raw); } catch(e){} }
+        let raw = await localforage.getItem(`LOCAL_BASIC_INFO_${paramProj}`);
+        if (!raw) raw = localStorage.getItem(`LOCAL_BASIC_INFO_${paramProj}`);
+        if (raw) { try { basicData = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(e){} }
       }
 
       if (!basicData) {
-        const raw = localStorage.getItem('LOCAL_BASIC_INFO');
-        if (raw) { try { basicData = JSON.parse(raw); } catch(e){} }
+        let raw = await localforage.getItem('LOCAL_BASIC_INFO');
+        if (!raw) raw = localStorage.getItem('LOCAL_BASIC_INFO');
+        if (raw) { try { basicData = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(e){} }
       }
 
       if (basicData) {
         currentContractNo = paramContract || basicData.contractNo || 'NO_CONTRACT';
         const cleanCNo = currentContractNo.replace(/[^a-zA-Z0-9]/g, '_');
         currentProjectID = paramProj || basicData.projectID || `PROJ_${cleanCNo}`;
-        currentDriveFolderId = basicData.driveFolderId || '';
+        currentDriveFolderId = basicData.imageFolderId || basicData.driveFolderId || '';
       } else {
         currentContractNo = paramContract || 'DEFAULT';
         currentProjectID = paramProj || `PROJ_${currentContractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -183,11 +189,12 @@
       if (badgeEl) badgeEl.textContent = `สัญญา: ${currentContractNo} (ID: ${currentProjectID})`;
     }
 
-    function deleteMapImage() {
+    async function deleteMapImage() {
       if (confirm('คุณต้องการลบรูปภาพแผนที่ของโครงการนี้ใช่หรือไม่คะ?')) {
-        localStorage.removeItem(MAP_STORAGE_KEY);
+        await localforage.removeItem(MAP_STORAGE_KEY);
+        try { localStorage.removeItem(MAP_STORAGE_KEY); } catch(e){}
         resetMapDisplay();
-        alert('ลบรูปภาพแผนที่จากหน้าจอเรียบร้อยแล้วค่ะ');
+        alert('ลบรูปภาพแผนที่เรียบร้อยแล้วค่ะ');
       }
     }
 
@@ -232,21 +239,13 @@
       reader.onload = function(evt) {
         const img = new Image();
         img.onload = async function() {
-          // 1. ภาพขนาดใหญ่สำหรับส่งขึ้น Google Drive (กว้างไม่เกิน 1200px คุณภาพ 0.75)
           const uploadBase64 = compressImage(img, 1200, 1600, 0.75);
+          const previewBase64 = compressImage(img, 900, 1200, 0.65);
 
-          // 2. ภาพขนาดเล็กสำหรับแคชใน LocalStorage ป้องกัน Quota Exceeded (กว้างไม่เกิน 800px คุณภาพ 0.6)
-          const previewBase64 = compressImage(img, 800, 1000, 0.6);
+          await localforage.setItem(MAP_STORAGE_KEY, previewBase64);
+          try { localStorage.setItem(MAP_STORAGE_KEY, previewBase64); } catch (storageErr) {}
+          displayMapImage(previewBase64);
 
-          // บันทึกลง LocalStorage ก่อน
-          try {
-            localStorage.setItem(MAP_STORAGE_KEY, previewBase64);
-            displayMapImage(previewBase64);
-          } catch (storageErr) {
-            console.warn("LocalStorage เต็ม ไม่สามารถบันทึกภาพลงเครื่องได้:", storageErr);
-          }
-
-          // 3. ส่งไฟล์ขึ้น Google Drive ผ่าน Apps Script
           try {
             const payload = {
               action: 'upload_original_photo',
@@ -272,7 +271,7 @@
             }
           } catch (cloudErr) {
             console.error("Cloud upload error:", cloudErr);
-            alert("บันทึกรูปลงในหน้าจอเรียบร้อยแล้วค่ะ (แต่การส่งขึ้น Google Drive แจ้งเตือน: " + cloudErr.message + ")");
+            alert("บันทึกรูปลงในเครื่องเรียบร้อยแล้วค่ะ (ส่ง Drive แจ้งเตือน: " + cloudErr.message + ")");
           } finally {
             btnUpload.disabled = false;
             btnUpload.innerHTML = originalBtnHtml;
@@ -302,8 +301,8 @@
       placeholder.classList.remove('hidden');
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      initProjectContext();
+    window.addEventListener('DOMContentLoaded', async () => {
+      await initProjectContext();
 
       const urlParams = new URLSearchParams(window.location.search);
       const monthCode = urlParams.get('month');
@@ -311,11 +310,13 @@
         document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
       }
 
-      // โหลดข้อมูลโครงการเพื่อแสดงชื่อและหน่วยงาน
-      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+      let basicRaw = await localforage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`);
+      if (!basicRaw) basicRaw = await localforage.getItem('LOCAL_BASIC_INFO') || 
+                                localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || 
+                                localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
-          const projectData = JSON.parse(basicRaw);
+          const projectData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           if (projectData.projectName) {
             document.getElementById('lbl_project_desc').textContent = projectData.projectName;
           }
@@ -327,8 +328,8 @@
         }
       }
 
-      // ดึงภาพแผนที่ที่เคยบันทึกไว้ของโครงการนี้
-      const savedMap = localStorage.getItem(MAP_STORAGE_KEY);
+      let savedMap = await localforage.getItem(MAP_STORAGE_KEY);
+      if (!savedMap) savedMap = localStorage.getItem(MAP_STORAGE_KEY);
       if (savedMap) {
         displayMapImage(savedMap);
       } else {

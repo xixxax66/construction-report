@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>รายงานผลการก่อสร้างประจำเดือน</title>
+  <title>รายงานผลการก่อสร้างประจำเดือน (Offline Pro)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="../assets/gas-sync.js"></script>
   <style>
     @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
@@ -42,14 +43,13 @@
     <div class="xl:col-span-8 flex justify-center overflow-x-auto w-full">
       <div class="sheet-doc relative" id="doc-print">
         
-        <!-- ส่วนหัวตามที่คุณอรรถวัตต้องการ (mb-1) -->
         <div class="relative text-center mb-1">
           <img src="../assets/Krut.png" alt="ตราครุฑ" class="garuda-img" onerror="this.src='../../assets/Krut.png'">
           <h2 class="doc-title pt-1">บันทึกข้อความ</h2>
         </div>
 
         <div class="space-y-1 text-base">
-          <div class="flex flex-wrap items-baseline"><span class="font-bold w-24">ส่วนราชการ</span><input type="text" id="lbl_org" class="editable-input flex-1" value="กองช่าง องค์การบริหารส่วนตำบลโพนงาม"></div>
+          <div class="flex flex-wrap items-baseline"><span class="font-bold w-24">ส่วนราชการ</span><input type="text" id="lbl_org" class="editable-input flex-1" value="คณะกรรมการตรวจรับพัสดุ องค์การบริหารส่วนตำบลโพนงาม"></div>
           <div class="flex justify-between items-baseline">
             <div class="flex items-baseline flex-1">
               <span class="font-bold w-12">ที่</span>
@@ -66,13 +66,13 @@
         <div class="mt-1 text-base leading-relaxed text-justify space-y-1">
           <p class="font-normal">รายงานประจำเดือน <span id="lbl_month_year">มิถุนายน ๒๕๖๙</span></p>
           <p class="indent-word">
-            งาน<span id="lbl_project_title">โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายจากนานายราวี ดวงแสนพุฒ ถึงหนองหวาย หมู่ที่ ๑๒</span> 
+            งาน<span id="lbl_project_title">โครงการก่อสร้าง...</span> 
             โดยผู้ว่าจ้างคือ <span id="lbl_employer">องค์การบริหารส่วนตำบลโพนงาม</span> 
             ได้ทำสัญญาจ้างเลขที่ <span id="lbl_contract_no">E๑/๒๕๖๙</span> ลงวันที่ <span id="lbl_contract_date">๕ มิถุนายน ๒๕๖๙</span> 
             กับผู้รับจ้าง <span id="lbl_contractor">ห้างหุ้นส่วนจำกัด เค.เค.มุกดาหารก่อสร้าง</span> 
             เริ่มสัญญาวันที่ <span id="lbl_contract_start">-</span> สิ้นสุดสัญญาวันที่ <span id="lbl_contract_end">-</span> ระยะเวลาก่อสร้าง <span id="lbl_duration_days">-</span> วัน 
-            ในวงเงินค่าก่อสร้าง <span id="lbl_budget_amount">๒,๘๔๙,๒๖๐.๐๐</span> บาท 
-            กำหนดอัตราค่าปรับวันละ <span id="lbl_fine_per_day">๗,๑๒๔.๐๐</span> บาท 
+            ในวงเงินค่าก่อสร้าง <span id="lbl_budget_amount">๐.๐๐</span> บาท 
+            กำหนดอัตราค่าปรับวันละ <span id="lbl_fine_per_day">๐.๐๐</span> บาท 
             <span id="lbl_extension_info" class="text-slate-900"></span>
           </p>
         </div>
@@ -85,7 +85,7 @@
               <tr><th class="w-16">ปัจจุบัน</th><th class="w-20">เร็ว/ช้า</th><th class="w-16">ทั้งหมด</th><th class="w-16">ตรวจรับแล้ว</th></tr>
             </thead>
             <tbody id="report_table_tbody"></tbody>
-            <tfoot><tr><td colspan="5" class="border-t border-black"></td><td class="text-center font-bold">รวม</td><td id="cell_budget_sum" class="text-center font-bold">๒,๘๔๙,๒๖๐.๐๐</td><td id="cell_paid_sum" class="text-center font-bold">-</td></tr></tfoot>
+            <tfoot><tr><td colspan="5" class="border-t border-black"></td><td class="text-center font-bold">รวม</td><td id="cell_budget_sum" class="text-center font-bold">๐.๐๐</td><td id="cell_paid_sum" class="text-center font-bold">-</td></tr></tfoot>
           </table>
         </div>
 
@@ -119,15 +119,22 @@
 
   <script>
     lucide.createIcons();
+
+    localforage.config({
+      name: 'ConstructionDB',
+      storeName: 'project_data'
+    });
     
     let currentProjectID = 'DEFAULT_PROJ';
     let currentMonthCode = '';
 
-    function initProjectContext() {
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+    async function initProjectContext() {
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+
       if (basicRaw) {
         try {
-          const projectData = JSON.parse(basicRaw);
+          const projectData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           const cNo = projectData.contractNo || 'NO_CONTRACT';
           currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
         } catch(e) {}
@@ -156,10 +163,7 @@
       const thaiMonths = {
         "January": "มกราคม", "February": "กุมภาพันธ์", "March": "มีนาคม", "April": "เมษายน",
         "May": "พฤษภาคม", "June": "มิถุนายน", "July": "กรกฎาคม", "August": "สิงหาคม",
-        "September": "กันยายน", "October": "ตุลาคม", "November": "พฤศจิกายน", "December": "ธันวาคม",
-        "มกราคม": "มกราคม", "กุมภาพันธ์": "กุมภาพันธ์", "มีนาคม": "มีนาคม", "เมษายน": "เมษายน",
-        "พฤษภาคม": "พฤษภาคม", "มิถุนายน": "มิถุนายน", "กรกฎาคม": "กรกฎาคม", "สิงหาคม": "สิงหาคม",
-        "กันยายน": "กันยายน", "ตุลาคม": "ตุลาคม", "พฤศจิกายน": "พฤศจิกายน", "ธันวาคม": "ธันวาคม"
+        "September": "กันยายน", "October": "ตุลาคม", "November": "พฤศจิกายน", "December": "ธันวาคม"
       };
       
       let cleanStr = dateStr.toString().trim();
@@ -195,15 +199,17 @@
       return null;
     }
 
-    function loadAllData(isManualAlert = false) {
-      initProjectContext();
+    async function loadAllData(isManualAlert = false) {
+      await initProjectContext();
       try {
         let targetWeek = 5;
-        const monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+        let monthlyRaw = await localforage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`);
+        if (!monthlyRaw) monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+        
         let monthlyData = {};
         if (monthlyRaw) {
           try {
-            monthlyData = JSON.parse(monthlyRaw);
+            monthlyData = typeof monthlyRaw === 'string' ? JSON.parse(monthlyRaw) : monthlyRaw;
             if (monthlyData.month && monthlyData.year) {
               document.getElementById('lbl_month_year').textContent = thaiDateText(`${monthlyData.month} ${monthlyData.year}`);
             }
@@ -219,11 +225,13 @@
           } catch(e){}
         }
 
-        const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+        let basicRaw = await localforage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`);
+        if (!basicRaw) basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+        
         let projectData = {};
         if (basicRaw) {
           try {
-            projectData = JSON.parse(basicRaw);
+            projectData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
             if (projectData.organizationName) {
               document.getElementById('lbl_org').textContent = `คณะกรรมการตรวจรับพัสดุ ${toThaiNumber(projectData.organizationName)}`;
               document.getElementById('lbl_employer').textContent = toThaiNumber(projectData.organizationName);
@@ -272,10 +280,11 @@
 
         let latestProgress = parseFloat(monthlyData.actualPercent) || 0;
         if (latestProgress === 0) {
-          const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`);
+          let progressRaw = await localforage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${targetWeek}`);
+          if (!progressRaw) progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`);
           if (progressRaw) {
             try {
-              const progData = JSON.parse(progressRaw);
+              const progData = typeof progressRaw === 'string' ? JSON.parse(progressRaw) : progressRaw;
               latestProgress = parseFloat(progData.totalWeightPercent) || 0;
             } catch(e){}
           }
@@ -283,10 +292,11 @@
 
         if (latestProgress === 0) {
           for (let w = 5; w >= 1; w--) {
-            const wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`);
+            let wRaw = await localforage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${w}`);
+            if (!wRaw) wRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${currentMonthCode}_${w}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${w}`);
             if (wRaw) {
               try {
-                const wData = JSON.parse(wRaw);
+                const wData = typeof wRaw === 'string' ? JSON.parse(wRaw) : wRaw;
                 latestProgress = parseFloat(wData.totalWeightPercent) || 0;
                 break;
               } catch(e){}
@@ -304,9 +314,10 @@
         const progressTh = toThaiNumber(latestProgress.toFixed(2));
 
         let installments = [];
-        const savedWeekInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${targetWeek}`);
+        let savedWeekInst = await localforage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentMonthCode}_${targetWeek}`);
+        if (!savedWeekInst) savedWeekInst = localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || localStorage.getItem(`WEEK_REPORT_INSTALLMENTS_${currentProjectID}_${targetWeek}`);
         if (savedWeekInst) {
-          try { installments = JSON.parse(savedWeekInst); } catch(e){}
+          try { installments = typeof savedWeekInst === 'string' ? JSON.parse(savedWeekInst) : savedWeekInst; } catch(e){}
         }
         if (installments.length === 0 && projectData.installments && Array.isArray(projectData.installments)) {
           installments = projectData.installments;
@@ -316,9 +327,10 @@
         }
 
         let savedDates = {};
-        const savedDatesRaw = localStorage.getItem(`MONTHLY_INSPECTION_DATES_DB_${currentProjectID}`) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
+        let savedDatesRaw = await localforage.getItem(`MONTHLY_INSPECTION_DATES_DB_${currentProjectID}`);
+        if (!savedDatesRaw) savedDatesRaw = localStorage.getItem(`MONTHLY_INSPECTION_DATES_DB_${currentProjectID}`) || localStorage.getItem('MONTHLY_INSPECTION_DATES_DB');
         if (savedDatesRaw) {
-          try { savedDates = JSON.parse(savedDatesRaw); } catch(e){}
+          try { savedDates = typeof savedDatesRaw === 'string' ? JSON.parse(savedDatesRaw) : savedDatesRaw; } catch(e){}
         }
 
         let completedCount = 0;
@@ -331,9 +343,10 @@
         });
 
         let acceptedValue = completedCount > 0 ? toThaiNumber(completedCount) : "-";
-        const savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${targetWeek}`);
+        let savedAccepted = await localforage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentMonthCode}_${targetWeek}`);
+        if (!savedAccepted) savedAccepted = localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${currentMonthCode}_${targetWeek}`) || localStorage.getItem(`WEEK_REPORT_ACCEPTED_${currentProjectID}_${targetWeek}`);
         if (savedAccepted && savedAccepted !== '-') {
-          acceptedValue = savedAccepted;
+          acceptedValue = toThaiNumber(savedAccepted);
         }
 
         const totalInstallments = installments.length;
@@ -346,7 +359,7 @@
         let totalPaidSum = 0;
         let hasNumericPaid = false;
 
-        let totalDaysNum = projectData && projectData.durationDays ? parseInt(projectData.durationDays) : 140;
+        let totalDaysNum = projectData && (projectData.durationDays || projectData.manualDays) ? parseInt(projectData.durationDays || projectData.manualDays) : 140;
         if (projectData && projectData.totalExtendedDays && parseInt(projectData.totalExtendedDays) > 0) {
           totalDaysNum = parseInt(projectData.totalExtendedDays);
         }
@@ -354,8 +367,8 @@
         let remainDays = totalDaysNum;
         let timePercent = 0;
 
-        if (projectData && projectData.startDate && monthlyData && monthlyData.reportDate) {
-          const sDate = new Date(projectData.startDate);
+        if (projectData && (projectData.startDate || projectData.startDateTh) && monthlyData && monthlyData.reportDate) {
+          const sDate = parseThaiDateStr(projectData.startDateTh || projectData.startDate);
           const eDate = parseThaiDateStr(monthlyData.reportDate);
           if (sDate && !isNaN(sDate.getTime()) && eDate && !isNaN(eDate.getTime())) {
             const diffTime = eDate.getTime() - sDate.getTime();
@@ -425,29 +438,22 @@
     }
 
     function renderSignatures(data) {
-      // 💡 1. ผู้ควบคุมงาน (ขยับซ้าย 12px)
       const inspectors = data.inspectors || [{ name: "นายพัทธิยะ วงษาซ้าย", pos: "ผู้ควบคุมงาน" }];
       let inspHTML = "";
       inspectors.forEach(insp => {
-        if (insp.name) {
+        const inspName = typeof insp === 'object' ? insp.name : insp;
+        const inspPos = typeof insp === 'object' ? insp.pos : 'ผู้ควบคุมงาน';
+        if (inspName) {
           inspHTML += `
             <div class="space-y-1 text-center min-w-[220px] mb-3">
-              <p>(ลงชื่อ)........................................................... ${toThaiNumber(insp.pos || 'ผู้ควบคุมงาน')}</p>
-              <p class="font-medium mt-1" style="position: relative; right: 18px;">(${toThaiNumber(insp.name)})</p>
+              <p>(ลงชื่อ)........................................................... ${toThaiNumber(inspPos)}</p>
+              <p class="font-medium mt-1" style="position: relative; right: 18px;">(${toThaiNumber(inspName)})</p>
             </div>`;
         }
       });
-      if (!inspHTML) {
-        inspHTML = `
-          <div class="space-y-1 text-center min-w-[220px]">
-            <p>(ลงชื่อ)........................................................... ผู้ควบคุมงาน</p>
-            <p class="font-medium mt-1" style="position: relative; right: 12px;">(นายพัทธิยะ วงษาซ้าย)</p>
-          </div>`;
-      }
       const inspArea = document.getElementById('inspectorSignatureArea');
       if (inspArea) inspArea.innerHTML = inspHTML;
 
-      // 💡 2. คณะกรรมการ (ประธานฯ ขยับซ้าย 24px)
       const defaultComms = [
         "นางสาวถนอมนวล วะทวีก้านตรงฯ", "จ่าเอกธีรพงษ์ ดรชานนท์", "นางสาวปนัดดา ภูอาษา", "นายวีระศักดิ์ ทับวิชร", "นายอรรถวัต อดทน"
       ];
@@ -456,29 +462,30 @@
       
       if (commArea) {
         commArea.innerHTML = '';
-        comms.forEach((name, idx) => {
-          if (!name) return;
+        comms.forEach((item, idx) => {
+          if (!item) return;
+          const cName = typeof item === 'object' ? item.name : item;
           const roleLabel = (idx === 0) ? 'ประธานกรรมการฯ' : 'กรรมการฯ';
-          const nameStyle = (idx === 0) ? 'style="position: relative; right: 36px;"' : ''; // ใส่สไตล์เฉพาะประธาน
+          const nameStyle = (idx === 0) ? 'style="position: relative; right: 36px;"' : '';
           
           commArea.innerHTML += `
             <div class="${idx === 0 ? 'col-span-2 mb-2' : 'mb-2'} flex flex-col items-center">
               <div class="inline-block text-center">
                 <p>(ลงชื่อ).................................................... ${roleLabel}</p>
-                <p class="font-medium mt-1" ${nameStyle}>(${toThaiNumber(name)})</p>
+                <p class="font-medium mt-1" ${nameStyle}>(${toThaiNumber(cName)})</p>
               </div>
             </div>`;
         });
       }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const monthCode = urlParams.get('month');
       if (monthCode) {
         document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
       }
-      loadAllData(false);
+      await loadAllData(false);
     });
   </script>
 </body>

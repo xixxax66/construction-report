@@ -6,6 +6,7 @@
   <title>ข้อมูลรายงานรายสัปดาห์ - กำหนดข้อมูลเบื้องต้น</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="assets/gas-sync.js"></script>
   <style>
     @font-face {
@@ -118,7 +119,6 @@
         <div>
           <label class="block text-sm font-bold text-slate-700 mb-1">เลือกวันอาทิตย์เริ่มต้นสัปดาห์ที่ 1:</label>
           <select id="modal_calc_sunday_choice" class="w-full border-2 border-slate-300 rounded-xl p-2.5 font-bold text-emerald-800 bg-emerald-50/60 outline-none cursor-pointer text-base">
-            <!-- ตัวเลือกวันอาทิตย์จะสร้างให้อัตโนมัติ -->
           </select>
         </div>
 
@@ -209,7 +209,6 @@
     <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
       
       <div class="xl:col-span-7 space-y-6" id="weeks_container">
-        <!-- สัปดาห์ที่ 1 ถึง 5 จะถูกสร้างลิงก์พ่วงรหัสเดือนอัตโนมัติ -->
       </div>
 
       <!-- คอลัมน์ขวา: ปุ่มนำทาง ปฏิทินจริง และคำแนะนำ -->
@@ -260,8 +259,15 @@
   <script>
     lucide.createIcons();
 
+    localforage.config({
+      name: 'ConstructionDB',
+      storeName: 'project_data'
+    });
+
     const STORAGE_KEY_GAS_URL = 'CONSTRUCTION_GAS_URL';
-    const DEFAULT_GAS_URL = GAS_SYNC_CONFIG.defaultUrl;
+    const DEFAULT_GAS_URL = (typeof GAS_SYNC_CONFIG !== 'undefined' && GAS_SYNC_CONFIG.defaultUrl) 
+      ? GAS_SYNC_CONFIG.defaultUrl 
+      : 'https://script.google.com/macros/s/AKfycbz9T8I8iojUCXX9D71RRftcemcLsv5-mG1ND1pVbJugwHuDCffxMLHkIKU6V_y6zieJ5A/exec';
     
     function getActiveUrl() {
       return localStorage.getItem(STORAGE_KEY_GAS_URL) || DEFAULT_GAS_URL;
@@ -294,7 +300,8 @@
         const progBtn = document.getElementById(`btn_link_progress_${i}`);
         const repBtn = document.getElementById(`btn_link_report_${i}`);
 
-        if (logBtn) logBtn.href = `weekly/week_log.html?week=${i}&month=${currentReportMonth}`;
+        // ชี้ไปที่ week_log_2.html เพื่อใช้ไฟล์เวอร์ชันล่าสุด
+        if (logBtn) logBtn.href = `weekly/week_log_2.html?week=${i}&month=${currentReportMonth}`;
         if (photoBtn) photoBtn.href = `weekly/week_photo.html?week=${i}&month=${currentReportMonth}`;
         if (progBtn) progBtn.href = `weekly/week_progress.html?week=${i}&month=${currentReportMonth}`;
         if (repBtn) repBtn.href = `weekly/week_report.html?week=${i}&month=${currentReportMonth}`;
@@ -330,7 +337,7 @@
               </table>
             </div>
             <div class="w-full sm:w-80 flex flex-col justify-between gap-2.5 py-0.5">
-              <a id="btn_link_log_${i}" href="weekly/week_log.html?week=${i}" class="btn-3d flex-1 rounded-xl bg-gradient-to-r ${t.btn} text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
+              <a id="btn_link_log_${i}" href="weekly/week_log_2.html?week=${i}" class="btn-3d flex-1 rounded-xl bg-gradient-to-r ${t.btn} text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
                 บันทึกสภาพการปฏิบัติงาน
               </a>
               <a id="btn_link_photo_${i}" href="weekly/week_photo.html?week=${i}" class="btn-3d flex-1 rounded-xl bg-gradient-to-r ${t.btn} text-white font-bold text-2xl shadow text-center flex items-center justify-center px-3 py-2.5">
@@ -401,14 +408,16 @@
       });
     }
 
-    function initProjectContext() {
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+    async function initProjectContext() {
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+
       if (basicRaw) {
         try {
-          const projectData = JSON.parse(basicRaw);
+          const projectData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
           const pName = projectData.projectName || 'โครงการก่อสร้าง';
           const cNo = projectData.contractNo || 'NO_CONTRACT';
-          currentProjectID = getActiveProjectId(projectData);
+          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
           document.getElementById('lbl_current_project_title').textContent = `${pName} (สัญญาเลขที่ ${cNo})`;
         } catch(e) {
           document.getElementById('lbl_current_project_title').textContent = 'โครงการทั่วไป (ไม่ได้ระบุสัญญา)';
@@ -444,9 +453,8 @@
       const sel = document.getElementById('modal_calc_sunday_choice');
       sel.innerHTML = '';
 
-      // ล็อกเวลาไว้ที่ 12:00 น. เพื่อป้องกันปัญหา Timezone ปัดเศษวันผิดพลาด
       let firstDayOfMonth = new Date(ceYear, mIdx, 1, 12, 0, 0);
-      let dayOfWeek = firstDayOfMonth.getDay(); // 0 = อาทิตย์, 1 = จันทร์, ...
+      let dayOfWeek = firstDayOfMonth.getDay();
 
       let sundays = [];
 
@@ -479,22 +487,23 @@
       });
     }
 
-    function executeGenerateDatesByMonth() {
+    async function executeGenerateDatesByMonth() {
       const chosenDateStr = document.getElementById('modal_calc_sunday_choice').value;
       if (!chosenDateStr) return;
 
       const parts = chosenDateStr.split('-');
-      // ล็อกเวลา 12:00 น. ตอนสร้าง Date Object เพื่อความเสถียรของวันที่ ไม่ให้ปัดถอยหลัง
       let chosenSunday = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 12, 0, 0);
 
       const startSeq = parseInt(document.getElementById('modal_start_seq').value) || 1;
       let durationWeeks = 20;
 
-      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+      let basicRaw = await localforage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`);
+      if (!basicRaw) basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+      
       if (basicRaw) {
         try {
-          const pData = JSON.parse(basicRaw);
-          const durationDays = getContractDurationDays(pData);
+          const pData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
+          const durationDays = parseInt(pData.durationDays || pData.manualDays || 0);
           if (durationDays > 0) durationWeeks = Math.ceil(durationDays / 7);
         } catch(e){}
       }
@@ -502,12 +511,12 @@
       let runningSunday = new Date(chosenSunday);
 
       for (let i = 1; i <= 5; i++) {
-        let wStart = new Date(runningSunday); // วันอาทิตย์
+        let wStart = new Date(runningSunday);
         let wEnd = new Date(runningSunday);
-        wEnd.setDate(wEnd.getDate() + 6); // วันเสาร์ (อาทิตย์ + 6 วัน)
+        wEnd.setDate(wEnd.getDate() + 6);
 
         let wRep = new Date(wEnd);
-        wRep.setDate(wRep.getDate() + 2); // วันรายงาน
+        wRep.setDate(wRep.getDate() + 2);
 
         const startTh = formatToThaiDate(wStart);
         const endTh = formatToThaiDate(wEnd);
@@ -534,7 +543,7 @@
       alert(`คำนวณช่วงวันที่ตั้งแต่วันอาทิตย์ถึงวันเสาร์ ทั้ง 5 สัปดาห์ถูกต้องแม่นยำแล้วค่ะ!`);
     }
 
-    function exportProjectJSON() {
+    async function exportProjectJSON() {
       const exportData = {
         version: "2.0",
         projectID: currentProjectID,
@@ -544,11 +553,13 @@
         weeklyRef: null
       };
 
-      const basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
-      if (basicRaw) { try { exportData.basicInfo = JSON.parse(basicRaw); } catch(e){} }
+      let basicRaw = await localforage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`);
+      if (!basicRaw) basicRaw = localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) { try { exportData.basicInfo = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw; } catch(e){} }
 
-      const weeklyRefRaw = localStorage.getItem(getProjectWeeklyKey());
-      if (weeklyRefRaw) { try { exportData.weeklyRef = JSON.parse(weeklyRefRaw); } catch(e){} }
+      let weeklyRefRaw = await localforage.getItem(getProjectWeeklyKey());
+      if (!weeklyRefRaw) weeklyRefRaw = localStorage.getItem(getProjectWeeklyKey());
+      if (weeklyRefRaw) { try { exportData.weeklyRef = typeof weeklyRefRaw === 'string' ? JSON.parse(weeklyRefRaw) : weeklyRefRaw; } catch(e){} }
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -564,12 +575,12 @@
       alert(`สำรองไฟล์รายงานประจำเดือน ${currentReportMonth} เรียบร้อยแล้วค่ะ!`);
     }
 
-    function handleImportFile(event) {
+    async function handleImportFile(event) {
       const file = event.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = async function(e) {
         try {
           const imported = JSON.parse(e.target.result);
           if (!imported.weeklyRef) {
@@ -581,7 +592,9 @@
           const targetMonth = imported.reportMonth || currentReportMonth;
           const importKey = `CONSTRUCTION_WEEKLY_REF_DB_${targetProjID}_${targetMonth}`;
 
-          localStorage.setItem(importKey, JSON.stringify(imported.weeklyRef));
+          await localforage.setItem(importKey, JSON.stringify(imported.weeklyRef));
+          try { localStorage.setItem(importKey, JSON.stringify(imported.weeklyRef)); } catch(e){}
+
           alert(`กู้คืนข้อมูลรายงานประจำเดือน ${targetMonth} สำเร็จแล้วค่ะ!`);
           location.reload();
         } catch (err) {
@@ -667,13 +680,15 @@
       });
     }
 
-    function loadSavedDataForCurrentMonth() {
-      const local = localStorage.getItem(getProjectWeeklyKey()) ||
-        localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) ||
-        localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+    async function loadSavedDataForCurrentMonth() {
+      let local = await localforage.getItem(getProjectWeeklyKey());
+      if (!local) local = localStorage.getItem(getProjectWeeklyKey()) ||
+                          localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) ||
+                          localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+
       if (local) {
         try {
-          populateData(JSON.parse(local));
+          populateData(typeof local === 'string' ? JSON.parse(local) : local);
         } catch(e){}
       } else {
         for (let i = 1; i <= 5; i++) {
@@ -693,7 +708,8 @@
       const statusEl = document.getElementById('sync-status');
       const payload = getBatchData();
 
-      localStorage.setItem(getProjectWeeklyKey(), JSON.stringify(payload.weeks));
+      await localforage.setItem(getProjectWeeklyKey(), JSON.stringify(payload.weeks));
+      try { localStorage.setItem(getProjectWeeklyKey(), JSON.stringify(payload.weeks)); } catch(e){}
 
       btn.disabled = true;
       btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> กำลังบันทึก...`;
@@ -738,13 +754,14 @@
         
         if (result && result.weeks && result.weeks.length > 0) {
           populateData(result.weeks);
-          localStorage.setItem(getProjectWeeklyKey(), JSON.stringify(result.weeks));
+          await localforage.setItem(getProjectWeeklyKey(), JSON.stringify(result.weeks));
+          try { localStorage.setItem(getProjectWeeklyKey(), JSON.stringify(result.weeks)); } catch(e){}
           alert(`ดึงข้อมูลรายสัปดาห์รอบเดือน ${currentReportMonth} เรียบร้อยแล้วค่ะ`);
         } else {
           throw new Error('ไม่พบข้อมูลส่วนกลาง');
         }
       } catch (err) {
-        loadSavedDataForCurrentMonth();
+        await loadSavedDataForCurrentMonth();
         alert(`โหลดข้อมูลประจำรอบเดือน ${currentReportMonth} ที่เก็บไว้ในเครื่องเรียบร้อยแล้วค่ะ`);
       } finally {
         btn.disabled = false;
@@ -753,43 +770,18 @@
       }
     }
 
-   window.addEventListener('DOMContentLoaded', () => {
-      initProjectContext();
+    window.addEventListener('DOMContentLoaded', async () => {
+      await initProjectContext();
       
       const lastSavedMonth = localStorage.getItem(`LAST_ACTIVE_REPORT_MONTH_${currentProjectID}`);
       if (lastSavedMonth) {
         currentReportMonth = lastSavedMonth;
         const selMonth = document.getElementById('sel_global_report_month');
-        if (selMonth) {
-          selMonth.value = lastSavedMonth;
-        }
-      } else {
-        const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
-        if (basicRaw) {
-          try {
-            const pData = JSON.parse(basicRaw);
-            if (pData.startDate) {
-              const sDate = new Date(pData.startDate);
-              if (!isNaN(sDate.getTime())) {
-                const mKeys = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-                const codeMonth = `${mKeys[sDate.getMonth()]}_${sDate.getFullYear() + 543}`;
-                
-                const selMonth = document.getElementById('sel_global_report_month');
-                for (let opt of selMonth.options) {
-                  if (opt.value === codeMonth) {
-                    selMonth.value = codeMonth;
-                    currentReportMonth = codeMonth;
-                    break;
-                  }
-                }
-              }
-            }
-          } catch(e){}
-        }
+        if (selMonth) selMonth.value = lastSavedMonth;
       }
 
       buildWeeksUI();
-      loadSavedDataForCurrentMonth();
+      await loadSavedDataForCurrentMonth();
       renderCalendar(currentMonth, currentYear);
     });
   </script>

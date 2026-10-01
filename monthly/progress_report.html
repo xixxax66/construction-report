@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>รายงานความคืบหน้างานก่อสร้างประจำเดือน</title>
+  <title>รายงานความคืบหน้างานก่อสร้างประจำเดือน (Offline Pro)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="../assets/gas-sync.js"></script>
   <style>
     @font-face { font-family: 'THSarabunPSK'; src: url('../assets/THSarabun.ttf') format('truetype'); font-weight: normal; }
@@ -148,7 +149,6 @@
         <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3 px-5 font-bold text-xl shadow-lg flex items-center justify-center gap-3 cursor-pointer">
           <i data-lucide="printer" class="w-6 h-6"></i> พิมพ์บันทึกข้อความ (A4)
         </button>
-        <!-- 💡 เพิ่ม ID btn_back_menu เพื่อจดจำเดือนเวลากลับเมนู -->
         <a id="btn_back_menu" href="../Monthly_Reference.html" class="bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl py-3 px-5 font-bold text-lg text-center shadow-lg flex items-center justify-center gap-3">
           <i data-lucide="arrow-left" class="w-6 h-6"></i> กลับเมนูรายงานประจำเดือน
         </a>
@@ -159,8 +159,15 @@
 
   <script>
     lucide.createIcons();
+
+    localforage.config({
+      name: 'ConstructionDB',
+      storeName: 'project_data'
+    });
+
     const STORAGE_KEY_REPORT = 'MONTHLY_PROGRESS_REPORT_DB';
 
+    let currentProjectID = 'DEFAULT_PROJ';
     let globalProjectData = {};
     let globalMonthlyData = {};
     let globalCalculated = {};
@@ -169,6 +176,18 @@
       { name: "พ.จ.ท.บุญเกื้อ เจริญสุข", pos: "ปลัดองค์การบริหารส่วนตำบลโพนงาม" },
       { name: "นายสกล มหาชัย", pos: "นายกองค์การบริหารส่วนตำบลโพนงาม" }
     ];
+
+    async function initProjectContext() {
+      let basicRaw = await localforage.getItem('LOCAL_BASIC_INFO');
+      if (!basicRaw) basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      if (basicRaw) {
+        try {
+          const projectData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
+          const cNo = projectData.contractNo || 'NO_CONTRACT';
+          currentProjectID = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        } catch(e) {}
+      }
+    }
 
     function toThaiNumber(numStr) {
       if (numStr === null || numStr === undefined) return '';
@@ -226,7 +245,7 @@
     }
 
     function onDatePicked(picker) {
-      const val = picker.value; // YYYY-MM-DD
+      const val = picker.value;
       if (!val) return;
       const parts = val.split('-');
       const year = parseInt(parts[0]) + 543;
@@ -243,33 +262,40 @@
       renderPages();
     }
 
-    function loadMonthlyProgressData(isManual = false) {
+    async function loadMonthlyProgressData(isManual = false) {
+      await initProjectContext();
+
       let targetWeek = 5;
-      const monthlyRaw = localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+      let monthlyRaw = await localforage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`);
+      if (!monthlyRaw) monthlyRaw = localStorage.getItem(`MONTHLY_REPORT_INFO_DATA_${currentProjectID}`) || localStorage.getItem('MONTHLY_REPORT_INFO_DATA');
+      
       if (monthlyRaw) {
         try {
-          globalMonthlyData = JSON.parse(monthlyRaw);
+          globalMonthlyData = typeof monthlyRaw === 'string' ? JSON.parse(monthlyRaw) : monthlyRaw;
           if (globalMonthlyData.planWeek) {
             targetWeek = parseInt(globalMonthlyData.planWeek) || 5;
           }
         } catch(e){}
       }
 
-      const basicRaw = localStorage.getItem('LOCAL_BASIC_INFO');
+      let basicRaw = await localforage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`);
+      if (!basicRaw) basicRaw = await localforage.getItem('LOCAL_BASIC_INFO') || 
+                                  localStorage.getItem(`LOCAL_BASIC_INFO_${currentProjectID}`) || 
+                                  localStorage.getItem('LOCAL_BASIC_INFO');
       if (basicRaw) {
         try {
-          globalProjectData = JSON.parse(basicRaw);
+          globalProjectData = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
         } catch(e) {}
       }
 
-      let totalDaysNum = globalProjectData && globalProjectData.durationDays ? parseInt(globalProjectData.durationDays) : 140;
+      let totalDaysNum = globalProjectData && (globalProjectData.durationDays || globalProjectData.manualDays) ? parseInt(globalProjectData.durationDays || globalProjectData.manualDays) : 140;
       if (globalProjectData && globalProjectData.totalExtendedDays && parseInt(globalProjectData.totalExtendedDays) > 0) {
         totalDaysNum = parseInt(globalProjectData.totalExtendedDays);
       }
 
       let passedDays = targetWeek * 7;
-      if (globalProjectData && globalProjectData.startDate && globalMonthlyData && globalMonthlyData.reportDate) {
-        const sDate = new Date(globalProjectData.startDate);
+      if (globalProjectData && (globalProjectData.startDate || globalProjectData.startDateTh) && globalMonthlyData && globalMonthlyData.reportDate) {
+        const sDate = parseThaiDateStr(globalProjectData.startDateTh || globalProjectData.startDate);
         const eDate = parseThaiDateStr(globalMonthlyData.reportDate);
         if (sDate && !isNaN(sDate.getTime()) && eDate && !isNaN(eDate.getTime())) {
           const diffTime = eDate.getTime() - sDate.getTime();
@@ -284,11 +310,12 @@
 
       let planProg = parseFloat(globalMonthlyData.planPercent) || 0;
       if (planProg === 0) {
-        const weeklyRefRaw = localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
+        let weeklyRefRaw = await localforage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`);
+        if (!weeklyRefRaw) weeklyRefRaw = localStorage.getItem(`CONSTRUCTION_WEEKLY_REF_DB_${currentProjectID}`) || localStorage.getItem('CONSTRUCTION_WEEKLY_REF_DB');
         if (weeklyRefRaw) {
           try {
-            const weeksArray = JSON.parse(weeklyRefRaw);
-            const targetWeekObj = weeksArray.find(w => parseInt(w.weekIndex) === targetWeek);
+            const weeksArray = typeof weeklyRefRaw === 'string' ? JSON.parse(weeklyRefRaw) : weeklyRefRaw;
+            const targetWeekObj = Array.isArray(weeksArray) ? weeksArray.find(w => parseInt(w.weekIndex) === targetWeek) : null;
             if (targetWeekObj && targetWeekObj.plan) {
               planProg = parseFloat(targetWeekObj.plan) || 0;
             }
@@ -301,10 +328,11 @@
 
       let actualProg = parseFloat(globalMonthlyData.actualPercent) || 0;
       if (actualProg === 0) {
-        const progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
+        let progressRaw = await localforage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`);
+        if (!progressRaw) progressRaw = localStorage.getItem(`WEEK_PROGRESS_DATA_${currentProjectID}_${targetWeek}`) || localStorage.getItem(`WEEK_PROGRESS_DATA_${targetWeek}`);
         if (progressRaw) {
           try {
-            const progData = JSON.parse(progressRaw);
+            const progData = typeof progressRaw === 'string' ? JSON.parse(progressRaw) : progressRaw;
             actualProg = parseFloat(progData.totalWeightPercent) || 0;
           } catch(e){}
         }
@@ -322,10 +350,12 @@
         diffProg: diffProg
       };
 
-      const saved = localStorage.getItem(STORAGE_KEY_REPORT);
+      let saved = await localforage.getItem(STORAGE_KEY_REPORT);
+      if (!saved) saved = localStorage.getItem(STORAGE_KEY_REPORT);
+
       if (saved) {
         try {
-          const s = JSON.parse(saved);
+          const s = typeof saved === 'string' ? JSON.parse(saved) : saved;
           if (s.extraSigners) extraSigners = s.extraSigners;
           if (s.reportDateCustom) {
             document.getElementById('input_report_date_custom').value = s.reportDateCustom;
@@ -421,8 +451,10 @@
       let presidentHtml = '';
       let membersHtml = '';
       
-      comms.forEach((name, idx) => {
-        if (!name) return;
+      comms.forEach((item, idx) => {
+        if (!item) return;
+        const cName = typeof item === 'object' ? item.name : item;
+        if (!cName) return;
         if (idx === 0) {
           presidentHtml = `
             <div class="mb-4 text-left">
@@ -433,7 +465,7 @@
               </div>
               <div class="text-center">
                 <p>(ลงชื่อ)............................................................................ ประธานกรรมการฯ</p>
-                <p class="font-medium mt-1">(${name})</p>
+                <p class="font-medium mt-1">(${cName})</p>
               </div>
             </div>`;
         } else {
@@ -441,7 +473,7 @@
             <div class="flex flex-col items-center mb-4">
               <div class="inline-block text-center">
                 <p>(ลงชื่อ).................................................... กรรมการฯ</p>
-                <p class="font-medium mt-1">(${name})</p>
+                <p class="font-medium mt-1">(${cName})</p>
               </div>
             </div>`;
         }
@@ -450,8 +482,10 @@
       const inspectors = pData.inspectors || [{ name: "นายพัทธิยะ วงษาซ้าย", pos: "ผู้ควบคุมงาน" }];
       let inspHTML = "";
       inspectors.forEach(insp => {
-        if (insp.name) {
-          inspHTML += `<div class="space-y-1 text-center min-w-[200px]"><p>(ลงชื่อ)........................................................... ${insp.pos || 'ผู้ควบคุมงาน'}</p><p class="font-medium mt-1">(${insp.name})</p></div>`;
+        const inspName = typeof insp === 'object' ? insp.name : insp;
+        const inspPos = typeof insp === 'object' ? insp.pos : 'ผู้ควบคุมงาน';
+        if (inspName) {
+          inspHTML += `<div class="space-y-1 text-center min-w-[200px]"><p>(ลงชื่อ)........................................................... ${toThaiNumber(inspPos)}</p><p class="font-medium mt-1">(${toThaiNumber(inspName)})</p></div>`;
         }
       });
 
@@ -477,7 +511,6 @@
         }
       });
 
-      // --- หน้าที่ 1 (A4) ---
       const page1Html = `
         <div class="sheet-doc">
           <div>
@@ -603,7 +636,6 @@
             <p class="indent-word mt-2">จึงเรียนมาเพื่อโปรดทราบและพิจารณาสั่งการ</p>
           </div>
 
-          <!-- ลงนามหน้า 1 (ผู้ควบคุมงาน) -->
           <div>
             <div class="mt-3 flex justify-end pr-8">
               ${inspHTML}
@@ -612,7 +644,6 @@
         </div>
       `;
 
-      // --- หน้าที่ 2 (A4) ---
       const page2Html = `
         <div class="sheet-doc">
           <div>
@@ -641,7 +672,7 @@
       lucide.createIcons();
     }
 
-    function saveRecord() {
+    async function saveRecord() {
       const docNoInput = document.getElementById('in_doc_no');
       const otherTxt = document.getElementById('txt_other_opinion');
       const customDateInput = document.getElementById('input_report_date_custom');
@@ -664,29 +695,32 @@
         extraSigners: extraSigners,
         updatedAt: new Date().toLocaleString('th-TH')
       };
-      localStorage.setItem(STORAGE_KEY_REPORT, JSON.stringify(data));
+
+      await localforage.setItem(STORAGE_KEY_REPORT, JSON.stringify(data));
+      try { localStorage.setItem(STORAGE_KEY_REPORT, JSON.stringify(data)); } catch(e){}
       alert("บันทึกข้อมูลรายงานความคืบหน้าประจำเดือนเรียบร้อยแล้วค่ะ");
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      // 💡 จดจำพารามิเตอร์ URL เพื่อกลับไปเมนูเดือนเดิม
+    window.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const monthCode = urlParams.get('month');
       if (monthCode) {
         document.getElementById('btn_back_menu').href = `../Monthly_Reference.html?month=${monthCode}`;
       }
 
-      const saved = localStorage.getItem(STORAGE_KEY_REPORT);
+      let saved = await localforage.getItem(STORAGE_KEY_REPORT);
+      if (!saved) saved = localStorage.getItem(STORAGE_KEY_REPORT);
+
       if (saved) {
         try {
-          const s = JSON.parse(saved);
+          const s = typeof saved === 'string' ? JSON.parse(saved) : saved;
           if (s.extraSigners) extraSigners = s.extraSigners;
           if (s.reportDateCustom) {
             document.getElementById('input_report_date_custom').value = s.reportDateCustom;
           }
         } catch(e){}
       }
-      loadMonthlyProgressData(false);
+      await loadMonthlyProgressData(false);
     });
   </script>
 </body>
