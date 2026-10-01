@@ -299,24 +299,15 @@
       });
     }
 
-    // 💡 เปิดหน้าต่างกู้คืนโครงการ
+// 💡 เปิดหน้าต่างกู้คืนโครงการ (ตัดช่องเลือกเดือนออก เพราะเราจะสแกนหาทุกโครงการ)
     function openRestoreProjectModal() {
-      const sel = document.getElementById('sel_backup_history_proj');
       const btn = document.getElementById('btn-confirm-restore-proj');
       document.getElementById('restore_project_modal').classList.remove('hidden');
-      btn.disabled = true;
-
-      sel.innerHTML = '<option value="">-- กรุณาเลือกเดือนที่ต้องการสแกนหาโครงการ --</option>';
-      const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-      const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-      let d = new Date();
-      for(let i = 0; i < 6; i++) {
-        let mStr = months[d.getMonth()] + "_" + (d.getFullYear() + 543);
-        let label = thaiMonths[d.getMonth()] + " " + (d.getFullYear() + 543);
-        sel.innerHTML += `<option value="${mStr}">${mStr} (คลังข้อมูลเดือน ${label})</option>`;
-        d.setMonth(d.getMonth() - 1);
+      
+      const sel = document.getElementById('sel_backup_history_proj');
+      if(sel) {
+          sel.innerHTML = '<option value="ALL">สแกนหาทุกโครงการที่บันทึกไว้ใน Google Drive</option>';
       }
-      sel.innerHTML += `<option value="CUSTOM">-- ✍️ ระบุชื่อไฟล์/เดือน พิมพ์เอง --</option>`;
       btn.disabled = false;
     }
 
@@ -324,63 +315,46 @@
       document.getElementById('restore_project_modal').classList.add('hidden');
     }
 
-    // 💡 ดึงข้อมูลโครงการทั้งหมดจาก Drive แล้วยัดใส่ Dropdown
+    // 💡 ดึงข้อมูลโครงการทั้งหมดจาก Drive ทันที
     async function confirmRestoreAllProjects() {
-      const sel = document.getElementById('sel_backup_history_proj');
-      let fileName = sel.value;
-      
-      if (fileName === "CUSTOM") {
-        fileName = prompt("กรุณาพิมพ์ชื่อเดือน/ปี ของคลังข้อมูลที่ต้องการ (เช่น OCT_2569):");
-      }
-      
-      if (!fileName) return alert('กรุณาเลือกคลังข้อมูลค่ะ');
-
       const btn = document.getElementById('btn-confirm-restore-proj');
       btn.disabled = true;
       btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังสแกนหาโครงการ...`;
       lucide.createIcons();
 
       try {
-        const result = await requestJSONP('get_specific_project_database', { targetFileName: fileName });
+        // วิ่งไปเรียกคำสั่งใหม่ที่เราเพิ่งเติมใน code.gs
+        const result = await requestJSONP('get_all_projects');
         
-        if (result && result.status === 'success' && result.database) {
-          const db = result.database;
+        if (result && result.status === 'success' && result.projects) {
+          const projects = result.projects;
           let restoredCount = 0;
           let projectList = [];
           
-          const raw = localStorage.getItem(PROJECT_LIST_KEY);
-          if (raw) { try { projectList = JSON.parse(raw); } catch(e){} }
+          if (projects.length > 0) {
+            projects.forEach(projData => {
+              // เซฟข้อมูลแต่ละโครงการลงเครื่อง
+              const saveKey = `LOCAL_BASIC_INFO_${projData.projectID}`;
+              localStorage.setItem(saveKey, JSON.stringify(projData));
+              
+              // นำรายชื่อไปสร้าง Dropdown
+              if (!projectList.some(p => p.id === projData.projectID)) {
+                projectList.push({ id: projData.projectID, name: projData.projectName, contractNo: projData.contractNo });
+                restoredCount++;
+              }
+            });
 
-          for (const key in db) {
-            // ค้นหาคีย์ที่เก็บข้อมูลตั้งต้นโครงการ
-            if (key.startsWith('LOCAL_BASIC_INFO_PROJ_') || key === 'LOCAL_BASIC_INFO') {
-              try {
-                let projData = typeof db[key] === 'string' ? JSON.parse(db[key]) : db[key];
-                
-                if (!projData.projectID || !projData.contractNo) continue;
-                
-                const saveKey = `LOCAL_BASIC_INFO_${projData.projectID}`;
-                localStorage.setItem(saveKey, JSON.stringify(projData));
-                
-                if (!projectList.some(p => p.id === projData.projectID)) {
-                  projectList.push({ id: projData.projectID, name: projData.projectName, contractNo: projData.contractNo });
-                  restoredCount++;
-                }
-              } catch(e) { console.error('Error parsing project data', e); }
-            }
-          }
-
-          if (projectList.length > 0) {
-             localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(projectList));
-             loadProjectListDropdown(projectList[projectList.length - 1].id); 
-             switchProject(projectList[projectList.length - 1].id);
-             closeRestoreProjectModal();
-             alert(`สแกนพบและกู้คืนรายชื่อโครงการได้ทั้งหมด ${restoredCount} โครงการค่ะ!\nรายชื่อทั้งหมดถูกดึงมาใส่ในช่องเลือกโครงการเรียบร้อยแล้ว`);
+            // อัปเดตรายชื่อ Dropdown และสลับไปโปรเจกต์ล่าสุด
+            localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(projectList));
+            loadProjectListDropdown(projectList[projectList.length - 1].id); 
+            switchProject(projectList[projectList.length - 1].id);
+            closeRestoreProjectModal();
+            alert(`สแกนพบและกู้คืนรายชื่อโครงการได้ทั้งหมด ${restoredCount} โครงการค่ะ!\nรายชื่อทั้งหมดถูกดึงมาใส่ในช่องเลือกโครงการเรียบร้อยแล้ว`);
           } else {
-             alert(`ไม่พบข้อมูลตั้งต้นของโครงการใดๆ ในไฟล์นี้เลยค่ะ`);
+             alert(`ไม่พบไฟล์ข้อมูลโครงการ (Project_..._Database.json) บน Google Drive เลยค่ะ`);
           }
         } else {
-          alert(`เกิดข้อผิดพลาด: ไม่สามารถดึงข้อมูลจาก Drive ได้ หรือไฟล์อาจไม่มีอยู่จริง`);
+          alert(`เกิดข้อผิดพลาด: ${result ? result.message : 'ไม่สามารถดึงข้อมูลจาก Drive ได้'}`);
         }
       } catch (err) {
         alert(`ข้อผิดพลาดการเชื่อมต่อ: ${err.message}`);
@@ -390,7 +364,6 @@
         lucide.createIcons();
       }
     }
-
 
     function getStaffDirectory() {
       const raw = localStorage.getItem(STAFF_STORAGE_KEY);
