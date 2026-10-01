@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบข้อมูลเบื้องต้น - โปรแกรมรายงานผลการก่อสร้าง</title>
+  <title>ระบบข้อมูลเบื้องต้น - โปรแกรมรายงานผลการก่อสร้าง (Offline Pro)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 💡 เพิ่มไลบรารี LocalForage สำหรับจัดการฐานข้อมูลออฟไลน์ระดับ IndexedDB -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="../assets/gas-sync.js"></script>
   <style>
     body { font-family: 'Sarabun', sans-serif; background-color: #d1d5db; }
@@ -25,7 +27,6 @@
 </head>
 <body class="p-3 sm:p-6 min-h-screen">
 
-  <!-- 💡 Modal กู้คืนข้อมูลโครงการทั้งหมดจาก Google Drive -->
   <div id="restore_project_modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden no-print">
     <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-slate-200 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
@@ -36,8 +37,10 @@
       </div>
       <div>
         <label class="block text-sm font-bold text-slate-700 mb-2">เลือกฐานข้อมูลที่ต้องการสแกนหาโครงการ:</label>
-        <select id="sel_backup_history_proj" class="w-full border-2 border-slate-300 rounded-xl p-2.5 font-bold text-slate-800 bg-slate-50 outline-none cursor-pointer"></select>
-        <p class="text-xs text-slate-500 mt-2">* ระบบจะค้นหาและดึงข้อมูลตั้งต้นของ <b>"ทุกโครงการ"</b> ที่เคยบันทึกไว้ กลับมาแสดงในช่องเลือกโครงการอัตโนมัติ</p>
+        <select id="sel_backup_history_proj" class="w-full border-2 border-slate-300 rounded-xl p-2.5 font-bold text-slate-800 bg-slate-50 outline-none cursor-pointer">
+          <option value="ALL">สแกนหาทุกโครงการที่บันทึกไว้ใน Google Drive</option>
+        </select>
+        <p class="text-xs text-slate-500 mt-2">* ระบบจะค้นหาและดึงข้อมูลตั้งต้นของ <b>"ทุกโครงการ"</b> ลงมาเก็บในฐานข้อมูลออฟไลน์ระดับสูง (IndexedDB) อัตโนมัติ</p>
       </div>
       <div class="flex gap-2 pt-2 border-t">
         <button onclick="closeRestoreProjectModal()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-sm cursor-pointer">ยกเลิก</button>
@@ -48,7 +51,6 @@
 
   <div class="max-w-6xl mx-auto bg-slate-200/80 p-4 sm:p-6 rounded-xl shadow-lg border border-slate-300 space-y-4">
     
-    <!-- แถบเลือกโครงการ (Project Selector) และปุ่มกู้คืน -->
     <div class="bg-white p-3 rounded-lg shadow-sm border border-emerald-600 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2 flex-1 min-w-[280px]">
         <div class="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
@@ -64,7 +66,6 @@
         <a href="Staff_Directory.html" target="_blank" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition">
           <i data-lucide="users" class="w-4 h-4"></i> จัดการทำเนียบ
         </a>
-        <!-- 💡 ปุ่มใหม่สำหรับกู้คืนรายชื่อโครงการ -->
         <button onclick="openRestoreProjectModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition">
           <i data-lucide="folder-sync" class="w-4 h-4"></i> กู้คืนโครงการเก่า
         </button>
@@ -77,11 +78,10 @@
       </div>
     </div>
 
-    <!-- แถบสถานะและการบันทึก -->
     <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-lg shadow-sm border border-slate-300">
       <div class="flex items-center gap-2">
         <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="text-sm font-semibold text-slate-700">ฐานข้อมูลโครงการก่อสร้าง</span>
+        <span class="text-sm font-semibold text-slate-700">ฐานข้อมูลออฟไลน์ (IndexedDB)</span>
         <span id="sync-status" class="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-medium ml-2">พร้อมใช้งาน</span>
       </div>
       <div class="flex items-center gap-2">
@@ -94,7 +94,7 @@
       </div>
     </div>
 
-    <!-- โครงสร้างแบบฟอร์ม (เหมือนเดิมทุกประการ) -->
+    <!-- โครงสร้างแบบฟอร์ม -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
       <div class="lg:col-span-8 space-y-5">
         
@@ -117,7 +117,7 @@
               </tr>
               <tr>
                 <td class="th-green whitespace-nowrap font-medium">ชื่อโครงการ</td>
-                <td colspan="5" class="p-1 bg-white"><input type="text" id="projectName" class="cell-input font-medium" value="โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก สายบ้านหนองแวง-หนองขาม หมู่ที่ 12 กว้าง 4.00 ม. ยาว 850 ม. หนา 0.15 ม. หรือมีพื้นที่คอนกรีตไม่น้อยกว่า 3,400 ตร.ม. องค์การบริหารส่วนตำบลโพนงาม อำเภอโกสุมพิสัย จังหวัดมหาสารคาม"></td>
+                <td colspan="5" class="p-1 bg-white"><input type="text" id="projectName" class="cell-input font-medium" value="โครงการก่อสร้างถนนคอนกรีตเสริมเหล็ก..."></td>
               </tr>
               <tr>
                 <td class="th-green whitespace-nowrap font-medium">สถานที่ก่อสร้าง</td>
@@ -125,7 +125,7 @@
               </tr>
               <tr>
                 <td class="th-green whitespace-nowrap font-medium">ปริมาณงาน</td>
-                <td colspan="5" class="p-1 bg-white"><input type="text" id="projectScope" class="cell-input" placeholder="ระบุปริมาณงาน" value="ผิวจราจร คสล. กว้าง 4.00 ม. หนา 0.15 ม. ยาว 850 ม. หรือพื้นที่ไม่น้อยกว่า 3,400 ตร.ม. พร้อมลงลูกรังไหล่ทางตามแบบ อบต.โพนงาม"></td>
+                <td colspan="5" class="p-1 bg-white"><input type="text" id="projectScope" class="cell-input" placeholder="ระบุปริมาณงาน" value="-"></td>
               </tr>
               <tr>
                 <td class="th-green whitespace-nowrap font-medium">เลขที่สัญญา</td>
@@ -152,11 +152,11 @@
                 <td class="th-green whitespace-nowrap font-medium">จำนวนงวดงาน</td>
                 <td class="p-1 bg-white"><div class="flex items-center"><input type="number" id="workPeriodSummary" class="cell-input text-center font-semibold" value="1" readonly><span class="text-xs ml-1 pr-1">งวด</span></div></td>
                 <td class="th-green text-center font-medium">ค่างานรวม</td>
-                <td colspan="3" class="p-1 bg-slate-100"><input type="text" id="budgetAmount" class="cell-input text-right font-bold text-emerald-800" value="2,849,260.00" readonly></td>
+                <td colspan="3" class="p-1 bg-slate-100"><input type="text" id="budgetAmount" class="cell-input text-right font-bold text-emerald-800" value="0.00" readonly></td>
               </tr>
               <tr>
                 <td class="th-green whitespace-nowrap font-medium">ค่าปรับวันละ</td>
-                <td colspan="5" class="p-1 bg-white"><div class="flex items-center"><input type="text" id="finePerDay" class="cell-input text-right font-bold text-rose-600" value="7,124.00"><span class="text-xs ml-1 pr-1">บาท</span></div></td>
+                <td colspan="5" class="p-1 bg-white"><div class="flex items-center"><input type="text" id="finePerDay" class="cell-input text-right font-bold text-rose-600" value="0.00"><span class="text-xs ml-1 pr-1">บาท</span></div></td>
               </tr>
               <tr>
                 <td class="th-green whitespace-nowrap font-medium">ต่อสัญญาจ้างถึงวันที่</td>
@@ -175,7 +175,7 @@
               </tr>
               <tr>
                 <td class="th-green whitespace-nowrap font-medium">ที่อยู่ของผู้รับจ้าง</td>
-                <td colspan="5" class="p-1 bg-white"><input type="text" id="contractorAddress" class="cell-input" value="31/1 หมู่ 5 ตำบลกุดแข้ อำเภอเมืองมุกดาหาร จังหวัดมุกดาหาร"></td>
+                <td colspan="5" class="p-1 bg-white"><input type="text" id="contractorAddress" class="cell-input" value="-"></td>
               </tr>
             </tbody>
           </table>
@@ -202,7 +202,6 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- คณะกรรมการตรวจรับพัสดุ (รองรับการเลือกจากทำเนียบ) -->
           <div class="bg-white rounded-lg shadow border border-emerald-600 overflow-hidden">
             <table class="sheet-table">
               <thead><tr><th colspan="2" class="th-header-title">คณะกรรมการตรวจรับพัสดุ</th></tr></thead>
@@ -210,7 +209,6 @@
               <tbody id="committeeRows"></tbody>
             </table>
           </div>
-          <!-- ผู้ควบคุมงาน (รองรับการเลือกจากทำเนียบ) -->
           <div class="bg-white rounded-lg shadow border border-emerald-600 overflow-hidden">
             <table class="sheet-table">
               <thead><tr><th colspan="2" class="th-header-title">ผู้ควบคุมงาน</th></tr></thead>
@@ -255,10 +253,19 @@
 
   <script>
     lucide.createIcons();
+    
+    // 💡 ตั้งค่าพื้นที่ IndexedDB ชื่อ ConstructionDB
+    localforage.config({
+        name: 'ConstructionDB',
+        storeName: 'project_data'
+    });
+
     const STORAGE_KEY_GAS_URL = 'CONSTRUCTION_GAS_URL';
-    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyNk1gc_9FAtu0ByIBbcgzmK561YpShTklJaf-gCnBnrRHwW0W-L4aeos5fXarrI3Ft/exec';
+    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbz9T8I8iojUCXX9D71RRftcemcLsv5-mG1ND1pVbJugwHuDCffxMLHkIKU6V_y6zieJ5A/exec';
+    
+    // URL และบุคลากรมีขนาดเล็ก อนุญาตให้เก็บใน localStorage ปกติได้
     let currentGasUrl = localStorage.getItem(STORAGE_KEY_GAS_URL) || DEFAULT_GAS_URL;
-    let installmentListData = [{ amount: "2,849,260.00", year: "2569" }];
+    let installmentListData = [{ amount: "0.00", year: "2569" }];
     const defaultCommittees = ["นางสาวถนอมนวล วะทวีก้านตรงฯ", "จ่าเอกธีรพงษ์ ดรชานนท์", "นางสาวปนัดดา ภูอาษา", "นายวีระศักดิ์ ทับวิชร", "นายอรรถวัต อดทน"];
     const defaultInspectors = [{ name: "นายพัทธิยะ วงษาซ้าย", pos: "ผู้ควบคุมงาน" }, { name: "", pos: "ผู้ควบคุมงาน" }, { name: "", pos: "ผู้ควบคุมงาน" }];
     
@@ -266,7 +273,6 @@
     const PROJECT_LIST_KEY = 'CONSTRUCTION_ALL_PROJECTS_LIST';
     const STAFF_STORAGE_KEY = 'CONSTRUCTION_STAFF_DIRECTORY_DB';
 
-    // 💡 ฟังก์ชัน requestJSONP สำหรับดึงข้อมูลข้ามโดเมนจาก Drive
     function requestJSONP(action, params = {}) {
       return new Promise((resolve, reject) => {
         let url = currentGasUrl;
@@ -278,44 +284,22 @@
         }
         const script = document.createElement('script');
         script.src = fetchUrl;
-        const timeoutId = setTimeout(() => {
-          cleanup();
-          reject(new Error('หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ (Timeout)'));
-        }, 15000);
-        function cleanup() {
-          if (window[callbackName]) delete window[callbackName];
-          if (script.parentNode) script.parentNode.removeChild(script);
-          clearTimeout(timeoutId);
-        }
-        window[callbackName] = function(result) {
-          cleanup();
-          resolve(result);
-        };
-        script.onerror = function() {
-          cleanup();
-          reject(new Error('เครือข่ายขัดข้อง หรือถูกเบราว์เซอร์บล็อกสคริปต์ค่ะ'));
-        };
+        const timeoutId = setTimeout(() => { cleanup(); reject(new Error('หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ (Timeout)')); }, 15000);
+        function cleanup() { if (window[callbackName]) delete window[callbackName]; if (script.parentNode) script.parentNode.removeChild(script); clearTimeout(timeoutId); }
+        window[callbackName] = function(result) { cleanup(); resolve(result); };
+        script.onerror = function() { cleanup(); reject(new Error('เครือข่ายขัดข้อง หรือถูกเบราว์เซอร์บล็อกสคริปต์ค่ะ')); };
         document.body.appendChild(script);
       });
     }
 
-// 💡 เปิดหน้าต่างกู้คืนโครงการ (ตัดช่องเลือกเดือนออก เพราะเราจะสแกนหาทุกโครงการ)
     function openRestoreProjectModal() {
       const btn = document.getElementById('btn-confirm-restore-proj');
       document.getElementById('restore_project_modal').classList.remove('hidden');
-      
-      const sel = document.getElementById('sel_backup_history_proj');
-      if(sel) {
-          sel.innerHTML = '<option value="ALL">สแกนหาทุกโครงการที่บันทึกไว้ใน Google Drive</option>';
-      }
       btn.disabled = false;
     }
+    function closeRestoreProjectModal() { document.getElementById('restore_project_modal').classList.add('hidden'); }
 
-    function closeRestoreProjectModal() {
-      document.getElementById('restore_project_modal').classList.add('hidden');
-    }
-
-    // 💡 ดึงข้อมูลโครงการทั้งหมดจาก Drive ทันที
+    // 💡 แก้ไขฟังก์ชันการดึงข้อมูล ให้เซฟลง localforage (IndexedDB) แทน
     async function confirmRestoreAllProjects() {
       const btn = document.getElementById('btn-confirm-restore-proj');
       btn.disabled = true;
@@ -323,7 +307,6 @@
       lucide.createIcons();
 
       try {
-        // วิ่งไปเรียกคำสั่งใหม่ที่เราเพิ่งเติมใน code.gs
         const result = await requestJSONP('get_all_projects');
         
         if (result && result.status === 'success' && result.projects) {
@@ -332,24 +315,23 @@
           let projectList = [];
           
           if (projects.length > 0) {
-            projects.forEach(projData => {
-              // เซฟข้อมูลแต่ละโครงการลงเครื่อง
+            for (const projData of projects) {
               const saveKey = `LOCAL_BASIC_INFO_${projData.projectID}`;
-              localStorage.setItem(saveKey, JSON.stringify(projData));
               
-              // นำรายชื่อไปสร้าง Dropdown
+              // 💡 บันทึกลง IndexedDB จุข้อมูลได้ไม่อั้น
+              await localforage.setItem(saveKey, JSON.stringify(projData));
+              
               if (!projectList.some(p => p.id === projData.projectID)) {
                 projectList.push({ id: projData.projectID, name: projData.projectName, contractNo: projData.contractNo });
                 restoredCount++;
               }
-            });
+            }
 
-            // อัปเดตรายชื่อ Dropdown และสลับไปโปรเจกต์ล่าสุด
-            localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(projectList));
-            loadProjectListDropdown(projectList[projectList.length - 1].id); 
-            switchProject(projectList[projectList.length - 1].id);
+            await localforage.setItem(PROJECT_LIST_KEY, JSON.stringify(projectList));
+            await loadProjectListDropdown(projectList[projectList.length - 1].id); 
+            await switchProject(projectList[projectList.length - 1].id);
             closeRestoreProjectModal();
-            alert(`สแกนพบและกู้คืนรายชื่อโครงการได้ทั้งหมด ${restoredCount} โครงการค่ะ!\nรายชื่อทั้งหมดถูกดึงมาใส่ในช่องเลือกโครงการเรียบร้อยแล้ว`);
+            alert(`สแกนพบและกู้คืนรายชื่อโครงการได้ทั้งหมด ${restoredCount} โครงการค่ะ!\nข้อมูลถูกจัดเก็บในฐานข้อมูลออฟไลน์ระดับสูงเรียบร้อยแล้ว`);
           } else {
              alert(`ไม่พบไฟล์ข้อมูลโครงการ (Project_..._Database.json) บน Google Drive เลยค่ะ`);
           }
@@ -367,37 +349,26 @@
 
     function getStaffDirectory() {
       const raw = localStorage.getItem(STAFF_STORAGE_KEY);
-      if (!raw) {
-        return [
-          { name: "นายพัทธิยะ วงษาซ้าย", position: "นายช่างโยธาปฏิบัติงาน" },
-          { name: "นายอรรถวัต อดทน", position: "เจ้าพนักงานธุรการปฏิบัติงาน" }
-        ];
-      }
+      if (!raw) return [{ name: "นายพัทธิยะ วงษาซ้าย", position: "นายช่างโยธาปฏิบัติงาน" }, { name: "นายอรรถวัต อดทน", position: "เจ้าพนักงานธุรการปฏิบัติงาน" }];
       try { return JSON.parse(raw); } catch(e) { return []; }
     }
 
     function formatCurrencyInput(el) {
-      let val = el.value.replace(/,/g, '');
-      let parts = val.split('.');
-      let intPart = parts[0].replace(/\D/g, '');
+      let val = el.value.replace(/,/g, ''); let parts = val.split('.'); let intPart = parts[0].replace(/\D/g, '');
       if (intPart !== '') intPart = Number(intPart).toLocaleString('en-US');
       if (parts.length > 1) el.value = intPart + '.' + parts[1].slice(0, 2);
-      else if (val.endsWith('.')) el.value = intPart + '.';
-      else el.value = intPart;
+      else if (val.endsWith('.')) el.value = intPart + '.'; else el.value = intPart;
       calcTotalBudget();
     }
 
     function renderInstallmentTable(list = null) {
       if (list) installmentListData = list;
-      const tbody = document.getElementById('installmentRows');
-      tbody.innerHTML = '';
+      const tbody = document.getElementById('installmentRows'); tbody.innerHTML = '';
       installmentListData.forEach((item, idx) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="text-center font-bold bg-slate-50">${idx + 1}</td>
+        tr.innerHTML = `<td class="text-center font-bold bg-slate-50">${idx + 1}</td>
           <td class="p-1 bg-white"><input type="text" id="inst_amount_${idx}" class="cell-input text-right font-semibold" value="${item.amount || '0.00'}" oninput="formatCurrencyInput(this)"></td>
-          <td class="p-1 bg-white"><input type="text" id="inst_year_${idx}" class="cell-input text-center" value="${item.year || '2569'}"></td>
-        `;
+          <td class="p-1 bg-white"><input type="text" id="inst_year_${idx}" class="cell-input text-center" value="${item.year || '2569'}"></td>`;
         tbody.appendChild(tr);
       });
       document.getElementById('contractPeriods').value = installmentListData.length;
@@ -406,189 +377,72 @@
     }
 
     function addPeriodRow() { installmentListData.push({ amount: "0.00", year: "2569" }); renderInstallmentTable(); }
-    function removePeriodRow() { if (installmentListData.length > 1) { installmentListData.pop(); renderInstallmentTable(); } else { alert("ต้องมีงวดงานอย่างน้อย 1 งวดค่ะ"); } }
+    function removePeriodRow() { if (installmentListData.length > 1) { installmentListData.pop(); renderInstallmentTable(); } else alert("ต้องมีงวดงานอย่างน้อย 1 งวดค่ะ"); }
     function calcTotalBudget() {
       let total = 0;
-      installmentListData.forEach((_, idx) => {
-        const el = document.getElementById(`inst_amount_${idx}`);
-        if (el) { const val = parseFloat(el.value.replace(/,/g, '')) || 0; total += val; installmentListData[idx].amount = el.value; }
-      });
+      installmentListData.forEach((_, idx) => { const el = document.getElementById(`inst_amount_${idx}`); if (el) { const val = parseFloat(el.value.replace(/,/g, '')) || 0; total += val; installmentListData[idx].amount = el.value; } });
       document.getElementById('budgetAmount').value = total.toLocaleString('th-TH', { minimumFractionDigits: 2 });
       calcFine();
     }
 
     function handleStaffSelectChange(selectEl, customInputId) {
-      const customInput = document.getElementById(customInputId);
-      if (!customInput) return;
-      if (selectEl.value === "__CUSTOM__") {
-        customInput.classList.remove('hidden');
-        customInput.value = "";
-        customInput.focus();
-      } else {
-        customInput.classList.add('hidden');
-        customInput.value = selectEl.value;
-      }
+      const customInput = document.getElementById(customInputId); if (!customInput) return;
+      if (selectEl.value === "__CUSTOM__") { customInput.classList.remove('hidden'); customInput.value = ""; customInput.focus(); } 
+      else { customInput.classList.add('hidden'); customInput.value = selectEl.value; }
     }
 
     function renderCommitteeFields(existingList = null) {
       const count = parseInt(document.getElementById('committeeCount').value) || 1;
-      const tbody = document.getElementById('committeeRows');
-      tbody.innerHTML = '';
-      const staffList = getStaffDirectory();
+      const tbody = document.getElementById('committeeRows'); tbody.innerHTML = ''; const staffList = getStaffDirectory();
       for (let i = 0; i < count; i++) {
         const currentVal = existingList && existingList[i] !== undefined ? existingList[i] : (defaultCommittees[i] || '');
-        let isCustomMatch = true;
-        let optionsHtml = `<option value="">-- เลือกจากทำเนียบรายชื่อ --</option>`;
-        staffList.forEach(staff => {
-          const isSelected = (staff.name === currentVal);
-          if (isSelected) isCustomMatch = false;
-          optionsHtml += `<option value="${staff.name}" ${isSelected ? 'selected' : ''}>${staff.name} (${staff.position})</option>`;
-        });
+        let isCustomMatch = true; let optionsHtml = `<option value="">-- เลือกจากทำเนียบ --</option>`;
+        staffList.forEach(staff => { const isSelected = (staff.name === currentVal); if (isSelected) isCustomMatch = false; optionsHtml += `<option value="${staff.name}" ${isSelected ? 'selected' : ''}>${staff.name} (${staff.position})</option>`; });
         optionsHtml += `<option value="__CUSTOM__" ${isCustomMatch && currentVal ? 'selected' : ''}>✏️ พิมพ์ชื่อระบุเอง...</option>`;
         const customInputDisplay = (isCustomMatch && currentVal) ? '' : 'hidden';
-        tbody.innerHTML += `
-          <tr>
-            <td class="th-green whitespace-nowrap font-medium">${(i === 0) ? 'ชื่อประธานกรรมการ' : 'ชื่อกรรมการ'}</td>
-            <td class="p-1 bg-white space-y-1">
-              <select id="comm_sel_${i}" class="cell-input font-medium cursor-pointer" onchange="handleStaffSelectChange(this, 'comm_custom_${i}')">
-                ${optionsHtml}
-              </select>
-              <input type="text" id="comm_custom_${i}" class="cell-input font-medium border-t pt-1 ${customInputDisplay}" value="${currentVal}" placeholder="พิมพ์ชื่อ-นามสกุล...">
-            </td>
-          </tr>`;
+        tbody.innerHTML += `<tr><td class="th-green whitespace-nowrap font-medium">${(i === 0) ? 'ชื่อประธานกรรมการ' : 'ชื่อกรรมการ'}</td><td class="p-1 bg-white space-y-1"><select id="comm_sel_${i}" class="cell-input font-medium cursor-pointer" onchange="handleStaffSelectChange(this, 'comm_custom_${i}')">${optionsHtml}</select><input type="text" id="comm_custom_${i}" class="cell-input font-medium border-t pt-1 ${customInputDisplay}" value="${currentVal}" placeholder="พิมพ์ชื่อ-นามสกุล..."></td></tr>`;
       }
     }
 
     function renderInspectorFields(existingList = null) {
       const count = parseInt(document.getElementById('inspectorCount').value) || 1;
-      const tbody = document.getElementById('inspectorRows');
-      tbody.innerHTML = '';
-      const staffList = getStaffDirectory();
+      const tbody = document.getElementById('inspectorRows'); tbody.innerHTML = ''; const staffList = getStaffDirectory();
       for (let i = 0; i < count; i++) {
         const item = existingList && existingList[i] ? existingList[i] : defaultInspectors[i] || { name: '', pos: 'ผู้ควบคุมงาน' };
-        let isCustomMatch = true;
-        let optionsHtml = `<option value="">-- เลือกจากทำเนียบรายชื่อ --</option>`;
-        staffList.forEach(staff => {
-          const isSelected = (staff.name === item.name);
-          if (isSelected) isCustomMatch = false;
-          optionsHtml += `<option value="${staff.name}" ${isSelected ? 'selected' : ''}>${staff.name} (${staff.position})</option>`;
-        });
+        let isCustomMatch = true; let optionsHtml = `<option value="">-- เลือกจากทำเนียบ --</option>`;
+        staffList.forEach(staff => { const isSelected = (staff.name === item.name); if (isSelected) isCustomMatch = false; optionsHtml += `<option value="${staff.name}" ${isSelected ? 'selected' : ''}>${staff.name} (${staff.position})</option>`; });
         optionsHtml += `<option value="__CUSTOM__" ${isCustomMatch && item.name ? 'selected' : ''}>✏️ พิมพ์ชื่อระบุเอง...</option>`;
         const customInputDisplay = (isCustomMatch && item.name) ? '' : 'hidden';
-        tbody.innerHTML += `
-          <tr>
-            <td class="th-green whitespace-nowrap font-medium">ชื่อ-นามสกุล (${i+1})</td>
-            <td class="p-1 bg-white space-y-1">
-              <select id="insp_sel_${i}" class="cell-input font-medium cursor-pointer" onchange="handleStaffSelectChange(this, 'insp_custom_${i}')">
-                ${optionsHtml}
-              </select>
-              <input type="text" id="insp_custom_${i}" class="cell-input font-medium border-t pt-1 ${customInputDisplay}" value="${item.name}" placeholder="พิมพ์ชื่อ-นามสกุล...">
-            </td>
-          </tr>
-          <tr>
-            <td class="th-green whitespace-nowrap font-medium">ตำแหน่ง (${i+1})</td>
-            <td class="p-1 bg-white">
-              <select id="insp_pos_${i}" class="cell-input font-medium cursor-pointer">
-                <option value="ผู้ควบคุมงาน" ${item.pos === 'ผู้ควบคุมงาน' ? 'selected' : ''}>ผู้ควบคุมงาน</option>
-                <option value="หัวหน้าผู้ควบคุมงาน" ${item.pos === 'หัวหน้าผู้ควบคุมงาน' ? 'selected' : ''}>หัวหน้าผู้ควบคุมงาน</option>
-              </select>
-            </td>
-          </tr>`;
+        tbody.innerHTML += `<tr><td class="th-green whitespace-nowrap font-medium">ชื่อ-นามสกุล (${i+1})</td><td class="p-1 bg-white space-y-1"><select id="insp_sel_${i}" class="cell-input font-medium cursor-pointer" onchange="handleStaffSelectChange(this, 'insp_custom_${i}')">${optionsHtml}</select><input type="text" id="insp_custom_${i}" class="cell-input font-medium border-t pt-1 ${customInputDisplay}" value="${item.name}" placeholder="พิมพ์ชื่อ-นามสกุล..."></td></tr><tr><td class="th-green whitespace-nowrap font-medium">ตำแหน่ง (${i+1})</td><td class="p-1 bg-white"><select id="insp_pos_${i}" class="cell-input font-medium cursor-pointer"><option value="ผู้ควบคุมงาน" ${item.pos === 'ผู้ควบคุมงาน' ? 'selected' : ''}>ผู้ควบคุมงาน</option><option value="หัวหน้าผู้ควบคุมงาน" ${item.pos === 'หัวหน้าผู้ควบคุมงาน' ? 'selected' : ''}>หัวหน้าผู้ควบคุมงาน</option></select></td></tr>`;
       }
     }
 
     function calcDurationAuto() {
-      const start = document.getElementById('startDate').value;
-      const end = document.getElementById('endDate').value;
-      
-      if (start) {
-        const d1 = new Date(start);
-        document.getElementById('startDateTh').value = `${d1.getDate()} ${thaiMonthsArr[d1.getMonth()]} ${d1.getFullYear() + 543}`;
-      }
-      
-      if (end) {
-        const d2 = new Date(end);
-        document.getElementById('endDateTh').value = `${d2.getDate()} ${thaiMonthsArr[d2.getMonth()]} ${d2.getFullYear() + 543}`;
-      }
-
-      if (start && end) {
-        const d1 = new Date(start); const d2 = new Date(end);
-        const diffTime = d2.getTime() - d1.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        if (diffDays > 0) { 
-          document.getElementById('calcDays').value = diffDays; 
-          document.getElementById('manualDays').value = diffDays; 
-        }
-      }
+      const start = document.getElementById('startDate').value; const end = document.getElementById('endDate').value;
+      if (start) { const d1 = new Date(start); document.getElementById('startDateTh').value = `${d1.getDate()} ${thaiMonthsArr[d1.getMonth()]} ${d1.getFullYear() + 543}`; }
+      if (end) { const d2 = new Date(end); document.getElementById('endDateTh').value = `${d2.getDate()} ${thaiMonthsArr[d2.getMonth()]} ${d2.getFullYear() + 543}`; }
+      if (start && end) { const d1 = new Date(start); const d2 = new Date(end); const diffDays = Math.ceil((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24)) + 1; if (diffDays > 0) { document.getElementById('calcDays').value = diffDays; document.getElementById('manualDays').value = diffDays; } }
     }
-
-    function calcFine() {
-      const budget = parseFloat(document.getElementById('budgetAmount').value.replace(/,/g, ''));
-      if (!isNaN(budget) && budget > 0) document.getElementById('finePerDay').value = Math.round(budget * 0.0025).toLocaleString('th-TH', { minimumFractionDigits: 2 });
-    }
+    function calcFine() { const budget = parseFloat(document.getElementById('budgetAmount').value.replace(/,/g, '')); if (!isNaN(budget) && budget > 0) document.getElementById('finePerDay').value = Math.round(budget * 0.0025).toLocaleString('th-TH', { minimumFractionDigits: 2 }); }
 
     function getFormData() {
-      const commCount = parseInt(document.getElementById('committeeCount').value) || 1;
-      const committees = []; 
-      for (let i = 0; i < commCount; i++) {
-        const selVal = document.getElementById(`comm_sel_${i}`)?.value;
-        const customVal = document.getElementById(`comm_custom_${i}`)?.value;
-        committees.push(selVal === "__CUSTOM__" ? (customVal || '') : (selVal || customVal || ''));
-      }
-
-      const inspCount = parseInt(document.getElementById('inspectorCount').value) || 1;
-      const inspectors = [];
-      for (let i = 0; i < inspCount; i++) {
-        const selVal = document.getElementById(`insp_sel_${i}`)?.value;
-        const customVal = document.getElementById(`insp_custom_${i}`)?.value;
-        const finalName = selVal === "__CUSTOM__" ? (customVal || '') : (selVal || customVal || '');
-        inspectors.push({ name: finalName, pos: document.getElementById(`insp_pos_${i}`)?.value || 'ผู้ควบคุมงาน' });
-      }
-
-      installmentListData.forEach((_, idx) => {
-        installmentListData[idx].amount = document.getElementById(`inst_amount_${idx}`)?.value;
-        installmentListData[idx].year = document.getElementById(`inst_year_${idx}`)?.value;
-      });
+      const commCount = parseInt(document.getElementById('committeeCount').value) || 1; const committees = []; 
+      for (let i = 0; i < commCount; i++) { const selVal = document.getElementById(`comm_sel_${i}`)?.value; const customVal = document.getElementById(`comm_custom_${i}`)?.value; committees.push(selVal === "__CUSTOM__" ? (customVal || '') : (selVal || customVal || '')); }
+      const inspCount = parseInt(document.getElementById('inspectorCount').value) || 1; const inspectors = [];
+      for (let i = 0; i < inspCount; i++) { const selVal = document.getElementById(`insp_sel_${i}`)?.value; const customVal = document.getElementById(`insp_custom_${i}`)?.value; inspectors.push({ name: selVal === "__CUSTOM__" ? (customVal || '') : (selVal || customVal || ''), pos: document.getElementById(`insp_pos_${i}`)?.value || 'ผู้ควบคุมงาน' }); }
+      installmentListData.forEach((_, idx) => { installmentListData[idx].amount = document.getElementById(`inst_amount_${idx}`)?.value; installmentListData[idx].year = document.getElementById(`inst_year_${idx}`)?.value; });
 
       const contractNo = document.getElementById('contractNo').value || 'NO_CONTRACT';
       const projId = `PROJ_${contractNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
       return {
-        action: 'save_basic_info',
-        projectID: projId,
-        organizationName: document.getElementById('organizationName').value,
-        district: document.getElementById('district').value,
-        province: document.getElementById('province').value,
-        projectName: document.getElementById('projectName').value,
-        projectLocation: document.getElementById('projectLocation').value,
-        projectScope: document.getElementById('projectScope').value,
-        contractNo: contractNo,
-        contractDate: document.getElementById('contractDate').value,
-        contractPeriods: installmentListData.length,
-        installments: installmentListData,
-        startDate: document.getElementById('startDate').value,
-        startDateTh: document.getElementById('startDateTh').value,
-        endDate: document.getElementById('endDate').value,
-        endDateTh: document.getElementById('endDateTh').value,
-        calcDays: document.getElementById('calcDays').value,
-        manualDays: document.getElementById('manualDays').value,
-        durationDays: document.getElementById('manualDays').value,
-        workPeriodSummary: installmentListData.length,
-        budgetAmount: document.getElementById('budgetAmount').value,
-        finePerDay: document.getElementById('finePerDay').value,
-        extendContractDate: document.getElementById('extendContractDate').value,
-        totalExtendedDays: document.getElementById('totalExtendedDays').value,
-        designerName: document.getElementById('designerName').value,
-        contractorName: document.getElementById('contractorName').value,
-        contractorAddress: document.getElementById('contractorAddress').value,
-        committeeCount: commCount, committees: committees,
-        inspectorCount: inspCount, inspectors: inspectors,
-        orderNo: document.getElementById('orderNo').value,
-        orderDate: document.getElementById('orderDate').value,
-        contractorRepStatus: document.getElementById('contractorRepStatus').value,
-        contractorRepName: document.getElementById('contractorRepName').value,
-        febDays: document.getElementById('febDays').value,
-        updatedAt: new Date().toLocaleString('th-TH')
+        action: 'save_basic_info', projectID: projId, organizationName: document.getElementById('organizationName').value, district: document.getElementById('district').value, province: document.getElementById('province').value,
+        projectName: document.getElementById('projectName').value, projectLocation: document.getElementById('projectLocation').value, projectScope: document.getElementById('projectScope').value, contractNo: contractNo, contractDate: document.getElementById('contractDate').value,
+        contractPeriods: installmentListData.length, installments: installmentListData, startDate: document.getElementById('startDate').value, startDateTh: document.getElementById('startDateTh').value, endDate: document.getElementById('endDate').value, endDateTh: document.getElementById('endDateTh').value,
+        calcDays: document.getElementById('calcDays').value, manualDays: document.getElementById('manualDays').value, durationDays: document.getElementById('manualDays').value, workPeriodSummary: installmentListData.length,
+        budgetAmount: document.getElementById('budgetAmount').value, finePerDay: document.getElementById('finePerDay').value, extendContractDate: document.getElementById('extendContractDate').value, totalExtendedDays: document.getElementById('totalExtendedDays').value,
+        designerName: document.getElementById('designerName').value, contractorName: document.getElementById('contractorName').value, contractorAddress: document.getElementById('contractorAddress').value,
+        committeeCount: commCount, committees: committees, inspectorCount: inspCount, inspectors: inspectors, orderNo: document.getElementById('orderNo').value, orderDate: document.getElementById('orderDate').value,
+        contractorRepStatus: document.getElementById('contractorRepStatus').value, contractorRepName: document.getElementById('contractorRepName').value, febDays: document.getElementById('febDays').value, updatedAt: new Date().toLocaleString('th-TH')
       };
     }
 
@@ -602,166 +456,120 @@
       }
     }
 
-    function loadProjectListDropdown(selectedId = '') {
+    // 💡 โหลดรายชื่อโครงการจาก IndexedDB
+    async function loadProjectListDropdown(selectedId = '') {
       const select = document.getElementById('project_selector');
       if (!select) return;
-
       let list = [];
-      const raw = localStorage.getItem(PROJECT_LIST_KEY);
-      if (raw) {
-        try { list = JSON.parse(raw); } catch(e){}
-      }
-
+      const raw = await localforage.getItem(PROJECT_LIST_KEY);
+      if (raw) { try { list = JSON.parse(raw); } catch(e){} }
       const currentData = getFormData();
       if (currentData.contractNo && !list.some(p => p.id === currentData.projectID)) {
         list.push({ id: currentData.projectID, name: currentData.projectName, contractNo: currentData.contractNo });
-        localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
+        await localforage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
       }
-
       select.innerHTML = '';
-      if (list.length === 0) {
-        select.innerHTML = `<option value="DEFAULT">โครงการเริ่มต้น (E1/2569)</option>`;
-        return;
-      }
-
+      if (list.length === 0) { select.innerHTML = `<option value="DEFAULT">โครงการเริ่มต้น (E1/2569)</option>`; return; }
       list.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.id;
+        const opt = document.createElement('option'); opt.value = p.id;
         opt.textContent = `[สัญญา ${p.contractNo}] ${p.name.substring(0, 50)}...`;
         if (p.id === selectedId) opt.selected = true;
         select.appendChild(opt);
       });
     }
 
-    function switchProject(projId) {
+    // 💡 สลับโครงการโดยดึงจาก IndexedDB
+    async function switchProject(projId) {
       const key = `LOCAL_BASIC_INFO_${projId}`;
-      const saved = localStorage.getItem(key);
+      const saved = await localforage.getItem(key);
       if (saved) {
         try {
-          const data = JSON.parse(saved);
-          setFormData(data);
-          localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(data));
+          const data = JSON.parse(saved); setFormData(data);
+          await localforage.setItem('LOCAL_BASIC_INFO', JSON.stringify(data));
           alert(`สลับมายังโครงการสัญญา ${data.contractNo} เรียบร้อยแล้วค่ะ`);
         } catch(e) {}
       }
     }
 
-    function createNewProject() {
+    async function createNewProject() {
       const cNo = prompt("กรุณาระบุเลขที่สัญญาของโครงการใหม่ (เช่น E2/2569):");
       if (!cNo) return;
-
       const newProjId = `PROJ_${cNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      
-      document.getElementById('contractNo').value = cNo;
-      document.getElementById('projectName').value = "โครงการก่อสร้าง...";
-      document.getElementById('budgetAmount').value = "0.00";
+      document.getElementById('contractNo').value = cNo; document.getElementById('projectName').value = "โครงการก่อสร้าง..."; document.getElementById('budgetAmount').value = "0.00";
       renderInstallmentTable([{ amount: "0.00", year: "2569" }]);
-
       const payload = getFormData();
-      localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(payload));
-      localStorage.setItem(`LOCAL_BASIC_INFO_${newProjId}`, JSON.stringify(payload));
+      
+      await localforage.setItem('LOCAL_BASIC_INFO', JSON.stringify(payload));
+      await localforage.setItem(`LOCAL_BASIC_INFO_${newProjId}`, JSON.stringify(payload));
 
       let list = [];
-      const raw = localStorage.getItem(PROJECT_LIST_KEY);
+      const raw = await localforage.getItem(PROJECT_LIST_KEY);
       if (raw) { try { list = JSON.parse(raw); } catch(e){} }
       if (!list.some(p => p.id === newProjId)) {
         list.push({ id: newProjId, name: payload.projectName, contractNo: cNo });
-        localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
+        await localforage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
       }
-
-      loadProjectListDropdown(newProjId);
+      await loadProjectListDropdown(newProjId);
       alert(`สร้างและสลับไปยังโครงการใหม่ (สัญญา ${cNo}) เรียบร้อยแล้วค่ะ`);
     }
 
-    function deleteCurrentProject() {
+    async function deleteCurrentProject() {
       const payload = getFormData();
       if (confirm(`คุณต้องการลบข้อมูลของโครงการสัญญา ${payload.contractNo} ใช่หรือไม่?`)) {
-        localStorage.removeItem(`LOCAL_BASIC_INFO_${payload.projectID}`);
-        
+        await localforage.removeItem(`LOCAL_BASIC_INFO_${payload.projectID}`);
         let list = [];
-        const raw = localStorage.getItem(PROJECT_LIST_KEY);
+        const raw = await localforage.getItem(PROJECT_LIST_KEY);
         if (raw) { try { list = JSON.parse(raw); } catch(e){} }
         list = list.filter(p => p.id !== payload.projectID);
-        localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
-
-        alert("ลบข้อมูลโครงการเรียบร้อยแล้วค่ะ");
-        location.reload();
+        await localforage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
+        alert("ลบข้อมูลโครงการเรียบร้อยแล้วค่ะ"); location.reload();
       }
     }
 
+    // 💡 ฟังก์ชันบันทึกที่อัปเกรดเป็น IndexedDB
     async function saveToGoogleSheets() {
-      const btn = document.getElementById('btn-save');
-      const payload = getFormData();
-      
-      localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(payload));
-      localStorage.setItem(`LOCAL_BASIC_INFO_${payload.projectID}`, JSON.stringify(payload));
+      const btn = document.getElementById('btn-save'); const payload = getFormData();
+      await localforage.setItem('LOCAL_BASIC_INFO', JSON.stringify(payload));
+      await localforage.setItem(`LOCAL_BASIC_INFO_${payload.projectID}`, JSON.stringify(payload));
 
       let list = [];
-      const raw = localStorage.getItem(PROJECT_LIST_KEY);
+      const raw = await localforage.getItem(PROJECT_LIST_KEY);
       if (raw) { try { list = JSON.parse(raw); } catch(e){} }
-      if (!list.some(p => p.id === payload.projectID)) {
-        list.push({ id: payload.projectID, name: payload.projectName, contractNo: payload.contractNo });
-      } else {
-        const idx = list.findIndex(p => p.id === payload.projectID);
-        if (idx !== -1) { list[idx].name = payload.projectName; list[idx].contractNo = payload.contractNo; }
-      }
-      localStorage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
+      if (!list.some(p => p.id === payload.projectID)) { list.push({ id: payload.projectID, name: payload.projectName, contractNo: payload.contractNo }); } 
+      else { const idx = list.findIndex(p => p.id === payload.projectID); if (idx !== -1) { list[idx].name = payload.projectName; list[idx].contractNo = payload.contractNo; } }
+      await localforage.setItem(PROJECT_LIST_KEY, JSON.stringify(list));
 
-      btn.disabled = true; btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังบันทึก...`;
-      lucide.createIcons();
-
+      btn.disabled = true; btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังบันทึก...`; lucide.createIcons();
       try {
         const response = await fetch(currentGasUrl, { method: 'POST', body: JSON.stringify(payload) });
         const result = await response.json();
-        if (result.status === 'success') {
-          document.getElementById('sync-status').textContent = 'บันทึกสำเร็จ';
-          alert('บันทึกข้อมูลโครงการลง Google Drive เรียบร้อยแล้วค่ะ');
-        } else throw new Error();
+        if (result.status === 'success') { document.getElementById('sync-status').textContent = 'บันทึกสำเร็จ'; alert('บันทึกข้อมูลโครงการลง Google Drive เรียบร้อยแล้วค่ะ'); } else throw new Error();
       } catch (err) {
-        document.getElementById('sync-status').textContent = 'บันทึกในเครื่องแล้ว';
-        alert('บันทึกข้อมูลลงเครื่องเรียบร้อยแล้วค่ะ (พร้อมจัดเก็บแยกระรายโครงการ)');
-      } finally {
-        btn.disabled = false; btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล (Google Drive)`; lucide.createIcons();
-      }
+        document.getElementById('sync-status').textContent = 'ออฟไลน์สมบูรณ์แล้ว';
+        alert('บันทึกข้อมูลลงฐานข้อมูลออฟไลน์ระดับสูง (IndexedDB) ในเครื่องเรียบร้อยแล้วค่ะ');
+      } finally { btn.disabled = false; btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูล (Google Drive)`; lucide.createIcons(); }
     }
 
     async function loadFromGoogleSheets() {
-      const btn = document.getElementById('btn-load');
-      btn.disabled = true; btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังโหลด...`;
-      lucide.createIcons();
-
+      const btn = document.getElementById('btn-load'); btn.disabled = true; btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> กำลังโหลด...`; lucide.createIcons();
       try {
-        const response = await fetch(`${currentGasUrl}?action=get_basic_info`);
-        const res = await response.json();
+        const response = await fetch(`${currentGasUrl}?action=get_basic_info`); const res = await response.json();
         if (res && res.data && Object.keys(res.data).length > 0) { 
-          setFormData(res.data); 
-          localStorage.setItem('LOCAL_BASIC_INFO', JSON.stringify(res.data));
-          alert('ดึงข้อมูลล่าสุดจาก Google Drive เรียบร้อยแล้วค่ะ'); 
+          setFormData(res.data); await localforage.setItem('LOCAL_BASIC_INFO', JSON.stringify(res.data)); alert('ดึงข้อมูลล่าสุดจาก Google Drive เรียบร้อยแล้วค่ะ'); 
         } else throw new Error();
       } catch (err) {
-        const cached = localStorage.getItem('LOCAL_BASIC_INFO');
-        if (cached) { setFormData(JSON.parse(cached)); alert('โหลดข้อมูลล่าสุดที่เก็บไว้ในเครื่องเรียบร้อยแล้วค่ะ'); }
-      } finally {
-        btn.disabled = false; btn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4"></i> โหลดข้อมูลล่าสุด`; lucide.createIcons();
-      }
+        const cached = await localforage.getItem('LOCAL_BASIC_INFO');
+        if (cached) { setFormData(JSON.parse(cached)); alert('โหลดข้อมูลล่าสุดที่เก็บไว้แบบออฟไลน์เรียบร้อยแล้วค่ะ'); }
+      } finally { btn.disabled = false; btn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4"></i> โหลดข้อมูลล่าสุด`; lucide.createIcons(); }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       renderCommitteeFields(); renderInspectorFields();
-      const cached = localStorage.getItem('LOCAL_BASIC_INFO');
+      const cached = await localforage.getItem('LOCAL_BASIC_INFO');
       if (cached) { 
-        try { 
-          const data = JSON.parse(cached);
-          setFormData(data);
-          loadProjectListDropdown(data.projectID);
-        } catch(e) { 
-          renderInstallmentTable(); 
-          loadProjectListDropdown();
-        } 
-      } else { 
-        renderInstallmentTable(); 
-        loadProjectListDropdown();
-      }
+        try { const data = JSON.parse(cached); setFormData(data); await loadProjectListDropdown(data.projectID); } 
+        catch(e) { renderInstallmentTable(); await loadProjectListDropdown(); } 
+      } else { renderInstallmentTable(); await loadProjectListDropdown(); }
     });
   </script>
 </body>
